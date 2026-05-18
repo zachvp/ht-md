@@ -5,14 +5,21 @@
   "main": "background.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint '*.js' --ignore-pattern 'turndown.js'"
+    "lint": "eslint 'src/*.ts'",
+    "build": "mkdir -p dist && esbuild src/background.ts src/content.ts src/popup.ts --bundle --platform=browser --outdir=dist && cp manifest.json content.css turndown.js dist/ && cp -r icons dist/",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@types/chrome": "^0.1.42",
+    "@typescript-eslint/eslint-plugin": "^8.59.4",
+    "@typescript-eslint/parser": "^8.59.4",
+    "esbuild": "^0.28.0",
     "eslint": "^10.4.0",
-    "globals": "^17.6.0"
+    "globals": "^17.6.0",
+    "typescript": "^6.0.3"
   }
 }

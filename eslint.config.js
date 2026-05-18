@@ -1,35 +1,28 @@
 const globals = require('globals')
+const tsParser = require('@typescript-eslint/parser')
+const tsPlugin = require('@typescript-eslint/eslint-plugin')
 
 module.exports = [
   {
     files: ['eslint.config.js'],
-    languageOptions: {
-      globals: globals.node,
-    },
+    languageOptions: { globals: globals.node },
   },
   {
-    files: ['*.js'],
-    ignores: ['eslint.config.js', 'turndown.js'],
+    files: ['src/*.ts'],
     languageOptions: {
-      ecmaVersion: 2020,
+      parser: tsParser,
       globals: {
         ...globals.browser,
-        // extension namespace globals (firefox / chrome)
         browser: 'readonly',
         chrome: 'readonly',
-        // service worker global (chrome background)
         importScripts: 'readonly',
-        // shared via browser.js
-        BROWSER: 'readonly',
-        api: 'readonly',
-        // shared via turndown.js
-        TurndownService: 'readonly',
       },
     },
+    plugins: { '@typescript-eslint': tsPlugin },
     rules: {
-      'no-redeclare': 'error',
-      'no-undef': 'error',
-      'no-unused-vars': ['warn', { varsIgnorePattern: '^(api|BROWSER)$' }],
+      ...tsPlugin.configs.recommended.rules,
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^(api|BROWSER)$' }],
     },
   },
 ]

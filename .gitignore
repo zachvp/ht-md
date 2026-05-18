@@ -1,1 +1,10 @@
 node_modules/
+
+# TypeScript source (compiled output goes to root)
+browser.js
+background.js
+content.js
+popup.js
+
+# Build output
+dist/
