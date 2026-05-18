@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint 'src/*.ts'",
     "build": "mkdir -p dist && esbuild 'src/*.ts' --bundle --platform=browser --outdir=dist && cp manifest.json content.css turndown.js dist/ && cp -r icons dist/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "gen-icons": "python3 scripts/gen-icons.py"
   },
   "keywords": [],
   "author": "",
