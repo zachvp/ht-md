@@ -8,10 +8,6 @@ const handlers: Record<string, (tab: chrome.tabs.Tab) => void> = {
     chrome.tabs.sendMessage(tab.id!, { action: 'activate' })
       .catch((err: Error) => console.warn('[web-md] activatePicker:', err.message))
   },
-  openMenu(tab) {
-    chrome.action.setPopup({ tabId: tab.id, popup: 'popup.html' })
-    chrome.action.openPopup()
-  },
 }
 
 chrome.action.onClicked.addListener((tab) => {
