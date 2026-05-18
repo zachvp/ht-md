@@ -3,9 +3,12 @@
   "name": "web-md",
   "version": "0.1.0",
   "description": "Pick any element, copy it as Markdown",
-  "permissions": ["activeTab", "tabs"],
+  "permissions": ["activeTab", "tabs", "storage"],
+  "background": {
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
+  },
   "action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
