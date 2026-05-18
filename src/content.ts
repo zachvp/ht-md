@@ -50,7 +50,7 @@ function onClick(e: MouseEvent): void {
   console.log('[web-md] captured element:', el.tagName, '— md length:', md.length)
 
   navigator.clipboard.writeText(md)
-    .then(() => { console.log('[web-md] clipboard write ok'); showFlash('Copied!', e.clientX, e.clientY) })
+    .then(() => { console.log('[web-md] clipboard write ok'); showFlash('📝 Copied', e.clientX, e.clientY) })
     .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); showFlash('Error: ' + err.message, e.clientX, e.clientY) })
 
   deactivatePicker()
@@ -67,9 +67,14 @@ function showFlash(text: string, x: number, y: number): void {
   const el = document.createElement('div')
   el.className = 'web-md-flash'
   el.textContent = text
-  el.style.left = `${x}px`
-  el.style.top = `${y + 12}px`
+  el.style.left = '0'
+  el.style.top = '0'
   document.body.appendChild(el)
+  const pad = 8
+  const w = el.offsetWidth
+  const h = el.offsetHeight
+  el.style.left = `${Math.min(Math.max(x - w / 2, pad), window.innerWidth - w - pad)}px`
+  el.style.top = `${Math.min(Math.max(y + 12, pad), window.innerHeight - h - pad)}px`
   setTimeout(() => el.remove(), 1500)
 }
 
