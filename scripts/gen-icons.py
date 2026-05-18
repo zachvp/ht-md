@@ -13,7 +13,7 @@ FONT_PATHS = [
     '/Library/Fonts/Courier New.ttf',
 ]
 
-BG     = (20, 20, 32, 255)
+BG     = (20, 20, 32, 0)
 TEAL   = (77, 208, 225)   # < >  HTML
 ORANGE = (255, 153, 0)    # #    Markdown
 
@@ -25,21 +25,28 @@ def load_font(size: int) -> ImageFont.FreeTypeFont:
             continue
     return ImageFont.load_default()
 
+def fit_font(draw: ImageDraw.ImageDraw, text: str, canvas: int) -> tuple[ImageFont.FreeTypeFont, tuple]:
+    """Find the largest font where text fits within canvas, return font and tight bbox."""
+    for fs in range(canvas * 2, 1, -1):
+        font  = load_font(fs)
+        tight = draw.textbbox((0, 0), text, font=font)
+        w = tight[2] - tight[0]
+        h = tight[3] - tight[1]
+        if w <= canvas and h <= canvas:
+            return font, tight
+    return load_font(1), (0, 0, 1, 1)
+
 def make_icon(size: int) -> Image.Image:
     img  = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    radius = max(2, size // 7)
-    draw.rounded_rectangle([(0, 0), (size - 1, size - 1)], radius=radius, fill=BG)
+    font, tight = fit_font(draw, '<#', size)
+    parts   = [('<', TEAL), ('#', ORANGE)]
+    total_w = tight[2] - tight[0]
+    text_h  = tight[3] - tight[1]
 
-    font    = load_font(int(size * 0.48))
-    parts   = [('<', TEAL), ('#', ORANGE), ('>', TEAL)]
-    total_w = sum(draw.textlength(ch, font=font) for ch, _ in parts)
-    bbox    = draw.textbbox((0, 0), '<#>', font=font)
-    text_h  = bbox[3] - bbox[1]
-
-    x = (size - total_w) / 2
-    y = (size - text_h) / 2 - bbox[1]
+    x = (size - total_w) / 2 - tight[0]
+    y = (size - text_h) / 2 - tight[1]
 
     for ch, color in parts:
         draw.text((x, y), ch, font=font, fill=color)
