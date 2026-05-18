@@ -1,4 +1,4 @@
-const browserAPI = typeof browser !== 'undefined' ? browser : chrome
+console.log('[web-md] content script loaded')
 
 let pickerActive = false
 let lastHighlighted = null
@@ -7,6 +7,7 @@ const turndown = new TurndownService()
 function activatePicker() {
   if (pickerActive) return
   pickerActive = true
+  console.log('[web-md] picker activated')
 
   document.addEventListener('mouseover', onMouseOver)
   document.addEventListener('click', onClick, true)
@@ -16,6 +17,7 @@ function activatePicker() {
 function deactivatePicker() {
   if (!pickerActive) return
   pickerActive = false
+  console.log('[web-md] picker deactivated')
 
   if (lastHighlighted) {
     lastHighlighted.classList.remove('web-md-highlight')
@@ -46,10 +48,11 @@ function onClick(e) {
 
   const html = el.outerHTML
   const md = turndown.turndown(html)
+  console.log('[web-md] captured element:', el.tagName, '— md length:', md.length)
 
   navigator.clipboard.writeText(md)
-    .then(() => showFlash('Copied!'))
-    .catch(err => showFlash('Error: ' + err.message))
+    .then(() => { console.log('[web-md] clipboard write ok'); showFlash('Copied!') })
+    .catch(err => { console.error('[web-md] clipboard write failed:', err.message); showFlash('Error: ' + err.message) })
 
   deactivatePicker()
 }
@@ -69,6 +72,7 @@ function showFlash(text) {
   setTimeout(() => el.remove(), 1500)
 }
 
-browserAPI.runtime.onMessage.addListener((msg) => {
+api.runtime.onMessage.addListener((msg) => {
+  console.log('[web-md] message received:', msg)
   if (msg.action === 'activate') activatePicker()
 })
