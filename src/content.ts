@@ -1,5 +1,3 @@
-import { api } from './browser.js'
-
 console.log('[web-md] content script loaded')
 
 let pickerActive = false
@@ -73,7 +71,7 @@ function showFlash(text: string): void {
   setTimeout(() => el.remove(), 1500)
 }
 
-api.runtime.onMessage.addListener((msg: { action: string }) => {
+chrome.runtime.onMessage.addListener((msg: { action: string }) => {
   console.log('[web-md] message received:', msg)
   if (msg.action === 'activate') activatePicker()
 })
