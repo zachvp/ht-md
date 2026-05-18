@@ -1,4 +1,4 @@
-const browserAPI = window.browser || window.chrome
+const browserAPI = typeof browser !== 'undefined' ? browser : chrome
 
 let pickerActive = false
 let lastHighlighted = null
