@@ -1,0 +1,17 @@
+.web-md-highlight {
+  outline: 2px solid #f90 !important;
+  cursor: crosshair !important;
+}
+
+.web-md-flash {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font: 13px/1.4 system-ui, sans-serif;
+  z-index: 2147483647;
+  pointer-events: none;
+}

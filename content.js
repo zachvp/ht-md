@@ -2,21 +2,11 @@ const browserAPI = typeof browser !== 'undefined' ? browser : chrome
 
 let pickerActive = false
 let lastHighlighted = null
-let injectedStyle = null
 const turndown = new TurndownService()
 
 function activatePicker() {
   if (pickerActive) return
   pickerActive = true
-
-  injectedStyle = document.createElement('style')
-  injectedStyle.textContent = `
-    .web-md-highlight {
-      outline: 2px solid #f90 !important;
-      cursor: crosshair !important;
-    }
-  `
-  document.head.appendChild(injectedStyle)
 
   document.addEventListener('mouseover', onMouseOver)
   document.addEventListener('click', onClick, true)
@@ -30,10 +20,6 @@ function deactivatePicker() {
   if (lastHighlighted) {
     lastHighlighted.classList.remove('web-md-highlight')
     lastHighlighted = null
-  }
-  if (injectedStyle) {
-    injectedStyle.remove()
-    injectedStyle = null
   }
 
   document.removeEventListener('mouseover', onMouseOver)
@@ -77,19 +63,8 @@ function onKeyDown(e) {
 
 function showFlash(text) {
   const el = document.createElement('div')
+  el.className = 'web-md-flash'
   el.textContent = text
-  el.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: rgba(0,0,0,0.8);
-    color: #fff;
-    padding: 8px 14px;
-    border-radius: 6px;
-    font: 13px/1.4 system-ui, sans-serif;
-    z-index: 2147483647;
-    pointer-events: none;
-  `
   document.body.appendChild(el)
   setTimeout(() => el.remove(), 1500)
 }
