@@ -3,6 +3,7 @@ console.log('[web-md] content script loaded')
 let pickerActive = false
 let lastHighlighted: Element | null = null
 const turndown = new TurndownService()
+turndown.remove(['style', 'script', 'noscript'])
 
 function activatePicker(): void {
   if (pickerActive) return
