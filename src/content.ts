@@ -3,6 +3,8 @@ console.log('[web-md] content script loaded')
 let pickerActive = false
 let lastHighlighted: Element | null = null
 let lastMousePos = { x: 0, y: 0 }
+let flashEl: HTMLDivElement | null = null
+let flashMoveHandler: ((e: MouseEvent) => void) | null = null
 const selectedElements: Element[] = []
 const selectedSet = new Set<Element>()
 
@@ -55,7 +57,7 @@ function onClick(e: MouseEvent): void {
     return
   }
 
-  if (e.shiftKey) {
+  if (e.metaKey) {
     if (!selectedSet.has(el)) {
       selectedElements.push(el)
       selectedSet.add(el)
@@ -93,18 +95,36 @@ function onKeyDown(e: KeyboardEvent): void {
 }
 
 function showFlash(text: string, x: number, y: number): void {
-  const el = document.createElement('div')
+  if (flashEl) {
+    flashEl.remove()
+    if (flashMoveHandler) document.removeEventListener('mousemove', flashMoveHandler)
+  }
+
+  const el = document.createElement('div') as HTMLDivElement
   el.className = 'web-md-flash'
   el.textContent = text
   el.style.left = '0'
   el.style.top = '0'
   document.body.appendChild(el)
+
   const pad = 8
   const w = el.offsetWidth
   const h = el.offsetHeight
-  el.style.left = `${Math.min(Math.max(x - w / 2, pad), window.innerWidth - w - pad)}px`
-  el.style.top = `${Math.min(Math.max(y + 12, pad), window.innerHeight - h - pad)}px`
-  setTimeout(() => el.remove(), 1500)
+  function position(cx: number, cy: number): void {
+    el.style.left = `${Math.min(Math.max(cx - w / 2, pad), window.innerWidth - w - pad)}px`
+    el.style.top = `${Math.min(Math.max(cy + 12, pad), window.innerHeight - h - pad)}px`
+  }
+
+  position(x, y)
+  flashEl = el
+  flashMoveHandler = (e: MouseEvent) => position(e.clientX, e.clientY)
+  document.addEventListener('mousemove', flashMoveHandler)
+
+  setTimeout(() => {
+    el.remove()
+    document.removeEventListener('mousemove', flashMoveHandler!)
+    if (flashEl === el) { flashEl = null; flashMoveHandler = null }
+  }, 1500)
 }
 
 chrome.runtime.onMessage.addListener((msg: { action: string }) => {
