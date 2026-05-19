@@ -1,3 +1,8 @@
+.web-md-selected {
+  outline: 2px solid #39f !important;
+  cursor: crosshair !important;
+}
+
 .web-md-highlight {
   outline: 2px solid #f90 !important;
   cursor: crosshair !important;

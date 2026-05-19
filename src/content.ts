@@ -2,6 +2,10 @@ console.log('[web-md] content script loaded')
 
 let pickerActive = false
 let lastHighlighted: Element | null = null
+let lastMousePos = { x: 0, y: 0 }
+const selectedElements: Element[] = []
+const selectedSet = new Set<Element>()
+
 const turndown = new TurndownService()
 turndown.remove(['style', 'script', 'noscript'])
 
@@ -23,12 +27,17 @@ function deactivatePicker(): void {
   lastHighlighted?.classList.remove('web-md-highlight')
   lastHighlighted = null
 
+  for (const el of selectedElements) el.classList.remove('web-md-selected')
+  selectedElements.length = 0
+  selectedSet.clear()
+
   document.removeEventListener('mouseover', onMouseOver)
   document.removeEventListener('click', onClick, true)
   document.removeEventListener('keydown', onKeyDown, true)
 }
 
 function onMouseOver(e: MouseEvent): void {
+  lastMousePos = { x: e.clientX, y: e.clientY }
   lastHighlighted?.classList.remove('web-md-highlight')
   const target = e.target as Element
   if (target === document.body || target === document.documentElement) return
@@ -46,6 +55,16 @@ function onClick(e: MouseEvent): void {
     return
   }
 
+  if (e.metaKey) {
+    if (!selectedSet.has(el)) {
+      selectedElements.push(el)
+      selectedSet.add(el)
+      el.classList.add('web-md-selected')
+    }
+    showFlash(`${selectedElements.length} selected — Enter to copy`, e.clientX, e.clientY)
+    return
+  }
+
   const html = el.outerHTML
   const md = turndown.turndown(html)
   console.log('[web-md] captured element:', el.tagName, '— md length:', md.length)
@@ -60,6 +79,15 @@ function onClick(e: MouseEvent): void {
 function onKeyDown(e: KeyboardEvent): void {
   if (e.key === 'Escape') {
     e.stopPropagation()
+    deactivatePicker()
+  } else if (e.key === 'Enter' && selectedElements.length > 0) {
+    e.preventDefault()
+    e.stopPropagation()
+    const md = selectedElements.map(el => turndown.turndown(el.outerHTML)).join('\n')
+    console.log('[web-md] committing', selectedElements.length, 'elements — md length:', md.length)
+    navigator.clipboard.writeText(md)
+      .then(() => { console.log('[web-md] clipboard write ok'); showFlash('📝 Copied', lastMousePos.x, lastMousePos.y) })
+      .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); showFlash('Error: ' + err.message, lastMousePos.x, lastMousePos.y) })
     deactivatePicker()
   }
 }
