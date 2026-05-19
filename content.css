@@ -9,6 +9,8 @@
 }
 
 .web-md-flash {
+  all: initial;
+  display: block;
   position: fixed;
   background: rgba(0, 0, 0, 0.8);
   color: #fff;

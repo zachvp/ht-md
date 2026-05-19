@@ -55,7 +55,7 @@ function onClick(e: MouseEvent): void {
     return
   }
 
-  if (e.metaKey) {
+  if (e.shiftKey) {
     if (!selectedSet.has(el)) {
       selectedElements.push(el)
       selectedSet.add(el)
