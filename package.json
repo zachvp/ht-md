@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint 'src/*.ts'",
-    "build": "mkdir -p dist && esbuild 'src/*.ts' --bundle --platform=browser --outdir=dist && cp manifest.json content.css turndown.js dist/ && cp -r icons dist/",
+    "build": "mkdir -p dist && esbuild 'src/*.ts' --bundle --platform=browser --outdir=dist && cp manifest.json content.css turndown.js dist/ && cp -r icons dist/ && cd dist && zip -r ../web-md.xpi . && cd ..",
     "typecheck": "tsc --noEmit",
     "gen-icons": "python3 scripts/gen-icons.py"
   },

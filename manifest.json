@@ -6,11 +6,14 @@
   "permissions": ["activeTab", "tabs", "storage"],
   "browser_specific_settings": {
     "gecko": {
-      "id": "web-md@local"
+      "id": "web-md@local",
+      "data_collection_permissions": {
+        "required": [],
+        "optional": []
+      }
     }
   },
   "background": {
-    "service_worker": "background.js",
     "scripts": ["background.js"]
   },
   "action": {
