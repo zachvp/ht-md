@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Builds the extension for one or more browser targets into dist/<target>/,
-// and packages each into a browser-appropriate archive at the repo root.
+// and packages each into a browser-appropriate archive under dist/.
 //
 // Usage:
 //   node scripts/build.js firefox
@@ -76,18 +76,17 @@ function buildTarget(name) {
 
   fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(merged, null, 2) + '\n');
 
-  let archiveName = null;
+  let archivePath = null;
   if (config.archiveExt) {
-    archiveName = `web-md-${name}.${config.archiveExt}`;
-    console.log(`[${name}] packaging ${archiveName}`);
-    fs.rmSync(path.join(ROOT, archiveName), { force: true });
-    execSync(`zip -rq ${JSON.stringify(path.join(ROOT, archiveName))} .`, {
-      cwd: outDir,
-      stdio: 'inherit',
-    });
+    archivePath = path.join(ROOT, 'dist', `web-md-${name}.${config.archiveExt}`);
+    console.log(`[${name}] packaging ${path.relative(ROOT, archivePath)}`);
+    fs.rmSync(archivePath, { force: true });
+    execSync(`zip -rq ${JSON.stringify(archivePath)} .`, { cwd: outDir, stdio: 'inherit' });
   }
 
-  console.log(`[${name}] done -> dist/${name}/${archiveName ? `, ${archiveName}` : ''}`);
+  console.log(
+    `[${name}] done -> dist/${name}/${archivePath ? `, ${path.relative(ROOT, archivePath)}` : ''}`
+  );
 
   if (name === 'firefox') {
     console.log(`[${name}] linting with web-ext`);

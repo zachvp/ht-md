@@ -37,10 +37,12 @@ function readKeychainSecret(service) {
 const apiKey = readKeychainSecret('web-md-amo-issuer');
 const apiSecret = readKeychainSecret('web-md-amo-secret');
 
+const ARTIFACTS_DIR = path.join(ROOT, 'dist', 'web-ext-artifacts');
+
 console.log(`Signing ${path.relative(ROOT, SOURCE_DIR)} via AMO (unlisted channel)...`);
 execSync(
   `npx web-ext sign --source-dir=${JSON.stringify(SOURCE_DIR)} --channel=unlisted --artifacts-dir=${JSON.stringify(
-    path.join(ROOT, 'web-ext-artifacts')
+    ARTIFACTS_DIR
   )}`,
   {
     cwd: ROOT,

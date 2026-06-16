@@ -8,6 +8,3 @@ popup.js
 
 # Build output
 dist/
-
-# web-ext sign output (signed .xpi + JSON metadata)
-web-ext-artifacts/
