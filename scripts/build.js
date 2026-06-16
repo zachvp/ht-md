@@ -13,27 +13,26 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 
+// Firefox's MV3 doesn't support service workers yet, so its background page
+// uses the scripts-array form; Chromium (Chrome/Brave/Edge) requires
+// service_worker and silently ignores "scripts" — which is exactly the bug
+// that motivated checkBackgroundKey below.
 const TARGETS = {
-  firefox: {
-    manifestOverride: 'manifest.firefox.json',
-    archiveExt: 'xpi',
-    // Firefox's MV3 doesn't support service workers yet — it needs the
-    // scripts-array event-page form.
-    assertManifest: (m) =>
-      Array.isArray(m.background?.scripts) && !m.background?.service_worker,
-    assertMessage: 'expected background.scripts (array), not background.service_worker',
-  },
-  // Brave and Edge are Chromium-based and load the chrome build directly.
-  chrome: {
-    manifestOverride: 'manifest.chrome.json',
-    archiveExt: 'zip',
-    // Chromium MV3 requires service_worker — "scripts" is silently ignored,
-    // which is exactly the bug that motivated this check.
-    assertManifest: (m) =>
-      typeof m.background?.service_worker === 'string' && !m.background?.scripts,
-    assertMessage: 'expected background.service_worker (string), not background.scripts',
-  },
+  firefox: { manifestOverride: 'manifest.firefox.json', archiveExt: 'xpi', backgroundKey: 'scripts' },
+  chrome: { manifestOverride: 'manifest.chrome.json', archiveExt: 'zip', backgroundKey: 'service_worker' },
 };
+
+// All MV3 background keys this manifest could plausibly carry. Used to make
+// sure only the target's own key is present.
+const BACKGROUND_KEYS = ['scripts', 'service_worker'];
+
+function checkBackgroundKey(manifest, config) {
+  const present = BACKGROUND_KEYS.filter((key) => manifest.background?.[key] !== undefined);
+  if (present.length !== 1 || present[0] !== config.backgroundKey) {
+    return `expected only background.${config.backgroundKey}, found: ${present.join(', ') || '(none)'}`;
+  }
+  return null;
+}
 
 function buildTarget(name) {
   const config = TARGETS[name];
@@ -65,8 +64,9 @@ function buildTarget(name) {
   );
   const merged = { ...base, ...override };
 
-  if (!config.assertManifest(merged)) {
-    console.error(`[${name}] manifest check failed: ${config.assertMessage}`);
+  const manifestError = checkBackgroundKey(merged, config);
+  if (manifestError) {
+    console.error(`[${name}] manifest check failed: ${manifestError}`);
     process.exit(1);
   }
 
@@ -92,14 +92,14 @@ function buildTarget(name) {
 }
 
 function main() {
-  const arg = process.argv[2];
+  // No target (e.g. plain `npm run build`) defaults to "all" rather than
+  // guessing a single browser — building every target is always correct,
+  // unlike the old default-to-firefox behavior that broke Brave/Chrome.
+  const arg = process.argv[2] || 'all';
   const names = arg === 'all' ? Object.keys(TARGETS) : [arg];
 
-  if (!arg || (arg !== 'all' && !TARGETS[arg])) {
-    console.error(
-      `Usage: node scripts/build.js <${Object.keys(TARGETS).join('|')}|all>\n` +
-        `No target specified — refusing to guess, since the wrong manifest silently breaks the extension.`
-    );
+  if (arg !== 'all' && !TARGETS[arg]) {
+    console.error(`Usage: node scripts/build.js <${Object.keys(TARGETS).join('|')}|all>`);
     process.exit(1);
   }
 

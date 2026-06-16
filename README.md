@@ -15,17 +15,29 @@ Pick any element on a webpage and copy it as Markdown.
    npm install
    ```
 
-2. Build for a specific browser target:
+2. Build for a specific browser target, or all of them:
    ```
    npm run build:firefox   # dist/firefox/, web-md-firefox.xpi
    npm run build:chrome    # dist/chrome/,  web-md-chrome.zip  (also loads in Brave, Edge)
-   npm run build:all       # both
+   npm run build            # both (same as build:all) — no single manifest works
+                             # correctly across Firefox and Chromium, so each
+                             # target gets its own dist/ dir and manifest
    ```
-
-   `npm run build` with no target intentionally errors — there's no single manifest
-   that works correctly across Firefox and Chromium (MV3 background scripts differ),
-   so a target must be picked explicitly.
 
 Each target's manifest is `manifest.base.json` merged with its
 `manifest.<target>.json` override (only the fields that genuinely diverge per
 browser, e.g. `background`).
+
+## Troubleshooting: "Could not establish connection. Receiving end does not exist."
+
+After reloading the unpacked extension (or rebuilding it), Chrome/Brave does
+**not** retroactively inject the content script into tabs that were already
+open — only the background service worker restarts immediately. You'll see
+`background.js` logs fire normally, but the content script never logs
+"content script loaded" and `chrome.tabs.sendMessage` fails with this error.
+
+**Fix**: hard-refresh the tab you're testing in (not just reload the
+extension) after every rebuild/reload. This is expected browser behavior, not
+a bug in the build — see the
+[chromium-extensions discussion](https://groups.google.com/a/chromium.org/g/chromium-extensions/c/JPtI0_DZP-I)
+for background.
