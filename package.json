@@ -6,7 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint 'src/*.ts'",
-    "build": "mkdir -p dist && esbuild 'src/*.ts' --bundle --platform=browser --outdir=dist && cp manifest.json content.css turndown.js dist/ && cp -r icons dist/ && cd dist && zip -r ../web-md.xpi . && cd ..",
+    "build:js": "mkdir -p dist && esbuild 'src/*.ts' --bundle --platform=browser --outdir=dist && cp content.css turndown.js dist/ && cp -r icons dist/",
+    "build:firefox": "npm run build:js && cp manifest.json dist/manifest.json && cd dist && zip -r ../web-md.xpi . && cd ..",
+    "build:chrome": "npm run build:js && cp manifest.chrome.json dist/manifest.json && cd dist && zip -r ../web-md-chrome.zip . && cd ..",
+    "build": "npm run build:firefox",
     "typecheck": "tsc --noEmit",
     "gen-icons": "python3 scripts/gen-icons.py"
   },
