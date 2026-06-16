@@ -8,8 +8,7 @@
     "gecko": {
       "id": "web-md@local",
       "data_collection_permissions": {
-        "required": [],
-        "optional": []
+        "required": ["none"]
       }
     }
   },
