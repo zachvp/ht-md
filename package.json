@@ -6,10 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint 'src/*.ts'",
-    "build:js": "mkdir -p dist && esbuild 'src/*.ts' --bundle --platform=browser --outdir=dist && cp content.css turndown.js dist/ && cp -r icons dist/",
-    "build:firefox": "npm run build:js && cp manifest.json dist/manifest.json && cd dist && zip -r ../web-md.xpi . && cd ..",
-    "build:chrome": "npm run build:js && cp manifest.chrome.json dist/manifest.json && cd dist && zip -r ../web-md-chrome.zip . && cd ..",
-    "build": "npm run build:firefox",
+    "build:firefox": "node scripts/build.js firefox",
+    "build:chrome": "node scripts/build.js chrome",
+    "build:all": "node scripts/build.js all",
+    "build": "node scripts/build.js",
     "typecheck": "tsc --noEmit",
     "gen-icons": "python3 scripts/gen-icons.py"
   },
@@ -24,6 +24,7 @@
     "esbuild": "^0.28.0",
     "eslint": "^10.4.0",
     "globals": "^17.6.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "web-ext": "^10.4.0"
   }
 }

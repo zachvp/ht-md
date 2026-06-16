@@ -4,17 +4,6 @@
   "version": "0.1.0",
   "description": "Pick any element, copy it as Markdown",
   "permissions": ["activeTab", "tabs", "storage"],
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "web-md@local",
-      "data_collection_permissions": {
-        "required": ["none"]
-      }
-    }
-  },
-  "background": {
-    "scripts": ["background.js"]
-  },
   "action": {
     "default_icon": {
       "16": "icons/icon16.png",
