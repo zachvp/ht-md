@@ -18,7 +18,11 @@ const ROOT = path.join(__dirname, '..');
 // service_worker and silently ignores "scripts" — which is exactly the bug
 // that motivated checkBackgroundKey below.
 const TARGETS = {
-  firefox: { manifestOverride: 'manifest.firefox.json', archiveExt: 'xpi', backgroundKey: 'scripts' },
+  // No root-level archive for firefox: an unsigned .xpi can't be installed
+  // permanently anyway (see scripts/sign-firefox.js for the real
+  // distributable), and keeping one around just invites grabbing the wrong
+  // file. dist/firefox/ (unpacked) is enough for temporary-add-on testing.
+  firefox: { manifestOverride: 'manifest.firefox.json', archiveExt: null, backgroundKey: 'scripts' },
   chrome: { manifestOverride: 'manifest.chrome.json', archiveExt: 'zip', backgroundKey: 'service_worker' },
 };
 
@@ -72,15 +76,18 @@ function buildTarget(name) {
 
   fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(merged, null, 2) + '\n');
 
-  const archiveName = `web-md-${name}.${config.archiveExt}`;
-  console.log(`[${name}] packaging ${archiveName}`);
-  fs.rmSync(path.join(ROOT, archiveName), { force: true });
-  execSync(`zip -rq ${JSON.stringify(path.join(ROOT, archiveName))} .`, {
-    cwd: outDir,
-    stdio: 'inherit',
-  });
+  let archiveName = null;
+  if (config.archiveExt) {
+    archiveName = `web-md-${name}.${config.archiveExt}`;
+    console.log(`[${name}] packaging ${archiveName}`);
+    fs.rmSync(path.join(ROOT, archiveName), { force: true });
+    execSync(`zip -rq ${JSON.stringify(path.join(ROOT, archiveName))} .`, {
+      cwd: outDir,
+      stdio: 'inherit',
+    });
+  }
 
-  console.log(`[${name}] done -> dist/${name}/, ${archiveName}`);
+  console.log(`[${name}] done -> dist/${name}/${archiveName ? `, ${archiveName}` : ''}`);
 
   if (name === 'firefox') {
     console.log(`[${name}] linting with web-ext`);
