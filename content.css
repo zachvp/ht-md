@@ -3,9 +3,8 @@
   all: initial;
   display: block;
   position: absolute;
-  top: 0;
-  right: 0;
-  transform: translate(50%, -50%);
+  top: 4px;
+  right: 4px;
   background: #3399ff;
   color: #fff;
   font: bold 11px/16px system-ui, sans-serif;

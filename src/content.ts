@@ -21,6 +21,9 @@ const settings = {
   outlineColor: '#ff9900',
   outlineWidth: 2,
   insetWidth: 2,
+  cursorEmoji: '📌',
+  multiCursorEmoji: '📝',
+  flashFontSize: 13,
 }
 
 const turndown = new TurndownService()
@@ -42,14 +45,19 @@ turndownStripped.addRule('stripSvgDataUri', {
   },
 })
 
-chrome.storage.sync.get({ includeSvg: false, cursorSize: 32, outlineColor: '#ff9900', outlineWidth: 2, insetWidth: 2 })
-  .then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth }) => {
-    settings.includeSvg = includeSvg as boolean
-    settings.cursorSize = cursorSize as number
-    settings.outlineColor = outlineColor as string
-    settings.outlineWidth = outlineWidth as number
-    settings.insetWidth = insetWidth as number
-  })
+chrome.storage.sync.get({
+  includeSvg: false, cursorSize: 32, outlineColor: '#ff9900', outlineWidth: 2, insetWidth: 2,
+  cursorEmoji: '📌', multiCursorEmoji: '📝', flashFontSize: 13,
+}).then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth, cursorEmoji, multiCursorEmoji, flashFontSize }) => {
+  settings.includeSvg = includeSvg as boolean
+  settings.cursorSize = cursorSize as number
+  settings.outlineColor = outlineColor as string
+  settings.outlineWidth = outlineWidth as number
+  settings.insetWidth = insetWidth as number
+  settings.cursorEmoji = cursorEmoji as string
+  settings.multiCursorEmoji = multiCursorEmoji as string
+  settings.flashFontSize = flashFontSize as number
+})
 
 chrome.storage.onChanged.addListener(changes => {
   if (changes.includeSvg) settings.includeSvg = changes.includeSvg.newValue
@@ -57,6 +65,9 @@ chrome.storage.onChanged.addListener(changes => {
   if (changes.outlineColor) settings.outlineColor = changes.outlineColor.newValue
   if (changes.outlineWidth) settings.outlineWidth = changes.outlineWidth.newValue
   if (changes.insetWidth) settings.insetWidth = changes.insetWidth.newValue
+  if (changes.cursorEmoji) settings.cursorEmoji = changes.cursorEmoji.newValue
+  if (changes.multiCursorEmoji) settings.multiCursorEmoji = changes.multiCursorEmoji.newValue
+  if (changes.flashFontSize) settings.flashFontSize = changes.flashFontSize.newValue
   if (state.pickerActive && (changes.outlineColor || changes.outlineWidth || changes.insetWidth)) {
     applyOutlineStyles()
   }
@@ -76,7 +87,7 @@ function hexToRgba(hex: string, alpha: number): string {
 function applyOutlineStyles(): void {
   if (!state.outlineStyleEl) {
     state.outlineStyleEl = document.createElement('style')
-    state.outlineStyleEl.setAttribute('data-darkreader-ignore', '')
+    state.outlineStyleEl.className = 'darkreader darkreader--sync'
     document.head.appendChild(state.outlineStyleEl)
   }
   const highlightRgba = hexToRgba(settings.outlineColor, 0.35)
@@ -114,7 +125,7 @@ function buildCursor(emoji: string, size = 32): string {
 function setCursor(emoji: string): void {
   if (!state.cursorStyleEl) {
     state.cursorStyleEl = document.createElement('style')
-    state.cursorStyleEl.setAttribute('data-darkreader-ignore', '')
+    state.cursorStyleEl.className = 'darkreader darkreader--sync'
     document.head.appendChild(state.cursorStyleEl)
   }
   const url = buildCursor(emoji, settings.cursorSize)
@@ -163,7 +174,7 @@ function activatePicker(): void {
   console.log('[web-md] picker activated')
   try {
     applyOutlineStyles()
-    setCursor('📌')
+    setCursor(settings.cursorEmoji)
     document.addEventListener('mouseover', onMouseOver)
     document.addEventListener('click', onClick, true)
     document.addEventListener('keydown', onKeyDown, true)
@@ -222,6 +233,7 @@ function onClick(e: MouseEvent): void {
       state.selectedSet.add(el)
       el.classList.add('web-md-selected')
       addBadge(el, state.selectedElements.length)
+      if (state.selectedElements.length === 1) setCursor(settings.multiCursorEmoji)
     }
     showFlash(`${state.selectedElements.length} selected — Enter to copy`, e.clientX, e.clientY, true)
     return
@@ -266,6 +278,7 @@ function showFlash(text: string, x: number, y: number, horizontal = false): void
   el.textContent = text
   el.style.left = '0'
   el.style.top = '0'
+  el.style.fontSize = `${settings.flashFontSize}px`
   document.body.appendChild(el)
 
   const pad = 8

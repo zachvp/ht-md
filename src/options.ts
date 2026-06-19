@@ -1,11 +1,15 @@
 const checkbox = document.getElementById('includeSvg') as HTMLInputElement
 const cursorSlider = document.getElementById('cursorSize') as HTMLInputElement
 const cursorSliderVal = document.getElementById('cursorSizeVal') as HTMLSpanElement
+const cursorEmojiInput = document.getElementById('cursorEmoji') as HTMLInputElement
+const multiCursorEmojiInput = document.getElementById('multiCursorEmoji') as HTMLInputElement
 const colorPicker = document.getElementById('outlineColor') as HTMLInputElement
 const outlineSlider = document.getElementById('outlineWidth') as HTMLInputElement
 const outlineSliderVal = document.getElementById('outlineWidthVal') as HTMLSpanElement
 const insetSlider = document.getElementById('insetWidth') as HTMLInputElement
 const insetSliderVal = document.getElementById('insetWidthVal') as HTMLSpanElement
+const flashSizeSlider = document.getElementById('flashFontSize') as HTMLInputElement
+const flashSizeVal = document.getElementById('flashFontSizeVal') as HTMLSpanElement
 const status = document.getElementById('status') as HTMLParagraphElement
 
 function showSaved(): void {
@@ -16,18 +20,25 @@ function showSaved(): void {
 chrome.storage.sync.get({
   includeSvg: false,
   cursorSize: 32,
+  cursorEmoji: '📌',
+  multiCursorEmoji: '📝',
   outlineColor: '#ff9900',
   outlineWidth: 2,
   insetWidth: 2,
-}).then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth }) => {
+  flashFontSize: 13,
+}).then(({ includeSvg, cursorSize, cursorEmoji, multiCursorEmoji, outlineColor, outlineWidth, insetWidth, flashFontSize }) => {
   checkbox.checked = includeSvg as boolean
   cursorSlider.value = String(cursorSize)
   cursorSliderVal.textContent = `${cursorSize}px`
+  cursorEmojiInput.value = cursorEmoji as string
+  multiCursorEmojiInput.value = multiCursorEmoji as string
   colorPicker.value = outlineColor as string
   outlineSlider.value = String(outlineWidth)
   outlineSliderVal.textContent = `${outlineWidth}px`
   insetSlider.value = String(insetWidth)
   insetSliderVal.textContent = `${insetWidth}px`
+  flashSizeSlider.value = String(flashFontSize)
+  flashSizeVal.textContent = `${flashFontSize}px`
 })
 
 checkbox.addEventListener('change', () => {
@@ -39,6 +50,14 @@ cursorSlider.addEventListener('input', () => {
 })
 cursorSlider.addEventListener('change', () => {
   chrome.storage.sync.set({ cursorSize: Number(cursorSlider.value) }).then(showSaved)
+})
+
+cursorEmojiInput.addEventListener('change', () => {
+  chrome.storage.sync.set({ cursorEmoji: cursorEmojiInput.value }).then(showSaved)
+})
+
+multiCursorEmojiInput.addEventListener('change', () => {
+  chrome.storage.sync.set({ multiCursorEmoji: multiCursorEmojiInput.value }).then(showSaved)
 })
 
 colorPicker.addEventListener('change', () => {
@@ -57,4 +76,11 @@ insetSlider.addEventListener('input', () => {
 })
 insetSlider.addEventListener('change', () => {
   chrome.storage.sync.set({ insetWidth: Number(insetSlider.value) }).then(showSaved)
+})
+
+flashSizeSlider.addEventListener('input', () => {
+  flashSizeVal.textContent = `${flashSizeSlider.value}px`
+})
+flashSizeSlider.addEventListener('change', () => {
+  chrome.storage.sync.set({ flashFontSize: Number(flashSizeSlider.value) }).then(showSaved)
 })

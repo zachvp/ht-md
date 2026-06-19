@@ -4,7 +4,11 @@
   <meta charset="utf-8">
   <title>web→md settings</title>
   <style>
-    body { font-family: system-ui, sans-serif; padding: 2rem; max-width: 400px; }
+    @font-face {
+      font-family: 'FSEX302';
+      src: url('fonts/FSEX302.ttf') format('truetype');
+    }
+    body { font-family: 'FSEX302', monospace; padding: 2rem; max-width: 400px; }
     h1 { font-size: 1.1rem; margin-bottom: 1.5rem; }
     label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
     p.desc { margin: 0.25rem 0 0 1.5rem; font-size: 0.85rem; color: #666; }
@@ -14,6 +18,7 @@
     .slider-row span { font-size: 0.85rem; width: 2.5rem; text-align: right; }
     .color-row { display: flex; align-items: center; gap: 0.75rem; }
     .color-row input[type=color] { width: 2.5rem; height: 2rem; border: none; padding: 0; cursor: pointer; background: none; }
+    .emoji-input { font-size: 1.4rem; width: 3rem; text-align: center; border: 1px solid #ccc; border-radius: 4px; padding: 0.1rem 0.25rem; }
     #status { margin-top: 0.5rem; font-size: 0.85rem; color: #47C0FF; min-height: 1em; }
   </style>
 </head>
@@ -34,6 +39,14 @@
     </div>
   </div>
   <div class="setting">
+    <label>Picker cursor</label>
+    <input type="text" id="cursorEmoji" class="emoji-input" maxlength="2" placeholder="📌">
+  </div>
+  <div class="setting">
+    <label>Multi-select cursor</label>
+    <input type="text" id="multiCursorEmoji" class="emoji-input" maxlength="2" placeholder="📝">
+  </div>
+  <div class="setting">
     <label>Highlight color</label>
     <div class="color-row">
       <input type="color" id="outlineColor" value="#ff9900">
@@ -51,6 +64,13 @@
     <div class="slider-row">
       <input type="range" id="insetWidth" min="0" max="8" step="1">
       <span id="insetWidthVal"></span>
+    </div>
+  </div>
+  <div class="setting">
+    <label>Message font size</label>
+    <div class="slider-row">
+      <input type="range" id="flashFontSize" min="9" max="20" step="1">
+      <span id="flashFontSizeVal"></span>
     </div>
   </div>
   <p id="status"></p>
