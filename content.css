@@ -10,7 +10,7 @@
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  z-index: 2147483647;
+  z-index: 2147483647; /* Z_TOP — keep in sync with src/lib/constants.ts */
   pointer-events: none;
   text-align: center;
   box-sizing: border-box;
@@ -27,7 +27,7 @@
   font: 13px/1.4 Monaco, Menlo, ui-monospace, 'Courier New', monospace;
   pointer-events: none;
   white-space: nowrap;
-  z-index: 2147483647;
+  z-index: 2147483647; /* Z_TOP — keep in sync with src/lib/constants.ts */
   animation-name: web-md-flash-fall;
   animation-fill-mode: forwards;
 }

@@ -1,4 +1,5 @@
 import { SETTINGS_DEFAULTS, Settings } from './lib/settings'
+import { Z_TOP, Z_OVERLAY, DARKREADER_CLASS, HIGHLIGHT_ALPHA, OUTLINE_OFFSET, BADGE_INSET, CLASS_SELECTED, CLASS_BADGE, CLASS_FLASH } from './lib/constants'
 
 console.log('[web-md] content script loaded')
 
@@ -7,7 +8,6 @@ const state = {
   pickerActive: false,
   lastHighlighted: null as Element | null,
   lastMousePos: { x: 0, y: 0 },
-  flashContainerEl: null as HTMLDivElement | null,
   selectedElements: [] as Element[],
   selectedSet: new Set<Element>(),
   badgeEls: [] as HTMLDivElement[],
@@ -78,14 +78,14 @@ function withAlpha(color: string, alpha: number): string {
 function applyOutlineStyles(): void {
   if (!state.outlineStyleEl) {
     state.outlineStyleEl = document.createElement('style')
-    state.outlineStyleEl.className = 'darkreader darkreader--sync'
+    state.outlineStyleEl.className = DARKREADER_CLASS
     document.head.appendChild(state.outlineStyleEl)
   }
   state.outlineStyleEl.textContent = `
-    .web-md-selected {
+    .${CLASS_SELECTED} {
       outline: ${settings.outlineWidth}px solid ${settings.outlineColor} !important;
-      outline-offset: 1px !important;
-      box-shadow: inset 0 0 0 ${settings.insetWidth}px ${withAlpha(settings.outlineColor, 0.35)} !important;
+      outline-offset: ${OUTLINE_OFFSET} !important;
+      box-shadow: inset 0 0 0 ${settings.insetWidth}px ${withAlpha(settings.outlineColor, HIGHLIGHT_ALPHA)} !important;
     }
   `
 }
@@ -98,7 +98,7 @@ function clearOutlineStyles(): void {
 function positionHighlight(el: Element): void {
   if (!state.highlightOverlayEl) {
     const div = document.createElement('div')
-    div.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483646;box-sizing:border-box;'
+    div.style.cssText = `position:fixed;pointer-events:none;z-index:${Z_OVERLAY};box-sizing:border-box;`
     document.documentElement.appendChild(div)
     state.highlightOverlayEl = div
   }
@@ -109,8 +109,8 @@ function positionHighlight(el: Element): void {
   ov.style.width = `${r.width}px`
   ov.style.height = `${r.height}px`
   ov.style.outline = `${settings.outlineWidth}px solid ${settings.outlineColor}`
-  ov.style.outlineOffset = '1px'
-  ov.style.boxShadow = `inset 0 0 0 ${settings.insetWidth}px ${withAlpha(settings.outlineColor, 0.35)}`
+  ov.style.outlineOffset = OUTLINE_OFFSET
+  ov.style.boxShadow = `inset 0 0 0 ${settings.insetWidth}px ${withAlpha(settings.outlineColor, HIGHLIGHT_ALPHA)}`
   ov.style.display = 'block'
 }
 
@@ -125,13 +125,13 @@ function cursorFontSize(): number {
 function setCursor(emoji: string): void {
   if (!state.cursorStyleEl) {
     state.cursorStyleEl = document.createElement('style')
-    state.cursorStyleEl.className = 'darkreader darkreader--sync'
+    state.cursorStyleEl.className = DARKREADER_CLASS
     state.cursorStyleEl.textContent = '* { cursor: none !important; }'
     document.head.appendChild(state.cursorStyleEl)
   }
   if (!state.cursorEl) {
     const el = document.createElement('div')
-    el.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;user-select:none;line-height:1;'
+    el.style.cssText = `position:fixed;top:0;left:0;pointer-events:none;z-index:${Z_TOP};user-select:none;line-height:1;`
     const initOy = cursorFontSize() + settings.cursorOffsetY
     el.style.transform = `translate(${state.lastMousePos.x + settings.cursorOffsetX}px,${state.lastMousePos.y - initOy}px)`
     document.documentElement.appendChild(el)
@@ -160,11 +160,11 @@ function clearCursor(): void {
 function addBadge(el: Element, index: number): void {
   const r = el.getBoundingClientRect()
   const badge = document.createElement('div')
-  badge.className = 'web-md-badge'
+  badge.className = CLASS_BADGE
   badge.textContent = String(index)
   document.documentElement.appendChild(badge)
-  badge.style.top = `${r.top + 4}px`
-  badge.style.left = `${r.right - badge.offsetWidth - 4}px`
+  badge.style.top = `${r.top + BADGE_INSET}px`
+  badge.style.left = `${r.right - badge.offsetWidth - BADGE_INSET}px`
   state.badgeEls.push(badge)
 }
 
@@ -208,7 +208,7 @@ function deactivatePicker(): void {
   state.highlightOverlayEl = null
   state.lastHighlighted = null
 
-  for (const el of state.selectedElements) el.classList.remove('web-md-selected')
+  for (const el of state.selectedElements) el.classList.remove(CLASS_SELECTED)
   state.selectedElements.length = 0
   state.selectedSet.clear()
   clearBadges()
@@ -245,7 +245,7 @@ function onClick(e: MouseEvent): void {
     if (!state.selectedSet.has(el)) {
       state.selectedElements.push(el)
       state.selectedSet.add(el)
-      el.classList.add('web-md-selected')
+      el.classList.add(CLASS_SELECTED)
       addBadge(el, state.selectedElements.length)
       if (state.selectedElements.length === 1) setCursor(settings.multiCursorEmoji)
     }
@@ -283,7 +283,7 @@ function onKeyDown(e: KeyboardEvent): void {
 
 function showFlash(text: string): void {
   const el = document.createElement('div')
-  el.className = 'web-md-flash'
+  el.className = CLASS_FLASH
   el.textContent = text
   el.style.fontSize = `${settings.flashFontSize}px`
   el.style.color = settings.flashFontColor
