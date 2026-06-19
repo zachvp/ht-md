@@ -67,6 +67,16 @@ function syncSwatch(input: HTMLInputElement, swatch: HTMLElement): void {
   swatch.style.background = input.value
 }
 
+function wireColor(
+  input: HTMLInputElement,
+  swatch: HTMLElement,
+  storageKey: string,
+  onInput?: () => void,
+): void {
+  input.addEventListener('input', () => { syncSwatch(input, swatch); onInput?.() })
+  input.addEventListener('change', () => chrome.storage.sync.set({ [storageKey]: input.value }).then(showSaved))
+}
+
 // 2D offset plane
 let planeDragging = false
 let curOffsetX = 0
@@ -157,10 +167,7 @@ facingYInput.addEventListener('change', () => {
   chrome.storage.sync.set({ facingY: Number(facingYInput.value) }).then(showSaved)
 })
 
-outlineColorInput.addEventListener('input', () => syncSwatch(outlineColorInput, outlineColorSwatch))
-outlineColorInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ outlineColor: outlineColorInput.value }).then(showSaved)
-})
+wireColor(outlineColorInput, outlineColorSwatch, 'outlineColor')
 
 outlineWidthInput.addEventListener('change', () => {
   chrome.storage.sync.set({ outlineWidth: Number(outlineWidthInput.value) }).then(showSaved)
@@ -182,10 +189,7 @@ flashDurationInput.addEventListener('change', () => {
   chrome.storage.sync.set({ flashDuration: Number(flashDurationInput.value) }).then(showSaved)
 })
 
-flashFontColorInput.addEventListener('input', () => syncSwatch(flashFontColorInput, flashFontColorSwatch))
-flashFontColorInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ flashFontColor: flashFontColorInput.value }).then(showSaved)
-})
+wireColor(flashFontColorInput, flashFontColorSwatch, 'flashFontColor')
 
 optionsFontSizeInput.addEventListener('input', () => {
   document.body.style.fontSize = `${optionsFontSizeInput.value}px`
@@ -194,21 +198,8 @@ optionsFontSizeInput.addEventListener('change', () => {
   chrome.storage.sync.set({ optionsFontSize: Number(optionsFontSizeInput.value) }).then(showSaved)
 })
 
-optionsFontColorInput.addEventListener('input', () => {
-  syncSwatch(optionsFontColorInput, optionsFontColorSwatch)
-  document.body.style.color = optionsFontColorInput.value
-})
-optionsFontColorInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ optionsFontColor: optionsFontColorInput.value }).then(showSaved)
-})
-
-optionsBgColorInput.addEventListener('input', () => {
-  syncSwatch(optionsBgColorInput, optionsBgColorSwatch)
-  document.body.style.background = optionsBgColorInput.value
-})
-optionsBgColorInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ optionsBgColor: optionsBgColorInput.value }).then(showSaved)
-})
+wireColor(optionsFontColorInput, optionsFontColorSwatch, 'optionsFontColor', () => { document.body.style.color = optionsFontColorInput.value })
+wireColor(optionsBgColorInput, optionsBgColorSwatch, 'optionsBgColor', () => { document.body.style.background = optionsBgColorInput.value })
 
 // Inject custom pixel spinners — must run after all change listeners are attached
 document.querySelectorAll<HTMLInputElement>('input[type=number]').forEach(input => {

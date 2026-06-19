@@ -23,24 +23,29 @@ const state = {
 // User-configurable settings, kept in sync with chrome.storage.sync
 const settings: Settings = { ...SETTINGS_DEFAULTS }
 
-const turndown = new TurndownService()
-turndown.remove(['style', 'script', 'noscript'])
+function makeTurndown(stripSvg: boolean): TurndownService {
+  const td = new TurndownService()
+  td.remove(['style', 'script', 'noscript'])
+  if (stripSvg) {
+    td.addRule('stripSvgElement', {
+      filter: ['svg'],
+      replacement: () => '[SVG]',
+    })
+    td.addRule('stripSvgDataUri', {
+      filter: (node: HTMLElement) =>
+        node.nodeName === 'IMG' &&
+        node.getAttribute('src')?.startsWith('data:image/svg+xml') === true,
+      replacement: (_content: string, node: Node) => {
+        const alt = (node as HTMLElement).getAttribute('alt')
+        return alt ? `[SVG image: ${alt}]` : '[SVG image]'
+      },
+    })
+  }
+  return td
+}
 
-const turndownStripped = new TurndownService()
-turndownStripped.remove(['style', 'script', 'noscript'])
-turndownStripped.addRule('stripSvgElement', {
-  filter: ['svg'],
-  replacement: () => '[SVG]',
-})
-turndownStripped.addRule('stripSvgDataUri', {
-  filter: (node: HTMLElement) =>
-    node.nodeName === 'IMG' &&
-    node.getAttribute('src')?.startsWith('data:image/svg+xml') === true,
-  replacement: (_content: string, node: Node) => {
-    const alt = (node as HTMLElement).getAttribute('alt')
-    return alt ? `[SVG image: ${alt}]` : '[SVG image]'
-  },
-})
+const turndown = makeTurndown(false)
+const turndownStripped = makeTurndown(true)
 
 chrome.storage.sync.get(SETTINGS_DEFAULTS).then(stored => {
   Object.assign(settings, stored)
@@ -129,6 +134,10 @@ function clearHighlight(): void {
   if (state.highlightOverlayEl) state.highlightOverlayEl.style.display = 'none'
 }
 
+function cursorFontSize(): number {
+  return Math.round(settings.cursorSize * 0.875)
+}
+
 function setCursor(emoji: string): void {
   if (!state.cursorStyleEl) {
     state.cursorStyleEl = document.createElement('style')
@@ -139,10 +148,10 @@ function setCursor(emoji: string): void {
   if (!state.cursorPosEl) {
     // Outer div: handles translate position only
     const pos = document.createElement('div')
-    const initOy = Math.round(settings.cursorSize * 0.875) + settings.cursorOffsetY
     const sz = settings.cursorSize
+    const oy = cursorFontSize() + settings.cursorOffsetY
     const initX = Math.max(0, Math.min(window.innerWidth - sz, state.lastMousePos.x + settings.cursorOffsetX))
-    const initY = Math.max(0, Math.min(window.innerHeight - sz, state.lastMousePos.y - initOy))
+    const initY = Math.max(0, Math.min(window.innerHeight - sz, state.lastMousePos.y - oy))
     pos.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;'
     pos.style.transform = `translate(${initX}px,${initY}px)`
 
@@ -163,8 +172,8 @@ function setCursor(emoji: string): void {
     }))
 
     state.cursorMoveHandler = (e: MouseEvent) => {
-      const oy = Math.round(settings.cursorSize * 0.875) + settings.cursorOffsetY
       const sz = settings.cursorSize
+      const oy = cursorFontSize() + settings.cursorOffsetY
       const x = Math.max(0, Math.min(window.innerWidth - sz, e.clientX + settings.cursorOffsetX))
       const y = Math.max(0, Math.min(window.innerHeight - sz, e.clientY - oy))
       state.cursorPosEl!.style.transform = `translate(${x}px,${y}px)`
@@ -172,9 +181,8 @@ function setCursor(emoji: string): void {
     }
     document.addEventListener('mousemove', state.cursorMoveHandler)
   }
-  const fs = Math.round(settings.cursorSize * 0.875)
   state.cursorEl!.textContent = emoji
-  state.cursorEl!.style.fontSize = `${fs}px`
+  state.cursorEl!.style.fontSize = `${cursorFontSize()}px`
 }
 
 function clearCursor(): void {
