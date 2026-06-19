@@ -10,6 +10,9 @@ const insetSlider = document.getElementById('insetWidth') as HTMLInputElement
 const insetSliderVal = document.getElementById('insetWidthVal') as HTMLSpanElement
 const flashSizeSlider = document.getElementById('flashFontSize') as HTMLInputElement
 const flashSizeVal = document.getElementById('flashFontSizeVal') as HTMLSpanElement
+const optionsFontSizeSlider = document.getElementById('optionsFontSize') as HTMLInputElement
+const optionsFontSizeVal = document.getElementById('optionsFontSizeVal') as HTMLSpanElement
+const optionsBgColorPicker = document.getElementById('optionsBgColor') as HTMLInputElement
 const status = document.getElementById('status') as HTMLParagraphElement
 
 function showSaved(): void {
@@ -26,7 +29,9 @@ chrome.storage.sync.get({
   outlineWidth: 2,
   insetWidth: 2,
   flashFontSize: 13,
-}).then(({ includeSvg, cursorSize, cursorEmoji, multiCursorEmoji, outlineColor, outlineWidth, insetWidth, flashFontSize }) => {
+  optionsFontSize: 14,
+  optionsBgColor: '#ffffff',
+}).then(({ includeSvg, cursorSize, cursorEmoji, multiCursorEmoji, outlineColor, outlineWidth, insetWidth, flashFontSize, optionsFontSize, optionsBgColor }) => {
   checkbox.checked = includeSvg as boolean
   cursorSlider.value = String(cursorSize)
   cursorSliderVal.textContent = `${cursorSize}px`
@@ -39,6 +44,11 @@ chrome.storage.sync.get({
   insetSliderVal.textContent = `${insetWidth}px`
   flashSizeSlider.value = String(flashFontSize)
   flashSizeVal.textContent = `${flashFontSize}px`
+  optionsFontSizeSlider.value = String(optionsFontSize)
+  optionsFontSizeVal.textContent = `${optionsFontSize}px`
+  optionsBgColorPicker.value = optionsBgColor as string
+  document.body.style.fontSize = `${optionsFontSize}px`
+  document.body.style.background = optionsBgColor as string
 })
 
 checkbox.addEventListener('change', () => {
@@ -83,4 +93,20 @@ flashSizeSlider.addEventListener('input', () => {
 })
 flashSizeSlider.addEventListener('change', () => {
   chrome.storage.sync.set({ flashFontSize: Number(flashSizeSlider.value) }).then(showSaved)
+})
+
+optionsFontSizeSlider.addEventListener('input', () => {
+  const v = optionsFontSizeSlider.value
+  optionsFontSizeVal.textContent = `${v}px`
+  document.body.style.fontSize = `${v}px`
+})
+optionsFontSizeSlider.addEventListener('change', () => {
+  chrome.storage.sync.set({ optionsFontSize: Number(optionsFontSizeSlider.value) }).then(showSaved)
+})
+
+optionsBgColorPicker.addEventListener('input', () => {
+  document.body.style.background = optionsBgColorPicker.value
+})
+optionsBgColorPicker.addEventListener('change', () => {
+  chrome.storage.sync.set({ optionsBgColor: optionsBgColorPicker.value }).then(showSaved)
 })

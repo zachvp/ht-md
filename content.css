@@ -2,9 +2,7 @@
 .web-md-badge {
   all: initial;
   display: block;
-  position: absolute;
-  top: 4px;
-  right: 4px;
+  position: fixed;
   background: #3399ff;
   color: #fff;
   font: bold 11px/16px system-ui, sans-serif;
@@ -12,7 +10,7 @@
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  z-index: 2147483646;
+  z-index: 2147483647;
   pointer-events: none;
   text-align: center;
   box-sizing: border-box;

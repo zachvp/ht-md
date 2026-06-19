@@ -166,27 +166,18 @@ function clearCursor(): void {
 }
 
 function addBadge(el: Element, index: number): void {
-  const htmlEl = el as HTMLElement
-  if (getComputedStyle(htmlEl).position === 'static') {
-    htmlEl.dataset.webMdOrigPos = htmlEl.style.position
-    htmlEl.style.position = 'relative'
-  }
+  const r = el.getBoundingClientRect()
   const badge = document.createElement('div')
   badge.className = 'web-md-badge'
   badge.textContent = String(index)
-  htmlEl.appendChild(badge)
+  document.body.appendChild(badge)
+  badge.style.top = `${r.top + 4}px`
+  badge.style.left = `${r.right - badge.offsetWidth - 4}px`
   state.badgeEls.push(badge)
 }
 
 function clearBadges(): void {
-  for (const b of state.badgeEls) {
-    const parent = b.parentElement as HTMLElement | null
-    if (parent && parent.dataset.webMdOrigPos !== undefined) {
-      parent.style.position = parent.dataset.webMdOrigPos
-      delete parent.dataset.webMdOrigPos
-    }
-    b.remove()
-  }
+  for (const b of state.badgeEls) b.remove()
   state.badgeEls.length = 0
 }
 
