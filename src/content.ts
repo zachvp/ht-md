@@ -14,10 +14,8 @@ const state = {
   outlineStyleEl: null as HTMLStyleElement | null,
   highlightOverlayEl: null as HTMLDivElement | null,
   cursorStyleEl: null as HTMLStyleElement | null,
-  cursorPosEl: null as HTMLDivElement | null,   // position wrapper (translate)
-  cursorEl: null as HTMLDivElement | null,      // content div (emoji + scale animation)
+  cursorEl: null as HTMLDivElement | null,
   cursorMoveHandler: null as ((e: MouseEvent) => void) | null,
-  lastTrackedEl: null as Element | null,        // element used for facing, persists within facingBounds
 }
 
 // User-configurable settings, kept in sync with chrome.storage.sync
@@ -76,19 +74,6 @@ function withAlpha(color: string, alpha: number): string {
   return /^#[0-9a-fA-F]{6}$/.test(color) ? hexToRgba(color, alpha) : color
 }
 
-function updateCursorRotation(el: Element): void {
-  if (!state.cursorEl) return
-  const r = el.getBoundingClientRect()
-  const cx = r.left + r.width / 2
-  const cy = r.top + r.height / 2
-  const dx = cx - state.lastMousePos.x
-  const dy = cy - state.lastMousePos.y
-  const mag = Math.sqrt(dx * dx + dy * dy)
-  if (mag < 1) return
-  const targetAngle = Math.atan2(dy / mag, dx / mag)
-  const naturalAngle = Math.atan2(settings.facingY, settings.facingX)
-  state.cursorEl.style.rotate = `${targetAngle - naturalAngle}rad`
-}
 
 function applyOutlineStyles(): void {
   if (!state.outlineStyleEl) {
@@ -114,7 +99,7 @@ function positionHighlight(el: Element): void {
   if (!state.highlightOverlayEl) {
     const div = document.createElement('div')
     div.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483646;box-sizing:border-box;'
-    document.body.appendChild(div)
+    document.documentElement.appendChild(div)
     state.highlightOverlayEl = div
   }
   const r = el.getBoundingClientRect()
@@ -127,7 +112,6 @@ function positionHighlight(el: Element): void {
   ov.style.outlineOffset = '1px'
   ov.style.boxShadow = `inset 0 0 0 ${settings.insetWidth}px ${withAlpha(settings.outlineColor, 0.35)}`
   ov.style.display = 'block'
-  updateCursorRotation(el)
 }
 
 function clearHighlight(): void {
@@ -145,39 +129,16 @@ function setCursor(emoji: string): void {
     state.cursorStyleEl.textContent = '* { cursor: none !important; }'
     document.head.appendChild(state.cursorStyleEl)
   }
-  if (!state.cursorPosEl) {
-    // Outer div: handles translate position only
-    const pos = document.createElement('div')
-    const sz = settings.cursorSize
-    const oy = cursorFontSize() + settings.cursorOffsetY
-    const initX = Math.max(0, Math.min(window.innerWidth - sz, state.lastMousePos.x + settings.cursorOffsetX))
-    const initY = Math.max(0, Math.min(window.innerHeight - sz, state.lastMousePos.y - oy))
-    pos.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;'
-    pos.style.transform = `translate(${initX}px,${initY}px)`
-
-    // Inner div: emoji content + scale-up animation (scale/rotate as independent CSS properties)
-    const inner = document.createElement('div')
-    inner.style.cssText = 'display:inline-block;user-select:none;line-height:1;scale:0;'
-    pos.appendChild(inner)
-    document.body.appendChild(pos)
-    state.cursorPosEl = pos
-    state.cursorEl = inner
-
-    // Animate scale 0 → 1 with a spring overshoot; rotate is independent (no transition)
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (inner.isConnected) {
-        inner.style.transition = 'scale 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)'
-        inner.style.scale = '1'
-      }
-    }))
-
+  if (!state.cursorEl) {
+    const el = document.createElement('div')
+    el.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;user-select:none;line-height:1;'
+    const initOy = cursorFontSize() + settings.cursorOffsetY
+    el.style.transform = `translate(${state.lastMousePos.x + settings.cursorOffsetX}px,${state.lastMousePos.y - initOy}px)`
+    document.documentElement.appendChild(el)
+    state.cursorEl = el
     state.cursorMoveHandler = (e: MouseEvent) => {
-      const sz = settings.cursorSize
       const oy = cursorFontSize() + settings.cursorOffsetY
-      const x = Math.max(0, Math.min(window.innerWidth - sz, e.clientX + settings.cursorOffsetX))
-      const y = Math.max(0, Math.min(window.innerHeight - sz, e.clientY - oy))
-      state.cursorPosEl!.style.transform = `translate(${x}px,${y}px)`
-      if (state.lastHighlighted) updateCursorRotation(state.lastHighlighted)
+      state.cursorEl!.style.transform = `translate(${e.clientX + settings.cursorOffsetX}px,${e.clientY - oy}px)`
     }
     document.addEventListener('mousemove', state.cursorMoveHandler)
   }
@@ -188,8 +149,7 @@ function setCursor(emoji: string): void {
 function clearCursor(): void {
   state.cursorStyleEl?.remove()
   state.cursorStyleEl = null
-  state.cursorPosEl?.remove()
-  state.cursorPosEl = null
+  state.cursorEl?.remove()
   state.cursorEl = null
   if (state.cursorMoveHandler) {
     document.removeEventListener('mousemove', state.cursorMoveHandler)
@@ -202,7 +162,7 @@ function addBadge(el: Element, index: number): void {
   const badge = document.createElement('div')
   badge.className = 'web-md-badge'
   badge.textContent = String(index)
-  document.body.appendChild(badge)
+  document.documentElement.appendChild(badge)
   badge.style.top = `${r.top + 4}px`
   badge.style.left = `${r.right - badge.offsetWidth - 4}px`
   state.badgeEls.push(badge)
@@ -214,6 +174,7 @@ function clearBadges(): void {
 }
 
 function notifyPickerState(active: boolean): void {
+  if (!chrome.runtime?.id) return
   chrome.runtime.sendMessage({ action: 'pickerState', active }).catch(() => {})
 }
 
@@ -328,9 +289,10 @@ function showFlash(text: string): void {
   el.style.color = settings.flashFontColor
   el.style.animationDelay = `${settings.flashPause}ms`
   el.style.animationDuration = `${settings.flashDuration}ms`
+  el.style.position = 'fixed'
   el.style.left = `${state.lastMousePos.x}px`
   el.style.top = `${state.lastMousePos.y}px`
-  document.body.appendChild(el)
+  document.documentElement.appendChild(el)
   setTimeout(() => el.remove(), settings.flashPause + settings.flashDuration)
 }
 
