@@ -24,6 +24,7 @@ const optionsBgColorSwatch = document.getElementById('optionsBgColorSwatch') as 
 const status = document.getElementById('status') as HTMLParagraphElement
 
 import 'emoji-picker-element'
+import { SETTINGS_DEFAULTS } from './lib/settings'
 
 function makeEmojiPicker(btn: HTMLButtonElement, onChange: (emoji: string) => void): void {
   let wrap: HTMLDivElement | null = null
@@ -104,26 +105,7 @@ document.addEventListener('mouseup', () => {
 })
 
 // Load
-chrome.storage.sync.get({
-  includeSvg: false,
-  cursorEmoji: '📌',
-  multiCursorEmoji: '📝',
-  cursorSize: 32,
-  cursorOffsetX: -6,
-  cursorOffsetY: -6,
-  facingX: 0,
-  facingY: -1,
-  outlineColor: '#ff9900',
-  outlineWidth: 2,
-  insetWidth: 2,
-  flashFontSize: 13,
-  flashFontColor: '#ffffff',
-  flashPause: 400,
-  flashDuration: 1500,
-  optionsFontSize: 14,
-  optionsFontColor: '#000000',
-  optionsBgColor: '#ffffff',
-}).then(({ includeSvg, cursorEmoji, multiCursorEmoji, cursorSize, cursorOffsetX, cursorOffsetY, facingX, facingY,
+chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, multiCursorEmoji, cursorSize, cursorOffsetX, cursorOffsetY, facingX, facingY,
           outlineColor, outlineWidth, insetWidth, flashFontSize, flashFontColor, flashPause, flashDuration,
           optionsFontSize, optionsFontColor, optionsBgColor }) => {
   checkbox.checked = includeSvg as boolean

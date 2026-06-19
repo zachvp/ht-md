@@ -1,3 +1,5 @@
+import { SETTINGS_DEFAULTS, Settings } from './lib/settings'
+
 console.log('[web-md] content script loaded')
 
 // All runtime picker state in one place
@@ -19,24 +21,7 @@ const state = {
 }
 
 // User-configurable settings, kept in sync with chrome.storage.sync
-const settings = {
-  includeSvg: false,
-  cursorSize: 32,
-  outlineColor: '#ff9900',
-  outlineWidth: 2,
-  insetWidth: 2,
-  cursorEmoji: '📌',
-  multiCursorEmoji: '📝',
-  flashFontSize: 13,
-  flashFontColor: '#ffffff',
-  flashPause: 400,
-  flashDuration: 1500,
-  cursorOffsetX: -6,
-  cursorOffsetY: -6,
-  facingX: 0,
-  facingY: -1,
-  facingBounds: 0,
-}
+const settings: Settings = { ...SETTINGS_DEFAULTS }
 
 const turndown = new TurndownService()
 turndown.remove(['style', 'script', 'noscript'])
@@ -57,44 +42,14 @@ turndownStripped.addRule('stripSvgDataUri', {
   },
 })
 
-chrome.storage.sync.get({
-  includeSvg: false, cursorSize: 32, outlineColor: '#ff9900', outlineWidth: 2, insetWidth: 2,
-  cursorEmoji: '📌', multiCursorEmoji: '📝', flashFontSize: 13, flashFontColor: '#ffffff', flashPause: 400, flashDuration: 1500, cursorOffsetX: -6, cursorOffsetY: -6, facingX: 0, facingY: -1, facingBounds: 0,
-}).then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth, cursorEmoji, multiCursorEmoji, flashFontSize, flashFontColor, flashPause, flashDuration, cursorOffsetX, cursorOffsetY, facingX, facingY, facingBounds }) => {
-  settings.includeSvg = includeSvg as boolean
-  settings.cursorSize = cursorSize as number
-  settings.outlineColor = outlineColor as string
-  settings.outlineWidth = outlineWidth as number
-  settings.insetWidth = insetWidth as number
-  settings.cursorEmoji = cursorEmoji as string
-  settings.multiCursorEmoji = multiCursorEmoji as string
-  settings.flashFontSize = flashFontSize as number
-  settings.flashFontColor = flashFontColor as string
-  settings.flashPause = flashPause as number
-  settings.flashDuration = flashDuration as number
-  settings.cursorOffsetX = cursorOffsetX as number
-  settings.cursorOffsetY = cursorOffsetY as number
-  settings.facingX = facingX as number
-  settings.facingY = facingY as number
-  settings.facingBounds = facingBounds as number
+chrome.storage.sync.get(SETTINGS_DEFAULTS).then(stored => {
+  Object.assign(settings, stored)
 })
 
 chrome.storage.onChanged.addListener(changes => {
-  if (changes.includeSvg) settings.includeSvg = changes.includeSvg.newValue
-  if (changes.cursorSize) settings.cursorSize = changes.cursorSize.newValue
-  if (changes.outlineColor) settings.outlineColor = changes.outlineColor.newValue
-  if (changes.outlineWidth) settings.outlineWidth = changes.outlineWidth.newValue
-  if (changes.insetWidth) settings.insetWidth = changes.insetWidth.newValue
-  if (changes.cursorEmoji) settings.cursorEmoji = changes.cursorEmoji.newValue
-  if (changes.multiCursorEmoji) settings.multiCursorEmoji = changes.multiCursorEmoji.newValue
-  if (changes.flashFontSize) settings.flashFontSize = changes.flashFontSize.newValue
-  if (changes.flashFontColor) settings.flashFontColor = changes.flashFontColor.newValue
-  if (changes.flashPause) settings.flashPause = changes.flashPause.newValue
-  if (changes.flashDuration) settings.flashDuration = changes.flashDuration.newValue
-  if (changes.cursorOffsetX) settings.cursorOffsetX = changes.cursorOffsetX.newValue
-  if (changes.cursorOffsetY) settings.cursorOffsetY = changes.cursorOffsetY.newValue
-  if (changes.facingX) settings.facingX = changes.facingX.newValue
-  if (changes.facingY) settings.facingY = changes.facingY.newValue
+  for (const key of Object.keys(settings) as (keyof Settings)[]) {
+    if (key in changes) (settings as Record<string, unknown>)[key] = changes[key].newValue
+  }
   if (state.pickerActive && (changes.outlineColor || changes.outlineWidth || changes.insetWidth)) {
     applyOutlineStyles()
   }
@@ -138,9 +93,9 @@ function applyOutlineStyles(): void {
   }
   state.outlineStyleEl.textContent = `
     .web-md-selected {
-      outline: ${settings.outlineWidth}px solid #3399ff !important;
+      outline: ${settings.outlineWidth}px solid ${settings.outlineColor} !important;
       outline-offset: 1px !important;
-      box-shadow: inset 0 0 0 ${settings.insetWidth}px rgba(51, 153, 255, 0.35) !important;
+      box-shadow: inset 0 0 0 ${settings.insetWidth}px ${withAlpha(settings.outlineColor, 0.35)} !important;
     }
   `
 }
