@@ -28,8 +28,15 @@ turndownStripped.addRule('stripSvgDataUri', {
 })
 
 let includeSvg = false
-chrome.storage.sync.get({ includeSvg: false }).then(({ includeSvg: val }) => { includeSvg = val as boolean })
-chrome.storage.onChanged.addListener(changes => { if (changes.includeSvg) includeSvg = changes.includeSvg.newValue })
+let cursorSize = 32
+chrome.storage.sync.get({ includeSvg: false, cursorSize: 32 }).then(({ includeSvg: svg, cursorSize: size }) => {
+  includeSvg = svg as boolean
+  cursorSize = size as number
+})
+chrome.storage.onChanged.addListener(changes => {
+  if (changes.includeSvg) includeSvg = changes.includeSvg.newValue
+  if (changes.cursorSize) cursorSize = changes.cursorSize.newValue
+})
 
 function convert(html: string): string {
   return (includeSvg ? turndown : turndownStripped).turndown(html)
@@ -54,8 +61,10 @@ function setCursor(emoji: string): void {
     cursorStyleEl = document.createElement('style')
     document.head.appendChild(cursorStyleEl)
   }
-  const url = buildCursor(emoji)
-  cursorStyleEl.textContent = `* { cursor: url(${url}) 16 2, auto !important; }`
+  const url = buildCursor(emoji, cursorSize)
+  const hx = Math.round(cursorSize / 2)
+  const hy = Math.round(cursorSize / 16)
+  cursorStyleEl.textContent = `* { cursor: url(${url}) ${hx} ${hy}, auto !important; }`
 }
 
 function clearCursor(): void {
