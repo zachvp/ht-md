@@ -1,20 +1,19 @@
 console.log('[web-md] background loaded')
 
-const DEFAULT_ACTION = 'activatePicker'
-
-const handlers: Record<string, (tab: chrome.tabs.Tab) => void> = {
-  activatePicker(tab) {
-    console.log('[web-md] sending activate to tab', tab.id, tab.url)
-    chrome.tabs.sendMessage(tab.id!, { action: 'activate' })
-      .catch((err: Error) => console.warn('[web-md] activatePicker:', err.message))
-  },
-}
+chrome.runtime.onMessage.addListener((msg: { action: string; active?: boolean }, sender) => {
+  if (msg.action === 'pickerState' && sender.tab?.id != null) {
+    const tabId = sender.tab.id
+    if (msg.active) {
+      chrome.action.setBadgeBackgroundColor({ color: '#ff9900', tabId })
+      chrome.action.setBadgeText({ text: ' ', tabId })
+    } else {
+      chrome.action.setBadgeText({ text: '', tabId })
+    }
+  }
+})
 
 chrome.action.onClicked.addListener((tab) => {
   console.log('[web-md] toolbar clicked, tab:', tab.id)
-  chrome.storage.sync.get({ toolbarAction: DEFAULT_ACTION }).then(({ toolbarAction }) => {
-    console.log('[web-md] dispatching action:', toolbarAction)
-    const handler = handlers[toolbarAction as string] ?? handlers[DEFAULT_ACTION]
-    handler(tab)
-  })
+  chrome.tabs.sendMessage(tab.id!, { action: 'toggle' })
+    .catch((err: Error) => console.warn('[web-md] sendMessage:', err.message))
 })

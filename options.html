@@ -12,6 +12,8 @@
     .slider-row { display: flex; align-items: center; gap: 0.75rem; }
     .slider-row input[type=range] { flex: 1; }
     .slider-row span { font-size: 0.85rem; width: 2.5rem; text-align: right; }
+    .color-row { display: flex; align-items: center; gap: 0.75rem; }
+    .color-row input[type=color] { width: 2.5rem; height: 2rem; border: none; padding: 0; cursor: pointer; background: none; }
     #status { margin-top: 0.5rem; font-size: 0.85rem; color: #47C0FF; min-height: 1em; }
   </style>
 </head>
@@ -29,6 +31,26 @@
     <div class="slider-row">
       <input type="range" id="cursorSize" min="24" max="64" step="4">
       <span id="cursorSizeVal"></span>
+    </div>
+  </div>
+  <div class="setting">
+    <label>Highlight color</label>
+    <div class="color-row">
+      <input type="color" id="outlineColor" value="#ff9900">
+    </div>
+  </div>
+  <div class="setting">
+    <label>Outer outline width</label>
+    <div class="slider-row">
+      <input type="range" id="outlineWidth" min="1" max="8" step="1">
+      <span id="outlineWidthVal"></span>
+    </div>
+  </div>
+  <div class="setting">
+    <label>Inner outline width</label>
+    <div class="slider-row">
+      <input type="range" id="insetWidth" min="0" max="8" step="1">
+      <span id="insetWidthVal"></span>
     </div>
   </div>
   <p id="status"></p>

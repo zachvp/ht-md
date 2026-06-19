@@ -1,13 +1,22 @@
-.web-md-selected {
-  outline: 2px solid #39f !important;
-  outline-offset: 1px !important;
-  box-shadow: 0 0 0 2px #39f !important;
-}
 
-.web-md-highlight {
-  outline: 2px solid #f90 !important;
-  outline-offset: 1px !important;
-  box-shadow: 0 0 0 2px #f90 !important;
+.web-md-badge {
+  all: initial;
+  display: block;
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
+  background: #3399ff;
+  color: #fff;
+  font: bold 11px/16px system-ui, sans-serif;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  z-index: 2147483646;
+  pointer-events: none;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .web-md-flash {

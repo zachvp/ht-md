@@ -1,12 +1,27 @@
 console.log('[web-md] content script loaded')
 
-let pickerActive = false
-let lastHighlighted: Element | null = null
-let lastMousePos = { x: 0, y: 0 }
-let flashEl: HTMLDivElement | null = null
-let flashMoveHandler: ((e: MouseEvent) => void) | null = null
-const selectedElements: Element[] = []
-const selectedSet = new Set<Element>()
+// All runtime picker state in one place
+const state = {
+  pickerActive: false,
+  lastHighlighted: null as Element | null,
+  lastMousePos: { x: 0, y: 0 },
+  flashEl: null as HTMLDivElement | null,
+  flashMoveHandler: null as ((e: MouseEvent) => void) | null,
+  selectedElements: [] as Element[],
+  selectedSet: new Set<Element>(),
+  badgeEls: [] as HTMLDivElement[],
+  outlineStyleEl: null as HTMLStyleElement | null,
+  cursorStyleEl: null as HTMLStyleElement | null,
+}
+
+// User-configurable settings, kept in sync with chrome.storage.sync
+const settings = {
+  includeSvg: false,
+  cursorSize: 32,
+  outlineColor: '#ff9900',
+  outlineWidth: 2,
+  insetWidth: 2,
+}
 
 const turndown = new TurndownService()
 turndown.remove(['style', 'script', 'noscript'])
@@ -27,19 +42,61 @@ turndownStripped.addRule('stripSvgDataUri', {
   },
 })
 
-let includeSvg = false
-let cursorSize = 32
-chrome.storage.sync.get({ includeSvg: false, cursorSize: 32 }).then(({ includeSvg: svg, cursorSize: size }) => {
-  includeSvg = svg as boolean
-  cursorSize = size as number
-})
+chrome.storage.sync.get({ includeSvg: false, cursorSize: 32, outlineColor: '#ff9900', outlineWidth: 2, insetWidth: 2 })
+  .then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth }) => {
+    settings.includeSvg = includeSvg as boolean
+    settings.cursorSize = cursorSize as number
+    settings.outlineColor = outlineColor as string
+    settings.outlineWidth = outlineWidth as number
+    settings.insetWidth = insetWidth as number
+  })
+
 chrome.storage.onChanged.addListener(changes => {
-  if (changes.includeSvg) includeSvg = changes.includeSvg.newValue
-  if (changes.cursorSize) cursorSize = changes.cursorSize.newValue
+  if (changes.includeSvg) settings.includeSvg = changes.includeSvg.newValue
+  if (changes.cursorSize) settings.cursorSize = changes.cursorSize.newValue
+  if (changes.outlineColor) settings.outlineColor = changes.outlineColor.newValue
+  if (changes.outlineWidth) settings.outlineWidth = changes.outlineWidth.newValue
+  if (changes.insetWidth) settings.insetWidth = changes.insetWidth.newValue
+  if (state.pickerActive && (changes.outlineColor || changes.outlineWidth || changes.insetWidth)) {
+    applyOutlineStyles()
+  }
 })
 
 function convert(html: string): string {
-  return (includeSvg ? turndown : turndownStripped).turndown(html)
+  return (settings.includeSvg ? turndown : turndownStripped).turndown(html)
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+function applyOutlineStyles(): void {
+  if (!state.outlineStyleEl) {
+    state.outlineStyleEl = document.createElement('style')
+    state.outlineStyleEl.setAttribute('data-darkreader-ignore', '')
+    document.head.appendChild(state.outlineStyleEl)
+  }
+  const highlightRgba = hexToRgba(settings.outlineColor, 0.35)
+  state.outlineStyleEl.textContent = `
+    .web-md-highlight {
+      outline: ${settings.outlineWidth}px solid ${settings.outlineColor} !important;
+      outline-offset: 1px !important;
+      box-shadow: inset 0 0 0 ${settings.insetWidth}px ${highlightRgba} !important;
+    }
+    .web-md-selected {
+      outline: ${settings.outlineWidth}px solid #3399ff !important;
+      outline-offset: 1px !important;
+      box-shadow: inset 0 0 0 ${settings.insetWidth}px rgba(51, 153, 255, 0.35) !important;
+    }
+  `
+}
+
+function clearOutlineStyles(): void {
+  state.outlineStyleEl?.remove()
+  state.outlineStyleEl = null
 }
 
 function buildCursor(emoji: string, size = 32): string {
@@ -54,49 +111,85 @@ function buildCursor(emoji: string, size = 32): string {
   return canvas.toDataURL()
 }
 
-let cursorStyleEl: HTMLStyleElement | null = null
-
 function setCursor(emoji: string): void {
-  if (!cursorStyleEl) {
-    cursorStyleEl = document.createElement('style')
-    document.head.appendChild(cursorStyleEl)
+  if (!state.cursorStyleEl) {
+    state.cursorStyleEl = document.createElement('style')
+    state.cursorStyleEl.setAttribute('data-darkreader-ignore', '')
+    document.head.appendChild(state.cursorStyleEl)
   }
-  const url = buildCursor(emoji, cursorSize)
-  const hx = Math.round(cursorSize / 2)
-  const hy = Math.round(cursorSize / 16)
-  cursorStyleEl.textContent = `* { cursor: url(${url}) ${hx} ${hy}, auto !important; }`
+  const url = buildCursor(emoji, settings.cursorSize)
+  const hx = Math.round(settings.cursorSize * 0.2)
+  const hy = Math.round(settings.cursorSize * 0.85)
+  state.cursorStyleEl.textContent = `* { cursor: url(${url}) ${hx} ${hy}, auto !important; }`
 }
 
 function clearCursor(): void {
-  cursorStyleEl?.remove()
-  cursorStyleEl = null
+  state.cursorStyleEl?.remove()
+  state.cursorStyleEl = null
+}
+
+function addBadge(el: Element, index: number): void {
+  const htmlEl = el as HTMLElement
+  if (getComputedStyle(htmlEl).position === 'static') {
+    htmlEl.dataset.webMdOrigPos = htmlEl.style.position
+    htmlEl.style.position = 'relative'
+  }
+  const badge = document.createElement('div')
+  badge.className = 'web-md-badge'
+  badge.textContent = String(index)
+  htmlEl.appendChild(badge)
+  state.badgeEls.push(badge)
+}
+
+function clearBadges(): void {
+  for (const b of state.badgeEls) {
+    const parent = b.parentElement as HTMLElement | null
+    if (parent && parent.dataset.webMdOrigPos !== undefined) {
+      parent.style.position = parent.dataset.webMdOrigPos
+      delete parent.dataset.webMdOrigPos
+    }
+    b.remove()
+  }
+  state.badgeEls.length = 0
+}
+
+function notifyPickerState(active: boolean): void {
+  chrome.runtime.sendMessage({ action: 'pickerState', active }).catch(() => {})
 }
 
 function activatePicker(): void {
-  if (pickerActive) return
-  pickerActive = true
+  if (state.pickerActive) return
+  state.pickerActive = true
   console.log('[web-md] picker activated')
-
-  setCursor('👆')
-
-  document.addEventListener('mouseover', onMouseOver)
-  document.addEventListener('click', onClick, true)
-  document.addEventListener('keydown', onKeyDown, true)
+  try {
+    applyOutlineStyles()
+    setCursor('📌')
+    document.addEventListener('mouseover', onMouseOver)
+    document.addEventListener('click', onClick, true)
+    document.addEventListener('keydown', onKeyDown, true)
+    notifyPickerState(true)
+  } catch (err) {
+    console.error('[web-md] activatePicker failed:', err)
+    deactivatePicker()
+  }
 }
 
 function deactivatePicker(): void {
-  if (!pickerActive) return
-  pickerActive = false
+  if (!state.pickerActive) return
+  state.pickerActive = false
   console.log('[web-md] picker deactivated')
+  notifyPickerState(false)
 
+  clearOutlineStyles()
   clearCursor()
 
-  lastHighlighted?.classList.remove('web-md-highlight')
-  lastHighlighted = null
+  state.lastHighlighted?.classList.remove('web-md-highlight')
+  state.lastHighlighted = null
 
-  for (const el of selectedElements) el.classList.remove('web-md-selected')
-  selectedElements.length = 0
-  selectedSet.clear()
+  for (const el of state.selectedElements) el.classList.remove('web-md-selected')
+  state.selectedElements.length = 0
+  state.selectedSet.clear()
+  clearBadges()
 
   document.removeEventListener('mouseover', onMouseOver)
   document.removeEventListener('click', onClick, true)
@@ -104,15 +197,16 @@ function deactivatePicker(): void {
 }
 
 function onMouseOver(e: MouseEvent): void {
-  lastMousePos = { x: e.clientX, y: e.clientY }
-  lastHighlighted?.classList.remove('web-md-highlight')
+  state.lastMousePos = { x: e.clientX, y: e.clientY }
+  state.lastHighlighted?.classList.remove('web-md-highlight')
   const target = e.target as Element
   if (target === document.body || target === document.documentElement) return
-  lastHighlighted = target
-  lastHighlighted.classList.add('web-md-highlight')
+  state.lastHighlighted = target
+  state.lastHighlighted.classList.add('web-md-highlight')
 }
 
 function onClick(e: MouseEvent): void {
+  if (!e.isTrusted) return
   e.preventDefault()
   e.stopPropagation()
 
@@ -123,12 +217,13 @@ function onClick(e: MouseEvent): void {
   }
 
   if (e.metaKey) {
-    if (!selectedSet.has(el)) {
-      selectedElements.push(el)
-      selectedSet.add(el)
+    if (!state.selectedSet.has(el)) {
+      state.selectedElements.push(el)
+      state.selectedSet.add(el)
       el.classList.add('web-md-selected')
+      addBadge(el, state.selectedElements.length)
     }
-    showFlash(`${selectedElements.length} selected — Enter to copy`, e.clientX, e.clientY)
+    showFlash(`${state.selectedElements.length} selected — Enter to copy`, e.clientX, e.clientY, true)
     return
   }
 
@@ -145,24 +240,25 @@ function onClick(e: MouseEvent): void {
 
 function onKeyDown(e: KeyboardEvent): void {
   if (e.key === 'Escape') {
-    e.stopPropagation()
-    deactivatePicker()
-  } else if (e.key === 'Enter' && selectedElements.length > 0) {
     e.preventDefault()
-    e.stopPropagation()
-    const md = selectedElements.map(el => convert(el.outerHTML)).join('\n')
-    console.log('[web-md] committing', selectedElements.length, 'elements — md length:', md.length)
+    e.stopImmediatePropagation()
+    deactivatePicker()
+  } else if (e.key === 'Enter' && state.selectedElements.length > 0) {
+    e.preventDefault()
+    e.stopImmediatePropagation()
+    const md = state.selectedElements.map(el => convert(el.outerHTML)).join('\n')
+    console.log('[web-md] committing', state.selectedElements.length, 'elements — md length:', md.length)
     navigator.clipboard.writeText(md)
-      .then(() => { console.log('[web-md] clipboard write ok'); showFlash('📝 Copied', lastMousePos.x, lastMousePos.y) })
-      .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); showFlash('Error: ' + err.message, lastMousePos.x, lastMousePos.y) })
+      .then(() => { console.log('[web-md] clipboard write ok'); showFlash('📝 Copied', state.lastMousePos.x, state.lastMousePos.y) })
+      .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); showFlash('Error: ' + err.message, state.lastMousePos.x, state.lastMousePos.y) })
     deactivatePicker()
   }
 }
 
-function showFlash(text: string, x: number, y: number): void {
-  if (flashEl) {
-    flashEl.remove()
-    if (flashMoveHandler) document.removeEventListener('mousemove', flashMoveHandler)
+function showFlash(text: string, x: number, y: number, horizontal = false): void {
+  if (state.flashEl) {
+    state.flashEl.remove()
+    if (state.flashMoveHandler) document.removeEventListener('mousemove', state.flashMoveHandler)
   }
 
   const el = document.createElement('div') as HTMLDivElement
@@ -176,23 +272,34 @@ function showFlash(text: string, x: number, y: number): void {
   const w = el.offsetWidth
   const h = el.offsetHeight
   function position(cx: number, cy: number): void {
-    el.style.left = `${Math.min(Math.max(cx - w / 2, pad), window.innerWidth - w - pad)}px`
-    el.style.top = `${Math.min(Math.max(cy + 12, pad), window.innerHeight - h - pad)}px`
+    if (horizontal) {
+      const toLeft = cx > window.innerWidth * 0.6
+      el.style.left = toLeft
+        ? `${Math.max(cx - w - pad, pad)}px`
+        : `${Math.min(cx + pad, window.innerWidth - w - pad)}px`
+      el.style.top = `${Math.min(Math.max(cy - h / 2, pad), window.innerHeight - h - pad)}px`
+    } else {
+      el.style.left = `${Math.min(Math.max(cx - w / 2, pad), window.innerWidth - w - pad)}px`
+      el.style.top = `${Math.min(Math.max(cy + 12, pad), window.innerHeight - h - pad)}px`
+    }
   }
 
   position(x, y)
-  flashEl = el
-  flashMoveHandler = (e: MouseEvent) => position(e.clientX, e.clientY)
-  document.addEventListener('mousemove', flashMoveHandler)
+  state.flashEl = el
+  state.flashMoveHandler = (e: MouseEvent) => position(e.clientX, e.clientY)
+  document.addEventListener('mousemove', state.flashMoveHandler)
 
   setTimeout(() => {
     el.remove()
-    document.removeEventListener('mousemove', flashMoveHandler!)
-    if (flashEl === el) { flashEl = null; flashMoveHandler = null }
+    document.removeEventListener('mousemove', state.flashMoveHandler!)
+    if (state.flashEl === el) { state.flashEl = null; state.flashMoveHandler = null }
   }, 1500)
 }
 
 chrome.runtime.onMessage.addListener((msg: { action: string }) => {
   console.log('[web-md] message received:', msg)
-  if (msg.action === 'activate') activatePicker()
+  if (msg.action === 'toggle' || msg.action === 'activate') {
+    if (state.pickerActive) deactivatePicker()
+    else activatePicker()
+  }
 })

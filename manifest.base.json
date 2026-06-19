@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
   "name": "web->md",
-  "version": "19.6.26.0",
+  "version": "6.19.26.2",
   "description": "Pick any element, copy it as Markdown",
   "permissions": ["activeTab", "tabs", "storage"],
   "options_ui": {
     "page": "options.html",
-    "open_in_tab": false
+    "open_in_tab": true
   },
   "action": {
     "default_icon": {
