@@ -23,28 +23,14 @@ const optionsBgColorInput = document.getElementById('optionsBgColor') as HTMLInp
 const optionsBgColorSwatch = document.getElementById('optionsBgColorSwatch') as HTMLSpanElement
 const status = document.getElementById('status') as HTMLParagraphElement
 
-const EMOJI_LIST = [
-  // Pointers
-  '📌', '📍', '👆', '👇', '👈', '👉', '☝️', '🖕', '👋', '✋', '🖐️', '🤚',
-  '👀', '👁️', '🎯', '🏹',
-  // Writing
-  '✏️', '📝', '✒️', '🖊️', '🖋️', '🖌️', '📋', '📄',
-  // Tools
-  '🔧', '🔨', '🛠️', '🔑', '🗝️', '🔍', '🔎', '⚙️',
-  // Effects
-  '⭐', '🌟', '💫', '✨', '🔥', '💥', '⚡', '❄️',
-  // Fun
-  '🎉', '🎊', '🎈', '🏁', '🚩', '🏴', '🎭', '🪄',
-  // Creatures
-  '🐱', '🦊', '🐸', '🐧', '🦋', '🐝', '🦅', '🐭',
-]
+import 'emoji-picker-element'
 
 function makeEmojiPicker(btn: HTMLButtonElement, onChange: (emoji: string) => void): void {
-  let panel: HTMLDivElement | null = null
+  let wrap: HTMLDivElement | null = null
 
   function close(): void {
-    panel?.remove()
-    panel = null
+    wrap?.remove()
+    wrap = null
     document.removeEventListener('click', onOutside)
   }
 
@@ -53,26 +39,20 @@ function makeEmojiPicker(btn: HTMLButtonElement, onChange: (emoji: string) => vo
   }
 
   btn.addEventListener('click', () => {
-    if (panel) { close(); return }
-    panel = document.createElement('div')
-    panel.className = 'emoji-picker-panel'
-    panel.style.background = document.body.style.background || '#fff'
-    panel.style.color = document.body.style.color || '#000'
-    EMOJI_LIST.forEach(em => {
-      const item = document.createElement('button')
-      item.type = 'button'
-      item.className = 'emoji-picker-item'
-      item.textContent = em
-      item.title = em
-      item.addEventListener('click', (e) => {
-        e.stopPropagation()
-        btn.textContent = em
-        onChange(em)
-        close()
-      })
-      panel!.appendChild(item)
+    if (wrap) { close(); return }
+    wrap = document.createElement('div')
+    wrap.className = 'emoji-picker-panel'
+    const picker = document.createElement('emoji-picker') as HTMLElement
+    picker.setAttribute('class', 'light')
+    wrap.appendChild(picker)
+    btn.parentElement!.appendChild(wrap)
+    picker.addEventListener('emoji-click', (e: Event) => {
+      const emoji = (e as CustomEvent).detail?.unicode as string
+      if (!emoji) return
+      btn.textContent = emoji
+      onChange(emoji)
+      close()
     })
-    btn.parentElement!.appendChild(panel)
     setTimeout(() => document.addEventListener('click', onOutside), 0)
   })
 }

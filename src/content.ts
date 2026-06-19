@@ -15,6 +15,7 @@ const state = {
   cursorPosEl: null as HTMLDivElement | null,   // position wrapper (translate)
   cursorEl: null as HTMLDivElement | null,      // content div (emoji + scale animation)
   cursorMoveHandler: null as ((e: MouseEvent) => void) | null,
+  lastTrackedEl: null as Element | null,        // element used for facing, persists within facingBounds
 }
 
 // User-configurable settings, kept in sync with chrome.storage.sync
@@ -34,6 +35,7 @@ const settings = {
   cursorOffsetY: -6,
   facingX: 0,
   facingY: -1,
+  facingBounds: 0,
 }
 
 const turndown = new TurndownService()
@@ -57,8 +59,8 @@ turndownStripped.addRule('stripSvgDataUri', {
 
 chrome.storage.sync.get({
   includeSvg: false, cursorSize: 32, outlineColor: '#ff9900', outlineWidth: 2, insetWidth: 2,
-  cursorEmoji: '📌', multiCursorEmoji: '📝', flashFontSize: 13, flashFontColor: '#ffffff', flashPause: 400, flashDuration: 1500, cursorOffsetX: -6, cursorOffsetY: -6, facingX: 0, facingY: -1,
-}).then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth, cursorEmoji, multiCursorEmoji, flashFontSize, flashFontColor, flashPause, flashDuration, cursorOffsetX, cursorOffsetY, facingX, facingY }) => {
+  cursorEmoji: '📌', multiCursorEmoji: '📝', flashFontSize: 13, flashFontColor: '#ffffff', flashPause: 400, flashDuration: 1500, cursorOffsetX: -6, cursorOffsetY: -6, facingX: 0, facingY: -1, facingBounds: 0,
+}).then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth, cursorEmoji, multiCursorEmoji, flashFontSize, flashFontColor, flashPause, flashDuration, cursorOffsetX, cursorOffsetY, facingX, facingY, facingBounds }) => {
   settings.includeSvg = includeSvg as boolean
   settings.cursorSize = cursorSize as number
   settings.outlineColor = outlineColor as string
@@ -74,6 +76,7 @@ chrome.storage.sync.get({
   settings.cursorOffsetY = cursorOffsetY as number
   settings.facingX = facingX as number
   settings.facingY = facingY as number
+  settings.facingBounds = facingBounds as number
 })
 
 chrome.storage.onChanged.addListener(changes => {
