@@ -5,7 +5,7 @@
   position: fixed;
   background: #3399ff;
   color: #fff;
-  font: bold 11px/16px system-ui, sans-serif;
+  font: bold 11px/16px Monaco, Menlo, ui-monospace, 'Courier New', monospace;
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
@@ -24,7 +24,7 @@
   color: #fff;
   padding: 8px 14px;
   border-radius: 6px;
-  font: 13px/1.4 system-ui, sans-serif;
+  font: 13px/1.4 Monaco, Menlo, ui-monospace, 'Courier New', monospace;
   z-index: 2147483647;
   pointer-events: none;
 }

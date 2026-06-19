@@ -4,88 +4,204 @@
   <meta charset="utf-8">
   <title>web→md settings</title>
   <style>
-    @font-face {
-      font-family: 'FSEX302';
-      src: url('fonts/FSEX302.ttf') format('truetype');
+    body {
+      font-family: Monaco, Menlo, ui-monospace, 'Courier New', monospace;
+      font-size: 14px;
+      padding: 1.5rem;
     }
-    body { font-family: 'FSEX302', monospace; padding: 2rem; max-width: 400px; }
-    h1 { font-size: 1.1rem; margin-bottom: 1.5rem; }
-    label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
-    p.desc { margin: 0.25rem 0 0 1.5rem; font-size: 0.85rem; color: #666; }
-    .setting { margin-bottom: 1.25rem; }
-    .slider-row { display: flex; align-items: center; gap: 0.75rem; }
-    .slider-row input[type=range] { flex: 1; }
-    .slider-row span { font-size: 0.85rem; width: 2.5rem; text-align: right; }
-    .color-row { display: flex; align-items: center; gap: 0.75rem; }
-    .color-row input[type=color] { width: 2.5rem; height: 2rem; border: none; padding: 0; cursor: pointer; background: none; }
-    .emoji-input { font-size: 1.4rem; width: 3rem; text-align: center; border: 1px solid #ccc; border-radius: 4px; padding: 0.1rem 0.25rem; }
-    #status { margin-top: 0.5rem; font-size: 0.85rem; color: #47C0FF; min-height: 1em; }
+    h1 { margin: 0 0 1.25rem; }
+
+    .setting { margin-bottom: 1.1rem; }
+    label.checkbox { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; }
+
+    /* Info tooltip */
+    .info-wrap { position: relative; display: inline-flex; align-items: center; }
+    .info-icon { font-style: normal; opacity: 0.55; cursor: help; line-height: 1; }
+    .info-tip {
+      display: none;
+      position: absolute;
+      left: 1.4rem; top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.82);
+      color: #fff;
+      padding: 0.3rem 0.5rem;
+      border-radius: 4px;
+      width: 200px;
+      z-index: 100;
+      pointer-events: none;
+      line-height: 1.4;
+    }
+    .info-wrap:hover .info-tip { display: block; }
+
+    .group { margin-bottom: 1.1rem; }
+    .group-label { display: block; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.55; margin-bottom: 0.45rem; }
+    .group-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
+    .field { display: flex; align-items: center; gap: 0.3rem; }
+    .unit { opacity: 0.65; }
+
+    /* Number inputs — hide native spinners */
+    input[type=number] {
+      -moz-appearance: textfield;
+      width: 3rem;
+      font-family: inherit;
+      font-size: inherit;
+      border: 1px solid currentColor;
+      border-right: none;
+      border-radius: 3px 0 0 3px;
+      padding: 0.15rem 0.3rem;
+      background: rgba(0,0,0,0.08);
+      color: inherit;
+      text-align: right;
+    }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { display: none; }
+
+    /* Custom spinner buttons (injected by JS) */
+    .num-wrap { display: flex; align-items: stretch; }
+    .num-btns {
+      display: flex; flex-direction: column;
+      border: 1px solid currentColor;
+      border-radius: 0 3px 3px 0;
+      overflow: hidden;
+    }
+    .num-btn {
+      all: unset;
+      display: flex; align-items: center; justify-content: center;
+      width: 1.1rem;
+      flex: 1;
+      font-size: 0.6em;
+      cursor: pointer;
+      opacity: 0.65;
+      box-sizing: border-box;
+      line-height: 1;
+    }
+    .num-btn:first-child { border-bottom: 1px solid currentColor; }
+    .num-btn:hover { background: rgba(0,0,0,0.12); opacity: 1; }
+    .num-btn:active { background: rgba(0,0,0,0.22); }
+
+    /* Color field: swatch + text input */
+    .color-field { display: flex; align-items: center; gap: 0.3rem; }
+    .color-swatch {
+      width: 1.2em; height: 1.2em;
+      border: 1px solid currentColor;
+      border-radius: 2px;
+      flex-shrink: 0;
+      display: inline-block;
+    }
+    input.color-text {
+      width: 8rem;
+      font-family: inherit;
+      font-size: inherit;
+      border: 1px solid currentColor;
+      border-radius: 3px;
+      padding: 0.12rem 0.3rem;
+      background: rgba(0,0,0,0.08);
+      color: inherit;
+    }
+
+    .emoji-input {
+      font-size: 1.4em;
+      width: 2.2rem;
+      text-align: center;
+      border: 1px solid currentColor;
+      border-radius: 3px;
+      padding: 0.05rem 0.1rem;
+      background: rgba(0,0,0,0.08);
+      color: inherit;
+    }
+
+    /* 2D offset plane */
+    .plane-wrap { display: flex; align-items: center; gap: 0.4rem; }
+    .plane {
+      position: relative; width: 72px; height: 72px;
+      border: 1px solid currentColor;
+      box-sizing: border-box;
+      cursor: crosshair;
+      flex-shrink: 0;
+    }
+    .plane-hline, .plane-vline {
+      position: absolute; background: currentColor; opacity: 0.2; pointer-events: none;
+    }
+    .plane-hline { width: 100%; height: 1px; top: 50%; left: 0; }
+    .plane-vline { width: 1px; height: 100%; left: 50%; top: 0; }
+    .plane-dot {
+      position: absolute; width: 10px; height: 10px;
+      border-radius: 50%; background: #3399ff;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .plane-coords { opacity: 0.65; min-width: 3.5rem; }
+
+    #status { margin-top: 0.75rem; color: #47C0FF; min-height: 1em; }
   </style>
 </head>
 <body>
   <h1>web→md settings</h1>
+
   <div class="setting">
-    <label>
+    <label class="checkbox">
       <input type="checkbox" id="includeSvg">
       Include SVG in output
+      <span class="info-wrap">
+        <span class="info-icon">ⓘ</span>
+        <span class="info-tip">When off, inline SVGs and SVG data URIs are replaced with [SVG image].</span>
+      </span>
     </label>
-    <p class="desc">When off, inline SVGs and SVG data URIs are replaced with <code>[SVG image]</code>.</p>
   </div>
-  <div class="setting">
-    <label>Cursor size</label>
-    <div class="slider-row">
-      <input type="range" id="cursorSize" min="24" max="64" step="4">
-      <span id="cursorSizeVal"></span>
+
+  <div class="group">
+    <span class="group-label">Cursor</span>
+    <div class="group-row">
+      <div class="field">pick <input type="text" id="cursorEmoji" class="emoji-input" maxlength="2" placeholder="📌"></div>
+      <div class="field">multi <input type="text" id="multiCursorEmoji" class="emoji-input" maxlength="2" placeholder="📝"></div>
+      <div class="field">size <input type="number" id="cursorSize" min="16" max="1024" step="4"><span class="unit">px</span></div>
+      <div class="field plane-wrap">
+        offset
+        <div class="plane" id="offsetPlane">
+          <div class="plane-hline"></div>
+          <div class="plane-vline"></div>
+          <div class="plane-dot" id="offsetDot"></div>
+        </div>
+        <span class="plane-coords" id="offsetCoords">0, 0</span>
+      </div>
     </div>
   </div>
-  <div class="setting">
-    <label>Picker cursor</label>
-    <input type="text" id="cursorEmoji" class="emoji-input" maxlength="2" placeholder="📌">
-  </div>
-  <div class="setting">
-    <label>Multi-select cursor</label>
-    <input type="text" id="multiCursorEmoji" class="emoji-input" maxlength="2" placeholder="📝">
-  </div>
-  <div class="setting">
-    <label>Highlight color</label>
-    <div class="color-row">
-      <input type="color" id="outlineColor" value="#ff9900">
+
+  <div class="group">
+    <span class="group-label">Highlight</span>
+    <div class="group-row">
+      <div class="color-field">
+        <span class="color-swatch" id="outlineColorSwatch"></span>
+        <input type="text" id="outlineColor" class="color-text" placeholder="#rrggbb or rgba(...)">
+      </div>
+      <div class="field">outer <input type="number" id="outlineWidth" min="1" max="1024" step="1"><span class="unit">px</span></div>
+      <div class="field">inner <input type="number" id="insetWidth" min="0" max="1024" step="1"><span class="unit">px</span></div>
     </div>
   </div>
-  <div class="setting">
-    <label>Outer outline width</label>
-    <div class="slider-row">
-      <input type="range" id="outlineWidth" min="1" max="8" step="1">
-      <span id="outlineWidthVal"></span>
+
+  <div class="group">
+    <span class="group-label">Message</span>
+    <div class="group-row">
+      <div class="field">font <input type="number" id="flashFontSize" min="1" max="1024" step="1"><span class="unit">px</span></div>
     </div>
   </div>
-  <div class="setting">
-    <label>Inner outline width</label>
-    <div class="slider-row">
-      <input type="range" id="insetWidth" min="0" max="8" step="1">
-      <span id="insetWidthVal"></span>
+
+  <div class="group">
+    <span class="group-label">Options</span>
+    <div class="group-row">
+      <div class="field">font <input type="number" id="optionsFontSize" min="1" max="1024" step="1"><span class="unit">px</span></div>
+      <div class="color-field">
+        <span class="color-swatch" id="optionsFontColorSwatch"></span>
+        <input type="text" id="optionsFontColor" class="color-text" placeholder="font color">
+      </div>
+      <div class="color-field">
+        <span class="color-swatch" id="optionsBgColorSwatch"></span>
+        <input type="text" id="optionsBgColor" class="color-text" placeholder="background">
+      </div>
     </div>
   </div>
-  <div class="setting">
-    <label>Message font size</label>
-    <div class="slider-row">
-      <input type="range" id="flashFontSize" min="9" max="20" step="1">
-      <span id="flashFontSizeVal"></span>
-    </div>
-  </div>
-  <div class="setting">
-    <label>Options font size</label>
-    <div class="slider-row">
-      <input type="range" id="optionsFontSize" min="10" max="22" step="1">
-      <span id="optionsFontSizeVal"></span>
-    </div>
-  </div>
-  <div class="setting">
-    <label>Options background</label>
-    <div class="color-row">
-      <input type="color" id="optionsBgColor" value="#ffffff">
-    </div>
-  </div>
+
   <p id="status"></p>
   <script src="options.js"></script>
 </body>

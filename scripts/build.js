@@ -57,7 +57,6 @@ function buildTarget(name) {
   fs.copyFileSync(path.join(ROOT, 'turndown.js'), path.join(outDir, 'turndown.js'));
   fs.copyFileSync(path.join(ROOT, 'options.html'), path.join(outDir, 'options.html'));
   fs.cpSync(path.join(ROOT, 'icons'), path.join(outDir, 'icons'), { recursive: true });
-  fs.cpSync(path.join(ROOT, 'fonts'), path.join(outDir, 'fonts'), { recursive: true });
 
   console.log(`[${name}] writing manifest`);
   const base = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.base.json'), 'utf8'));

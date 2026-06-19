@@ -27,6 +27,8 @@ const settings = {
   cursorEmoji: '📌',
   multiCursorEmoji: '📝',
   flashFontSize: 13,
+  cursorOffsetX: -6,
+  cursorOffsetY: -6,
 }
 
 const turndown = new TurndownService()
@@ -50,8 +52,8 @@ turndownStripped.addRule('stripSvgDataUri', {
 
 chrome.storage.sync.get({
   includeSvg: false, cursorSize: 32, outlineColor: '#ff9900', outlineWidth: 2, insetWidth: 2,
-  cursorEmoji: '📌', multiCursorEmoji: '📝', flashFontSize: 13,
-}).then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth, cursorEmoji, multiCursorEmoji, flashFontSize }) => {
+  cursorEmoji: '📌', multiCursorEmoji: '📝', flashFontSize: 13, cursorOffsetX: -6, cursorOffsetY: -6,
+}).then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth, cursorEmoji, multiCursorEmoji, flashFontSize, cursorOffsetX, cursorOffsetY }) => {
   settings.includeSvg = includeSvg as boolean
   settings.cursorSize = cursorSize as number
   settings.outlineColor = outlineColor as string
@@ -60,6 +62,8 @@ chrome.storage.sync.get({
   settings.cursorEmoji = cursorEmoji as string
   settings.multiCursorEmoji = multiCursorEmoji as string
   settings.flashFontSize = flashFontSize as number
+  settings.cursorOffsetX = cursorOffsetX as number
+  settings.cursorOffsetY = cursorOffsetY as number
 })
 
 chrome.storage.onChanged.addListener(changes => {
@@ -71,6 +75,8 @@ chrome.storage.onChanged.addListener(changes => {
   if (changes.cursorEmoji) settings.cursorEmoji = changes.cursorEmoji.newValue
   if (changes.multiCursorEmoji) settings.multiCursorEmoji = changes.multiCursorEmoji.newValue
   if (changes.flashFontSize) settings.flashFontSize = changes.flashFontSize.newValue
+  if (changes.cursorOffsetX) settings.cursorOffsetX = changes.cursorOffsetX.newValue
+  if (changes.cursorOffsetY) settings.cursorOffsetY = changes.cursorOffsetY.newValue
   if (state.pickerActive && (changes.outlineColor || changes.outlineWidth || changes.insetWidth)) {
     applyOutlineStyles()
   }
@@ -85,6 +91,11 @@ function hexToRgba(hex: string, alpha: number): string {
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+// Hex colors get auto-alpha applied; rgba/hsl/named values pass through as-is.
+function withAlpha(color: string, alpha: number): string {
+  return /^#[0-9a-fA-F]{6}$/.test(color) ? hexToRgba(color, alpha) : color
 }
 
 function applyOutlineStyles(): void {
@@ -116,14 +127,13 @@ function positionHighlight(el: Element): void {
   }
   const r = el.getBoundingClientRect()
   const ov = state.highlightOverlayEl
-  const highlightRgba = hexToRgba(settings.outlineColor, 0.35)
   ov.style.top = `${r.top}px`
   ov.style.left = `${r.left}px`
   ov.style.width = `${r.width}px`
   ov.style.height = `${r.height}px`
   ov.style.outline = `${settings.outlineWidth}px solid ${settings.outlineColor}`
   ov.style.outlineOffset = '1px'
-  ov.style.boxShadow = `inset 0 0 0 ${settings.insetWidth}px ${highlightRgba}`
+  ov.style.boxShadow = `inset 0 0 0 ${settings.insetWidth}px ${withAlpha(settings.outlineColor, 0.35)}`
   ov.style.display = 'block'
 }
 
@@ -141,12 +151,14 @@ function setCursor(emoji: string): void {
   if (!state.cursorEl) {
     const el = document.createElement('div')
     el.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;user-select:none;line-height:1;'
-    el.style.transform = `translate(${state.lastMousePos.x}px,${state.lastMousePos.y}px)`
     document.body.appendChild(el)
     state.cursorEl = el
     state.cursorMoveHandler = (e: MouseEvent) => {
-      state.cursorEl!.style.transform = `translate(${e.clientX}px,${e.clientY}px)`
+      const oy = Math.round(settings.cursorSize * 0.875) + settings.cursorOffsetY
+      state.cursorEl!.style.transform = `translate(${e.clientX + settings.cursorOffsetX}px,${e.clientY - oy}px)`
     }
+    const initOy = Math.round(settings.cursorSize * 0.875) + settings.cursorOffsetY
+    el.style.transform = `translate(${state.lastMousePos.x + settings.cursorOffsetX}px,${state.lastMousePos.y - initOy}px)`
     document.addEventListener('mousemove', state.cursorMoveHandler)
   }
   const fs = Math.round(settings.cursorSize * 0.875)
