@@ -176,6 +176,7 @@ function addBadge(el: Element, index: number): void {
   const badge = document.createElement('div')
   badge.className = CLASS_BADGE
   badge.textContent = String(index)
+  badge.style.background = settings.badgeBgColor
   document.documentElement.appendChild(badge)
   badge.style.top = `${r.top + BADGE_INSET}px`
   badge.style.left = `${r.right - badge.offsetWidth - BADGE_INSET}px`
@@ -301,6 +302,7 @@ function showMessage(text: string): void {
   el.textContent = text
   el.style.fontSize = `${settings.flashFontSize}px`
   el.style.color = settings.flashFontColor
+  el.style.background = settings.flashBgColor
   el.style.animationDelay = `${settings.flashPause}ms`
   el.style.animationDuration = `${settings.flashDuration}ms`
   el.style.setProperty('--fall-dist', `${settings.flashFallDistance}px`)

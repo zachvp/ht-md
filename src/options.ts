@@ -17,15 +17,61 @@ const flashDurationInput = document.getElementById('flashDuration') as HTMLInput
 const flashFallDistanceInput = document.getElementById('flashFallDistance') as HTMLInputElement
 const flashFontColorInput = document.getElementById('flashFontColor') as HTMLInputElement
 const flashFontColorSwatch = document.getElementById('flashFontColorSwatch') as HTMLSpanElement
+const flashBgColorInput = document.getElementById('flashBgColor') as HTMLInputElement
+const flashBgColorSwatch = document.getElementById('flashBgColorSwatch') as HTMLSpanElement
+const badgeBgColorInput = document.getElementById('badgeBgColor') as HTMLInputElement
+const badgeBgColorSwatch = document.getElementById('badgeBgColorSwatch') as HTMLSpanElement
 const optionsFontSizeInput = document.getElementById('optionsFontSize') as HTMLInputElement
 const optionsFontColorInput = document.getElementById('optionsFontColor') as HTMLInputElement
 const optionsFontColorSwatch = document.getElementById('optionsFontColorSwatch') as HTMLSpanElement
 const optionsBgColorInput = document.getElementById('optionsBgColor') as HTMLInputElement
 const optionsBgColorSwatch = document.getElementById('optionsBgColorSwatch') as HTMLSpanElement
+const sectionBgColorInput = document.getElementById('sectionBgColor') as HTMLInputElement
+const sectionBgColorSwatch = document.getElementById('sectionBgColorSwatch') as HTMLSpanElement
+const offsetMaxInput = document.getElementById('offsetMax') as HTMLInputElement
+const savedFlashDurationInput = document.getElementById('savedFlashDuration') as HTMLInputElement
 const status = document.getElementById('status') as HTMLParagraphElement
 
 import 'emoji-picker-element'
 import { SETTINGS_DEFAULTS } from './lib/settings'
+
+function hexToRgb(hex: string): [number, number, number] | null {
+  const m = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i)
+  if (m) return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)]
+  const s = hex.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i)
+  if (s) return [parseInt(s[1] + s[1], 16), parseInt(s[2] + s[2], 16), parseInt(s[3] + s[3], 16)]
+  return null
+}
+
+function withAlpha(color: string, alpha: number): string {
+  const rgb = hexToRgb(color)
+  return rgb ? `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha})` : color
+}
+
+const pickerColors = {
+  fontColor: SETTINGS_DEFAULTS.optionsFontColor,
+  bgColor: SETTINGS_DEFAULTS.optionsBgColor,
+}
+
+function applyDocumentTheme(fontColor: string, bgColor: string): void {
+  const r = document.documentElement.style
+  r.setProperty('--ui-overlay-sm', withAlpha(fontColor, 0.08))
+  r.setProperty('--ui-overlay-md', withAlpha(fontColor, 0.12))
+  r.setProperty('--ui-overlay-lg', withAlpha(fontColor, 0.22))
+  r.setProperty('--ui-shadow', withAlpha(fontColor, 0.25))
+}
+
+function applyPickerTheme(picker: HTMLElement, fontColor: string, bgColor: string): void {
+  picker.style.setProperty('--background', bgColor)
+  picker.style.setProperty('--border-color', withAlpha(fontColor, 0.2))
+  picker.style.setProperty('--button-active-background', withAlpha(fontColor, 0.2))
+  picker.style.setProperty('--button-hover-background', withAlpha(fontColor, 0.12))
+  picker.style.setProperty('--category-font-color', fontColor)
+  picker.style.setProperty('--input-border-color', withAlpha(fontColor, 0.4))
+  picker.style.setProperty('--input-font-color', fontColor)
+  picker.style.setProperty('--input-placeholder-color', withAlpha(fontColor, 0.5))
+  picker.style.setProperty('--outline-color', withAlpha(fontColor, 0.5))
+}
 
 function makeEmojiPicker(btn: HTMLButtonElement, onChange: (emoji: string) => void): void {
   let wrap: HTMLDivElement | null = null
@@ -45,7 +91,7 @@ function makeEmojiPicker(btn: HTMLButtonElement, onChange: (emoji: string) => vo
     wrap = document.createElement('div')
     wrap.className = 'emoji-picker-panel'
     const picker = document.createElement('emoji-picker') as HTMLElement
-    picker.setAttribute('class', 'light')
+    applyPickerTheme(picker, pickerColors.fontColor, pickerColors.bgColor)
     wrap.appendChild(picker)
     btn.parentElement!.appendChild(wrap)
     picker.addEventListener('emoji-click', (e: Event) => {
@@ -59,9 +105,11 @@ function makeEmojiPicker(btn: HTMLButtonElement, onChange: (emoji: string) => vo
   })
 }
 
+let savedFlashDuration = 1500
+
 function showSaved(): void {
   status.textContent = 'Saved'
-  setTimeout(() => { status.textContent = '' }, 1500)
+  setTimeout(() => { status.textContent = '' }, savedFlashDuration)
 }
 
 function syncSwatch(input: HTMLInputElement, swatch: HTMLElement): void {
@@ -101,23 +149,24 @@ function wireColor(
 }
 
 // 2D offset plane
+let OFFSET_MAX = 10
 let planeDragging = false
 let curOffsetX = 0
 let curOffsetY = 0
 
 function moveDot(x: number, y: number): void {
-  curOffsetX = Math.max(-10, Math.min(10, Math.round(x)))
-  curOffsetY = Math.max(-10, Math.min(10, Math.round(y)))
-  offsetDot.style.left = `${(curOffsetX + 10) / 20 * 100}%`
-  offsetDot.style.top = `${(10 - curOffsetY) / 20 * 100}%`
+  curOffsetX = Math.max(-OFFSET_MAX, Math.min(OFFSET_MAX, Math.round(x)))
+  curOffsetY = Math.max(-OFFSET_MAX, Math.min(OFFSET_MAX, Math.round(y)))
+  offsetDot.style.left = `${(curOffsetX + OFFSET_MAX) / (OFFSET_MAX * 2) * 100}%`
+  offsetDot.style.top = `${(OFFSET_MAX - curOffsetY) / (OFFSET_MAX * 2) * 100}%`
   offsetCoords.textContent = `${curOffsetX}, ${curOffsetY}`
 }
 
 function planeVals(e: MouseEvent): { x: number; y: number } {
   const r = offsetPlane.getBoundingClientRect()
   return {
-    x: (e.clientX - r.left) / r.width * 20 - 10,
-    y: 10 - (e.clientY - r.top) / r.height * 20,
+    x: (e.clientX - r.left) / r.width * (OFFSET_MAX * 2) - OFFSET_MAX,
+    y: OFFSET_MAX - (e.clientY - r.top) / r.height * (OFFSET_MAX * 2),
   }
 }
 
@@ -139,8 +188,8 @@ document.addEventListener('mouseup', () => {
 
 // Load
 chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, multiCursorEmoji, cursorSize, cursorOffsetX, cursorOffsetY, facingX, facingY,
-          outlineColor, outlineWidth, insetWidth, flashFontSize, flashFontColor, flashPause, flashDuration, flashFallDistance,
-          optionsFontSize, optionsFontColor, optionsBgColor }) => {
+          outlineColor, outlineWidth, insetWidth, flashFontSize, flashFontColor, flashBgColor, flashPause, flashDuration, flashFallDistance,
+          badgeBgColor, optionsFontSize, optionsFontColor, optionsBgColor, sectionBgColor, offsetMax, savedFlashDuration: sfd }) => {
   checkbox.checked = includeSvg as boolean
   cursorEmojiBtn.textContent = cursorEmoji as string
   multiCursorEmojiBtn.textContent = multiCursorEmoji as string
@@ -166,6 +215,16 @@ chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, mult
   document.body.style.fontSize = `${optionsFontSize}px`
   document.body.style.color = optionsFontColor as string
   document.body.style.background = optionsBgColor as string
+  pickerColors.fontColor = optionsFontColor as string
+  pickerColors.bgColor = optionsBgColor as string
+  applyDocumentTheme(optionsFontColor as string, optionsBgColor as string)
+  sectionBgColorInput.value = sectionBgColor as string
+  syncSwatch(sectionBgColorInput, sectionBgColorSwatch)
+  document.documentElement.style.setProperty('--ui-overlay-xs', sectionBgColor as string)
+  OFFSET_MAX = offsetMax as number
+  offsetMaxInput.value = String(offsetMax)
+  savedFlashDuration = sfd as number
+  savedFlashDurationInput.value = String(sfd)
 })
 
 // Listeners
@@ -226,8 +285,29 @@ optionsFontSizeInput.addEventListener('change', () => {
   chrome.storage.sync.set({ optionsFontSize: Number(optionsFontSizeInput.value) }).then(showSaved)
 })
 
-wireColor(optionsFontColorInput, optionsFontColorSwatch, 'optionsFontColor', () => { document.body.style.color = optionsFontColorInput.value })
-wireColor(optionsBgColorInput, optionsBgColorSwatch, 'optionsBgColor', () => { document.body.style.background = optionsBgColorInput.value })
+wireColor(optionsFontColorInput, optionsFontColorSwatch, 'optionsFontColor', () => {
+  document.body.style.color = optionsFontColorInput.value
+  pickerColors.fontColor = optionsFontColorInput.value
+  applyDocumentTheme(optionsFontColorInput.value, optionsBgColorInput.value)
+})
+wireColor(optionsBgColorInput, optionsBgColorSwatch, 'optionsBgColor', () => {
+  document.body.style.background = optionsBgColorInput.value
+  pickerColors.bgColor = optionsBgColorInput.value
+  applyDocumentTheme(optionsFontColorInput.value, optionsBgColorInput.value)
+})
+wireColor(sectionBgColorInput, sectionBgColorSwatch, 'sectionBgColor', () => {
+  document.documentElement.style.setProperty('--ui-overlay-xs', sectionBgColorInput.value)
+})
+
+offsetMaxInput.addEventListener('change', () => {
+  OFFSET_MAX = Number(offsetMaxInput.value)
+  chrome.storage.sync.set({ offsetMax: OFFSET_MAX }).then(showSaved)
+})
+
+savedFlashDurationInput.addEventListener('change', () => {
+  savedFlashDuration = Number(savedFlashDurationInput.value)
+  chrome.storage.sync.set({ savedFlashDuration }).then(showSaved)
+})
 
 // Inject custom pixel spinners — must run after all change listeners are attached
 document.querySelectorAll<HTMLInputElement>('input[type=number]').forEach(input => {

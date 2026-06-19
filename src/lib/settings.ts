@@ -6,8 +6,10 @@ export const SETTINGS_DEFAULTS = {
   insetWidth: 2,
   cursorEmoji: '📌',
   multiCursorEmoji: '📝',
+  badgeBgColor: '#3399ff',
   flashFontSize: 13,
   flashFontColor: '#ffffff',
+  flashBgColor: 'rgba(0,0,0,0.8)',
   flashPause: 400,
   flashDuration: 1500,
   flashFallDistance: 80,
@@ -19,6 +21,9 @@ export const SETTINGS_DEFAULTS = {
   optionsFontSize: 14,
   optionsFontColor: '#000000',
   optionsBgColor: '#ffffff',
+  sectionBgColor: 'rgba(0,0,0,0.06)',
+  offsetMax: 10,
+  savedFlashDuration: 1500,
 }
 
 export type Settings = typeof SETTINGS_DEFAULTS
