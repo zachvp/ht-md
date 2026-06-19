@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>web→md settings</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 2rem; max-width: 400px; }
+    h1 { font-size: 1.1rem; margin-bottom: 1.5rem; }
+    label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+    p.desc { margin: 0.25rem 0 0 1.5rem; font-size: 0.85rem; color: #666; }
+    #status { margin-top: 1rem; font-size: 0.85rem; color: #47C0FF; min-height: 1em; }
+  </style>
+</head>
+<body>
+  <h1>web→md settings</h1>
+  <label>
+    <input type="checkbox" id="includeSvg">
+    Include SVG in output
+  </label>
+  <p class="desc">When off, inline SVGs and SVG data URIs are replaced with <code>[SVG image]</code>.</p>
+  <p id="status"></p>
+  <script src="options.js"></script>
+</body>
+</html>

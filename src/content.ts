@@ -11,10 +11,64 @@ const selectedSet = new Set<Element>()
 const turndown = new TurndownService()
 turndown.remove(['style', 'script', 'noscript'])
 
+const turndownStripped = new TurndownService()
+turndownStripped.remove(['style', 'script', 'noscript'])
+turndownStripped.addRule('stripSvgElement', {
+  filter: ['svg'],
+  replacement: () => '[SVG]',
+})
+turndownStripped.addRule('stripSvgDataUri', {
+  filter: (node: HTMLElement) =>
+    node.nodeName === 'IMG' &&
+    node.getAttribute('src')?.startsWith('data:image/svg+xml') === true,
+  replacement: (_content: string, node: Node) => {
+    const alt = (node as HTMLElement).getAttribute('alt')
+    return alt ? `[SVG image: ${alt}]` : '[SVG image]'
+  },
+})
+
+let includeSvg = false
+chrome.storage.sync.get({ includeSvg: false }).then(({ includeSvg: val }) => { includeSvg = val as boolean })
+chrome.storage.onChanged.addListener(changes => { if (changes.includeSvg) includeSvg = changes.includeSvg.newValue })
+
+function convert(html: string): string {
+  return (includeSvg ? turndown : turndownStripped).turndown(html)
+}
+
+function buildCursor(emoji: string, size = 32): string {
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  ctx.font = `${size * 0.85}px serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(emoji, size / 2, size / 2)
+  return canvas.toDataURL()
+}
+
+let cursorStyleEl: HTMLStyleElement | null = null
+
+function setCursor(emoji: string): void {
+  if (!cursorStyleEl) {
+    cursorStyleEl = document.createElement('style')
+    document.head.appendChild(cursorStyleEl)
+  }
+  const url = buildCursor(emoji)
+  cursorStyleEl.textContent = `* { cursor: url(${url}) 16 2, auto !important; }`
+}
+
+function clearCursor(): void {
+  cursorStyleEl?.remove()
+  cursorStyleEl = null
+}
+
 function activatePicker(): void {
   if (pickerActive) return
   pickerActive = true
   console.log('[web-md] picker activated')
+
+  setCursor('👆')
 
   document.addEventListener('mouseover', onMouseOver)
   document.addEventListener('click', onClick, true)
@@ -25,6 +79,8 @@ function deactivatePicker(): void {
   if (!pickerActive) return
   pickerActive = false
   console.log('[web-md] picker deactivated')
+
+  clearCursor()
 
   lastHighlighted?.classList.remove('web-md-highlight')
   lastHighlighted = null
@@ -68,7 +124,7 @@ function onClick(e: MouseEvent): void {
   }
 
   const html = el.outerHTML
-  const md = turndown.turndown(html)
+  const md = convert(html)
   console.log('[web-md] captured element:', el.tagName, '— md length:', md.length)
 
   navigator.clipboard.writeText(md)
@@ -85,7 +141,7 @@ function onKeyDown(e: KeyboardEvent): void {
   } else if (e.key === 'Enter' && selectedElements.length > 0) {
     e.preventDefault()
     e.stopPropagation()
-    const md = selectedElements.map(el => turndown.turndown(el.outerHTML)).join('\n')
+    const md = selectedElements.map(el => convert(el.outerHTML)).join('\n')
     console.log('[web-md] committing', selectedElements.length, 'elements — md length:', md.length)
     navigator.clipboard.writeText(md)
       .then(() => { console.log('[web-md] clipboard write ok'); showFlash('📝 Copied', lastMousePos.x, lastMousePos.y) })

@@ -1,11 +1,13 @@
 .web-md-selected {
   outline: 2px solid #39f !important;
-  cursor: crosshair !important;
+  outline-offset: 1px !important;
+  box-shadow: 0 0 0 2px #39f !important;
 }
 
 .web-md-highlight {
   outline: 2px solid #f90 !important;
-  cursor: crosshair !important;
+  outline-offset: 1px !important;
+  box-shadow: 0 0 0 2px #f90 !important;
 }
 
 .web-md-flash {
