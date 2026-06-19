@@ -28,9 +28,12 @@ const settings = {
   multiCursorEmoji: '📝',
   flashFontSize: 13,
   flashFontColor: '#ffffff',
+  flashPause: 400,
   flashDuration: 1500,
   cursorOffsetX: -6,
   cursorOffsetY: -6,
+  facingX: 0,
+  facingY: -1,
 }
 
 const turndown = new TurndownService()
@@ -54,8 +57,8 @@ turndownStripped.addRule('stripSvgDataUri', {
 
 chrome.storage.sync.get({
   includeSvg: false, cursorSize: 32, outlineColor: '#ff9900', outlineWidth: 2, insetWidth: 2,
-  cursorEmoji: '📌', multiCursorEmoji: '📝', flashFontSize: 13, flashFontColor: '#ffffff', flashDuration: 1500, cursorOffsetX: -6, cursorOffsetY: -6,
-}).then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth, cursorEmoji, multiCursorEmoji, flashFontSize, flashFontColor, flashDuration, cursorOffsetX, cursorOffsetY }) => {
+  cursorEmoji: '📌', multiCursorEmoji: '📝', flashFontSize: 13, flashFontColor: '#ffffff', flashPause: 400, flashDuration: 1500, cursorOffsetX: -6, cursorOffsetY: -6, facingX: 0, facingY: -1,
+}).then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth, cursorEmoji, multiCursorEmoji, flashFontSize, flashFontColor, flashPause, flashDuration, cursorOffsetX, cursorOffsetY, facingX, facingY }) => {
   settings.includeSvg = includeSvg as boolean
   settings.cursorSize = cursorSize as number
   settings.outlineColor = outlineColor as string
@@ -65,9 +68,12 @@ chrome.storage.sync.get({
   settings.multiCursorEmoji = multiCursorEmoji as string
   settings.flashFontSize = flashFontSize as number
   settings.flashFontColor = flashFontColor as string
+  settings.flashPause = flashPause as number
   settings.flashDuration = flashDuration as number
   settings.cursorOffsetX = cursorOffsetX as number
   settings.cursorOffsetY = cursorOffsetY as number
+  settings.facingX = facingX as number
+  settings.facingY = facingY as number
 })
 
 chrome.storage.onChanged.addListener(changes => {
@@ -80,9 +86,12 @@ chrome.storage.onChanged.addListener(changes => {
   if (changes.multiCursorEmoji) settings.multiCursorEmoji = changes.multiCursorEmoji.newValue
   if (changes.flashFontSize) settings.flashFontSize = changes.flashFontSize.newValue
   if (changes.flashFontColor) settings.flashFontColor = changes.flashFontColor.newValue
+  if (changes.flashPause) settings.flashPause = changes.flashPause.newValue
   if (changes.flashDuration) settings.flashDuration = changes.flashDuration.newValue
   if (changes.cursorOffsetX) settings.cursorOffsetX = changes.cursorOffsetX.newValue
   if (changes.cursorOffsetY) settings.cursorOffsetY = changes.cursorOffsetY.newValue
+  if (changes.facingX) settings.facingX = changes.facingX.newValue
+  if (changes.facingY) settings.facingY = changes.facingY.newValue
   if (state.pickerActive && (changes.outlineColor || changes.outlineWidth || changes.insetWidth)) {
     applyOutlineStyles()
   }
@@ -102,6 +111,20 @@ function hexToRgba(hex: string, alpha: number): string {
 // Hex colors get auto-alpha applied; rgba/hsl/named values pass through as-is.
 function withAlpha(color: string, alpha: number): string {
   return /^#[0-9a-fA-F]{6}$/.test(color) ? hexToRgba(color, alpha) : color
+}
+
+function updateCursorRotation(el: Element): void {
+  if (!state.cursorEl) return
+  const r = el.getBoundingClientRect()
+  const cx = r.left + r.width / 2
+  const cy = r.top + r.height / 2
+  const dx = cx - state.lastMousePos.x
+  const dy = cy - state.lastMousePos.y
+  const mag = Math.sqrt(dx * dx + dy * dy)
+  if (mag < 1) return
+  const targetAngle = Math.atan2(dy / mag, dx / mag)
+  const naturalAngle = Math.atan2(settings.facingY, settings.facingX)
+  state.cursorEl.style.rotate = `${targetAngle - naturalAngle}rad`
 }
 
 function applyOutlineStyles(): void {
@@ -141,6 +164,7 @@ function positionHighlight(el: Element): void {
   ov.style.outlineOffset = '1px'
   ov.style.boxShadow = `inset 0 0 0 ${settings.insetWidth}px ${withAlpha(settings.outlineColor, 0.35)}`
   ov.style.display = 'block'
+  updateCursorRotation(el)
 }
 
 function clearHighlight(): void {
@@ -164,19 +188,19 @@ function setCursor(emoji: string): void {
     pos.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;'
     pos.style.transform = `translate(${initX}px,${initY}px)`
 
-    // Inner div: emoji content + scale-up animation
+    // Inner div: emoji content + scale-up animation (scale/rotate as independent CSS properties)
     const inner = document.createElement('div')
-    inner.style.cssText = 'display:inline-block;user-select:none;line-height:1;transform:scale(0);'
+    inner.style.cssText = 'display:inline-block;user-select:none;line-height:1;scale:0;'
     pos.appendChild(inner)
     document.body.appendChild(pos)
     state.cursorPosEl = pos
     state.cursorEl = inner
 
-    // Animate scale 0 → 1 with a spring overshoot
+    // Animate scale 0 → 1 with a spring overshoot; rotate is independent (no transition)
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (inner.isConnected) {
-        inner.style.transition = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)'
-        inner.style.transform = 'scale(1)'
+        inner.style.transition = 'scale 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)'
+        inner.style.scale = '1'
       }
     }))
 
@@ -186,6 +210,7 @@ function setCursor(emoji: string): void {
       const x = Math.max(0, Math.min(window.innerWidth - sz, e.clientX + settings.cursorOffsetX))
       const y = Math.max(0, Math.min(window.innerHeight - sz, e.clientY - oy))
       state.cursorPosEl!.style.transform = `translate(${x}px,${y}px)`
+      if (state.lastHighlighted) updateCursorRotation(state.lastHighlighted)
     }
     document.addEventListener('mousemove', state.cursorMoveHandler)
   }
@@ -330,28 +355,17 @@ function onKeyDown(e: KeyboardEvent): void {
 }
 
 function showFlash(text: string): void {
-  if (!state.flashContainerEl) {
-    const container = document.createElement('div')
-    container.className = 'web-md-flash-stack'
-    document.body.appendChild(container)
-    state.flashContainerEl = container
-  }
-
   const el = document.createElement('div')
   el.className = 'web-md-flash'
   el.textContent = text
   el.style.fontSize = `${settings.flashFontSize}px`
   el.style.color = settings.flashFontColor
+  el.style.animationDelay = `${settings.flashPause}ms`
   el.style.animationDuration = `${settings.flashDuration}ms`
-  state.flashContainerEl.appendChild(el)
-
-  setTimeout(() => {
-    el.remove()
-    if (state.flashContainerEl && !state.flashContainerEl.hasChildNodes()) {
-      state.flashContainerEl.remove()
-      state.flashContainerEl = null
-    }
-  }, settings.flashDuration)
+  el.style.left = `${state.lastMousePos.x}px`
+  el.style.top = `${state.lastMousePos.y}px`
+  document.body.appendChild(el)
+  setTimeout(() => el.remove(), settings.flashPause + settings.flashDuration)
 }
 
 chrome.runtime.onMessage.addListener((msg: { action: string }) => {

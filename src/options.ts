@@ -1,7 +1,9 @@
 const checkbox = document.getElementById('includeSvg') as HTMLInputElement
-const cursorEmojiInput = document.getElementById('cursorEmoji') as HTMLInputElement
-const multiCursorEmojiInput = document.getElementById('multiCursorEmoji') as HTMLInputElement
+const cursorEmojiBtn = document.getElementById('cursorEmojiBtn') as HTMLButtonElement
+const multiCursorEmojiBtn = document.getElementById('multiCursorEmojiBtn') as HTMLButtonElement
 const cursorSizeInput = document.getElementById('cursorSize') as HTMLInputElement
+const facingXInput = document.getElementById('facingX') as HTMLInputElement
+const facingYInput = document.getElementById('facingY') as HTMLInputElement
 const offsetPlane = document.getElementById('offsetPlane') as HTMLDivElement
 const offsetDot = document.getElementById('offsetDot') as HTMLDivElement
 const offsetCoords = document.getElementById('offsetCoords') as HTMLSpanElement
@@ -10,6 +12,7 @@ const outlineColorSwatch = document.getElementById('outlineColorSwatch') as HTML
 const outlineWidthInput = document.getElementById('outlineWidth') as HTMLInputElement
 const insetWidthInput = document.getElementById('insetWidth') as HTMLInputElement
 const flashFontSizeInput = document.getElementById('flashFontSize') as HTMLInputElement
+const flashPauseInput = document.getElementById('flashPause') as HTMLInputElement
 const flashDurationInput = document.getElementById('flashDuration') as HTMLInputElement
 const flashFontColorInput = document.getElementById('flashFontColor') as HTMLInputElement
 const flashFontColorSwatch = document.getElementById('flashFontColorSwatch') as HTMLSpanElement
@@ -19,6 +22,60 @@ const optionsFontColorSwatch = document.getElementById('optionsFontColorSwatch')
 const optionsBgColorInput = document.getElementById('optionsBgColor') as HTMLInputElement
 const optionsBgColorSwatch = document.getElementById('optionsBgColorSwatch') as HTMLSpanElement
 const status = document.getElementById('status') as HTMLParagraphElement
+
+const EMOJI_LIST = [
+  // Pointers
+  '📌', '📍', '👆', '👇', '👈', '👉', '☝️', '🖕', '👋', '✋', '🖐️', '🤚',
+  '👀', '👁️', '🎯', '🏹',
+  // Writing
+  '✏️', '📝', '✒️', '🖊️', '🖋️', '🖌️', '📋', '📄',
+  // Tools
+  '🔧', '🔨', '🛠️', '🔑', '🗝️', '🔍', '🔎', '⚙️',
+  // Effects
+  '⭐', '🌟', '💫', '✨', '🔥', '💥', '⚡', '❄️',
+  // Fun
+  '🎉', '🎊', '🎈', '🏁', '🚩', '🏴', '🎭', '🪄',
+  // Creatures
+  '🐱', '🦊', '🐸', '🐧', '🦋', '🐝', '🦅', '🐭',
+]
+
+function makeEmojiPicker(btn: HTMLButtonElement, onChange: (emoji: string) => void): void {
+  let panel: HTMLDivElement | null = null
+
+  function close(): void {
+    panel?.remove()
+    panel = null
+    document.removeEventListener('click', onOutside)
+  }
+
+  function onOutside(e: MouseEvent): void {
+    if (!btn.parentElement?.contains(e.target as Node)) close()
+  }
+
+  btn.addEventListener('click', () => {
+    if (panel) { close(); return }
+    panel = document.createElement('div')
+    panel.className = 'emoji-picker-panel'
+    panel.style.background = document.body.style.background || '#fff'
+    panel.style.color = document.body.style.color || '#000'
+    EMOJI_LIST.forEach(em => {
+      const item = document.createElement('button')
+      item.type = 'button'
+      item.className = 'emoji-picker-item'
+      item.textContent = em
+      item.title = em
+      item.addEventListener('click', (e) => {
+        e.stopPropagation()
+        btn.textContent = em
+        onChange(em)
+        close()
+      })
+      panel!.appendChild(item)
+    })
+    btn.parentElement!.appendChild(panel)
+    setTimeout(() => document.addEventListener('click', onOutside), 0)
+  })
+}
 
 function showSaved(): void {
   status.textContent = 'Saved'
@@ -74,28 +131,34 @@ chrome.storage.sync.get({
   cursorSize: 32,
   cursorOffsetX: -6,
   cursorOffsetY: -6,
+  facingX: 0,
+  facingY: -1,
   outlineColor: '#ff9900',
   outlineWidth: 2,
   insetWidth: 2,
   flashFontSize: 13,
   flashFontColor: '#ffffff',
+  flashPause: 400,
   flashDuration: 1500,
   optionsFontSize: 14,
   optionsFontColor: '#000000',
   optionsBgColor: '#ffffff',
-}).then(({ includeSvg, cursorEmoji, multiCursorEmoji, cursorSize, cursorOffsetX, cursorOffsetY,
-          outlineColor, outlineWidth, insetWidth, flashFontSize, flashFontColor, flashDuration,
+}).then(({ includeSvg, cursorEmoji, multiCursorEmoji, cursorSize, cursorOffsetX, cursorOffsetY, facingX, facingY,
+          outlineColor, outlineWidth, insetWidth, flashFontSize, flashFontColor, flashPause, flashDuration,
           optionsFontSize, optionsFontColor, optionsBgColor }) => {
   checkbox.checked = includeSvg as boolean
-  cursorEmojiInput.value = cursorEmoji as string
-  multiCursorEmojiInput.value = multiCursorEmoji as string
+  cursorEmojiBtn.textContent = cursorEmoji as string
+  multiCursorEmojiBtn.textContent = multiCursorEmoji as string
   cursorSizeInput.value = String(cursorSize)
   moveDot(cursorOffsetX as number, cursorOffsetY as number)
+  facingXInput.value = String(facingX)
+  facingYInput.value = String(facingY)
   outlineColorInput.value = outlineColor as string
   syncSwatch(outlineColorInput, outlineColorSwatch)
   outlineWidthInput.value = String(outlineWidth)
   insetWidthInput.value = String(insetWidth)
   flashFontSizeInput.value = String(flashFontSize)
+  flashPauseInput.value = String(flashPause)
   flashDurationInput.value = String(flashDuration)
   flashFontColorInput.value = flashFontColor as string
   syncSwatch(flashFontColorInput, flashFontColorSwatch)
@@ -114,18 +177,22 @@ checkbox.addEventListener('change', () => {
   chrome.storage.sync.set({ includeSvg: checkbox.checked }).then(showSaved)
 })
 
-cursorEmojiInput.addEventListener('change', () => {
-  if (!cursorEmojiInput.value) cursorEmojiInput.value = '📌'
-  chrome.storage.sync.set({ cursorEmoji: cursorEmojiInput.value }).then(showSaved)
+makeEmojiPicker(cursorEmojiBtn, em => {
+  chrome.storage.sync.set({ cursorEmoji: em }).then(showSaved)
 })
-
-multiCursorEmojiInput.addEventListener('change', () => {
-  if (!multiCursorEmojiInput.value) multiCursorEmojiInput.value = '📝'
-  chrome.storage.sync.set({ multiCursorEmoji: multiCursorEmojiInput.value }).then(showSaved)
+makeEmojiPicker(multiCursorEmojiBtn, em => {
+  chrome.storage.sync.set({ multiCursorEmoji: em }).then(showSaved)
 })
 
 cursorSizeInput.addEventListener('change', () => {
   chrome.storage.sync.set({ cursorSize: Number(cursorSizeInput.value) }).then(showSaved)
+})
+
+facingXInput.addEventListener('change', () => {
+  chrome.storage.sync.set({ facingX: Number(facingXInput.value) }).then(showSaved)
+})
+facingYInput.addEventListener('change', () => {
+  chrome.storage.sync.set({ facingY: Number(facingYInput.value) }).then(showSaved)
 })
 
 outlineColorInput.addEventListener('input', () => syncSwatch(outlineColorInput, outlineColorSwatch))
@@ -143,6 +210,10 @@ insetWidthInput.addEventListener('change', () => {
 
 flashFontSizeInput.addEventListener('change', () => {
   chrome.storage.sync.set({ flashFontSize: Number(flashFontSizeInput.value) }).then(showSaved)
+})
+
+flashPauseInput.addEventListener('change', () => {
+  chrome.storage.sync.set({ flashPause: Number(flashPauseInput.value) }).then(showSaved)
 })
 
 flashDurationInput.addEventListener('change', () => {

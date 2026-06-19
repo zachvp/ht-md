@@ -16,23 +16,10 @@
   box-sizing: border-box;
 }
 
-.web-md-flash-stack {
-  all: initial;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2147483647;
-  pointer-events: none;
-}
-
 .web-md-flash {
   all: initial;
   display: block;
+  position: fixed;
   background: rgba(0, 0, 0, 0.8);
   color: #fff;
   padding: 8px 14px;
@@ -40,14 +27,12 @@
   font: 13px/1.4 Monaco, Menlo, ui-monospace, 'Courier New', monospace;
   pointer-events: none;
   white-space: nowrap;
+  z-index: 2147483647;
   animation-name: web-md-flash-fall;
   animation-fill-mode: forwards;
 }
 
 @keyframes web-md-flash-fall {
-  0%   { transform: translateY(0);     opacity: 1; animation-timing-function: ease-out; }
-  8%   { transform: translateY(-20px); opacity: 1; animation-timing-function: ease-in; }
-  22%  { transform: translateY(2px);   opacity: 1; animation-timing-function: linear; }
-  68%  { transform: translateY(0);     opacity: 1; animation-timing-function: ease-in; }
-  100% { transform: translateY(80px);  opacity: 0; }
+  0%   { transform: translateX(-50%) translateY(0);    opacity: 1; animation-timing-function: ease-in; }
+  100% { transform: translateX(-50%) translateY(80px); opacity: 0; }
 }
