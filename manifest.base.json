@@ -6,7 +6,7 @@
   "permissions": ["activeTab", "tabs", "storage"],
   "options_ui": {
     "page": "options.html",
-    "open_in_tab": true
+    "open_in_tab": false
   },
   "action": {
     "default_icon": {
