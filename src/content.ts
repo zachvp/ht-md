@@ -5,8 +5,7 @@ const state = {
   pickerActive: false,
   lastHighlighted: null as Element | null,
   lastMousePos: { x: 0, y: 0 },
-  flashEl: null as HTMLDivElement | null,
-  flashMoveHandler: null as ((e: MouseEvent) => void) | null,
+  flashContainerEl: null as HTMLDivElement | null,
   selectedElements: [] as Element[],
   selectedSet: new Set<Element>(),
   badgeEls: [] as HTMLDivElement[],
@@ -29,6 +28,7 @@ const settings = {
   multiCursorEmoji: '📝',
   flashFontSize: 13,
   flashFontColor: '#ffffff',
+  flashDuration: 1500,
   cursorOffsetX: -6,
   cursorOffsetY: -6,
 }
@@ -54,8 +54,8 @@ turndownStripped.addRule('stripSvgDataUri', {
 
 chrome.storage.sync.get({
   includeSvg: false, cursorSize: 32, outlineColor: '#ff9900', outlineWidth: 2, insetWidth: 2,
-  cursorEmoji: '📌', multiCursorEmoji: '📝', flashFontSize: 13, flashFontColor: '#ffffff', cursorOffsetX: -6, cursorOffsetY: -6,
-}).then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth, cursorEmoji, multiCursorEmoji, flashFontSize, flashFontColor, cursorOffsetX, cursorOffsetY }) => {
+  cursorEmoji: '📌', multiCursorEmoji: '📝', flashFontSize: 13, flashFontColor: '#ffffff', flashDuration: 1500, cursorOffsetX: -6, cursorOffsetY: -6,
+}).then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth, cursorEmoji, multiCursorEmoji, flashFontSize, flashFontColor, flashDuration, cursorOffsetX, cursorOffsetY }) => {
   settings.includeSvg = includeSvg as boolean
   settings.cursorSize = cursorSize as number
   settings.outlineColor = outlineColor as string
@@ -65,6 +65,7 @@ chrome.storage.sync.get({
   settings.multiCursorEmoji = multiCursorEmoji as string
   settings.flashFontSize = flashFontSize as number
   settings.flashFontColor = flashFontColor as string
+  settings.flashDuration = flashDuration as number
   settings.cursorOffsetX = cursorOffsetX as number
   settings.cursorOffsetY = cursorOffsetY as number
 })
@@ -79,6 +80,7 @@ chrome.storage.onChanged.addListener(changes => {
   if (changes.multiCursorEmoji) settings.multiCursorEmoji = changes.multiCursorEmoji.newValue
   if (changes.flashFontSize) settings.flashFontSize = changes.flashFontSize.newValue
   if (changes.flashFontColor) settings.flashFontColor = changes.flashFontColor.newValue
+  if (changes.flashDuration) settings.flashDuration = changes.flashDuration.newValue
   if (changes.cursorOffsetX) settings.cursorOffsetX = changes.cursorOffsetX.newValue
   if (changes.cursorOffsetY) settings.cursorOffsetY = changes.cursorOffsetY.newValue
   if (state.pickerActive && (changes.outlineColor || changes.outlineWidth || changes.insetWidth)) {
@@ -295,7 +297,7 @@ function onClick(e: MouseEvent): void {
       addBadge(el, state.selectedElements.length)
       if (state.selectedElements.length === 1) setCursor(settings.multiCursorEmoji)
     }
-    showFlash(`${state.selectedElements.length} selected — Enter to copy`, e.clientX, e.clientY, true)
+    showFlash(`${state.selectedElements.length} selected — Enter to copy`)
     return
   }
 
@@ -304,8 +306,8 @@ function onClick(e: MouseEvent): void {
   console.log('[web-md] captured element:', el.tagName, '— md length:', md.length)
 
   navigator.clipboard.writeText(md)
-    .then(() => { console.log('[web-md] clipboard write ok'); showFlash('📝 Copied', e.clientX, e.clientY) })
-    .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); showFlash('Error: ' + err.message, e.clientX, e.clientY) })
+    .then(() => { console.log('[web-md] clipboard write ok'); showFlash('📝 Copied') })
+    .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); showFlash('Error: ' + err.message) })
 
   deactivatePicker()
 }
@@ -321,53 +323,35 @@ function onKeyDown(e: KeyboardEvent): void {
     const md = state.selectedElements.map(el => convert(el.outerHTML)).join('\n')
     console.log('[web-md] committing', state.selectedElements.length, 'elements — md length:', md.length)
     navigator.clipboard.writeText(md)
-      .then(() => { console.log('[web-md] clipboard write ok'); showFlash('📝 Copied', state.lastMousePos.x, state.lastMousePos.y) })
-      .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); showFlash('Error: ' + err.message, state.lastMousePos.x, state.lastMousePos.y) })
+      .then(() => { console.log('[web-md] clipboard write ok'); showFlash('📝 Copied') })
+      .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); showFlash('Error: ' + err.message) })
     deactivatePicker()
   }
 }
 
-function showFlash(text: string, x: number, y: number, horizontal = false): void {
-  if (state.flashEl) {
-    state.flashEl.remove()
-    if (state.flashMoveHandler) document.removeEventListener('mousemove', state.flashMoveHandler)
+function showFlash(text: string): void {
+  if (!state.flashContainerEl) {
+    const container = document.createElement('div')
+    container.className = 'web-md-flash-stack'
+    document.body.appendChild(container)
+    state.flashContainerEl = container
   }
 
-  const el = document.createElement('div') as HTMLDivElement
+  const el = document.createElement('div')
   el.className = 'web-md-flash'
   el.textContent = text
-  el.style.left = '0'
-  el.style.top = '0'
   el.style.fontSize = `${settings.flashFontSize}px`
   el.style.color = settings.flashFontColor
-  document.body.appendChild(el)
-
-  const pad = 8
-  const w = el.offsetWidth
-  const h = el.offsetHeight
-  function position(cx: number, cy: number): void {
-    if (horizontal) {
-      const toLeft = cx > window.innerWidth * 0.6
-      el.style.left = toLeft
-        ? `${Math.max(cx - w - pad, pad)}px`
-        : `${Math.min(cx + pad, window.innerWidth - w - pad)}px`
-      el.style.top = `${Math.min(Math.max(cy - h / 2, pad), window.innerHeight - h - pad)}px`
-    } else {
-      el.style.left = `${Math.min(Math.max(cx - w / 2, pad), window.innerWidth - w - pad)}px`
-      el.style.top = `${Math.min(Math.max(cy + 12, pad), window.innerHeight - h - pad)}px`
-    }
-  }
-
-  position(x, y)
-  state.flashEl = el
-  state.flashMoveHandler = (e: MouseEvent) => position(e.clientX, e.clientY)
-  document.addEventListener('mousemove', state.flashMoveHandler)
+  el.style.animationDuration = `${settings.flashDuration}ms`
+  state.flashContainerEl.appendChild(el)
 
   setTimeout(() => {
     el.remove()
-    document.removeEventListener('mousemove', state.flashMoveHandler!)
-    if (state.flashEl === el) { state.flashEl = null; state.flashMoveHandler = null }
-  }, 1500)
+    if (state.flashContainerEl && !state.flashContainerEl.hasChildNodes()) {
+      state.flashContainerEl.remove()
+      state.flashContainerEl = null
+    }
+  }, settings.flashDuration)
 }
 
 chrome.runtime.onMessage.addListener((msg: { action: string }) => {
