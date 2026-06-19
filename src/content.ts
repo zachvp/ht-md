@@ -16,6 +16,8 @@ const state = {
   cursorStyleEl: null as HTMLStyleElement | null,
   cursorEl: null as HTMLDivElement | null,
   cursorMoveHandler: null as ((e: MouseEvent) => void) | null,
+  cursorEnterHandler: null as (() => void) | null,
+  cursorLeaveHandler: null as (() => void) | null,
 }
 
 // User-configurable settings, kept in sync with chrome.storage.sync
@@ -140,7 +142,11 @@ function setCursor(emoji: string): void {
       const oy = cursorFontSize() + settings.cursorOffsetY
       state.cursorEl!.style.transform = `translate(${e.clientX + settings.cursorOffsetX}px,${e.clientY - oy}px)`
     }
+    state.cursorLeaveHandler = () => { state.cursorEl!.style.visibility = 'hidden' }
+    state.cursorEnterHandler = () => { state.cursorEl!.style.visibility = 'visible' }
     document.addEventListener('mousemove', state.cursorMoveHandler)
+    document.addEventListener('mouseleave', state.cursorLeaveHandler)
+    document.addEventListener('mouseenter', state.cursorEnterHandler)
   }
   state.cursorEl!.textContent = emoji
   state.cursorEl!.style.fontSize = `${cursorFontSize()}px`
@@ -154,6 +160,14 @@ function clearCursor(): void {
   if (state.cursorMoveHandler) {
     document.removeEventListener('mousemove', state.cursorMoveHandler)
     state.cursorMoveHandler = null
+  }
+  if (state.cursorLeaveHandler) {
+    document.removeEventListener('mouseleave', state.cursorLeaveHandler)
+    state.cursorLeaveHandler = null
+  }
+  if (state.cursorEnterHandler) {
+    document.removeEventListener('mouseenter', state.cursorEnterHandler)
+    state.cursorEnterHandler = null
   }
 }
 
@@ -249,7 +263,7 @@ function onClick(e: MouseEvent): void {
       addBadge(el, state.selectedElements.length)
       if (state.selectedElements.length === 1) setCursor(settings.multiCursorEmoji)
     }
-    showFlash(`${state.selectedElements.length} selected — Enter to copy`)
+    showMessage(`${state.selectedElements.length} selected — Enter to copy`)
     return
   }
 
@@ -258,8 +272,8 @@ function onClick(e: MouseEvent): void {
   console.log('[web-md] captured element:', el.tagName, '— md length:', md.length)
 
   navigator.clipboard.writeText(md)
-    .then(() => { console.log('[web-md] clipboard write ok'); showFlash('📝 Copied') })
-    .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); showFlash('Error: ' + err.message) })
+    .then(() => { console.log('[web-md] clipboard write ok'); showMessage('📝 Copied') })
+    .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); showMessage('Error: ' + err.message) })
 
   deactivatePicker()
 }
@@ -275,13 +289,13 @@ function onKeyDown(e: KeyboardEvent): void {
     const md = state.selectedElements.map(el => convert(el.outerHTML)).join('\n')
     console.log('[web-md] committing', state.selectedElements.length, 'elements — md length:', md.length)
     navigator.clipboard.writeText(md)
-      .then(() => { console.log('[web-md] clipboard write ok'); showFlash('📝 Copied') })
-      .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); showFlash('Error: ' + err.message) })
+      .then(() => { console.log('[web-md] clipboard write ok'); showMessage('📝 Copied') })
+      .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); showMessage('Error: ' + err.message) })
     deactivatePicker()
   }
 }
 
-function showFlash(text: string): void {
+function showMessage(text: string): void {
   const el = document.createElement('div')
   el.className = CLASS_FLASH
   el.textContent = text
@@ -289,9 +303,10 @@ function showFlash(text: string): void {
   el.style.color = settings.flashFontColor
   el.style.animationDelay = `${settings.flashPause}ms`
   el.style.animationDuration = `${settings.flashDuration}ms`
-  el.style.position = 'fixed'
-  el.style.left = `${state.lastMousePos.x}px`
-  el.style.top = `${state.lastMousePos.y}px`
+  el.style.setProperty('--fall-dist', `${settings.flashFallDistance}px`)
+  const oy = cursorFontSize() / 2 + settings.cursorOffsetY
+  el.style.left = `${state.lastMousePos.x + settings.cursorOffsetX + cursorFontSize() / 2}px`
+  el.style.top  = `${state.lastMousePos.y - oy}px`
   document.documentElement.appendChild(el)
   setTimeout(() => el.remove(), settings.flashPause + settings.flashDuration)
 }

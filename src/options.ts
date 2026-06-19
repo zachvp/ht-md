@@ -14,6 +14,7 @@ const insetWidthInput = document.getElementById('insetWidth') as HTMLInputElemen
 const flashFontSizeInput = document.getElementById('flashFontSize') as HTMLInputElement
 const flashPauseInput = document.getElementById('flashPause') as HTMLInputElement
 const flashDurationInput = document.getElementById('flashDuration') as HTMLInputElement
+const flashFallDistanceInput = document.getElementById('flashFallDistance') as HTMLInputElement
 const flashFontColorInput = document.getElementById('flashFontColor') as HTMLInputElement
 const flashFontColorSwatch = document.getElementById('flashFontColorSwatch') as HTMLSpanElement
 const optionsFontSizeInput = document.getElementById('optionsFontSize') as HTMLInputElement
@@ -73,6 +74,28 @@ function wireColor(
   storageKey: string,
   onInput?: () => void,
 ): void {
+  const picker = document.createElement('input')
+  picker.type = 'color'
+  picker.style.cssText = 'position:absolute;width:0;height:0;opacity:0;pointer-events:none'
+  swatch.parentElement!.appendChild(picker)
+
+  swatch.style.cursor = 'pointer'
+  swatch.addEventListener('click', () => {
+    picker.value = input.value.startsWith('#') ? input.value.slice(0, 7) : '#000000'
+    picker.click()
+  })
+  picker.addEventListener('input', () => {
+    input.value = picker.value
+    syncSwatch(input, swatch)
+    onInput?.()
+  })
+  picker.addEventListener('change', () => {
+    input.value = picker.value
+    syncSwatch(input, swatch)
+    onInput?.()
+    chrome.storage.sync.set({ [storageKey]: input.value }).then(showSaved)
+  })
+
   input.addEventListener('input', () => { syncSwatch(input, swatch); onInput?.() })
   input.addEventListener('change', () => chrome.storage.sync.set({ [storageKey]: input.value }).then(showSaved))
 }
@@ -116,7 +139,7 @@ document.addEventListener('mouseup', () => {
 
 // Load
 chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, multiCursorEmoji, cursorSize, cursorOffsetX, cursorOffsetY, facingX, facingY,
-          outlineColor, outlineWidth, insetWidth, flashFontSize, flashFontColor, flashPause, flashDuration,
+          outlineColor, outlineWidth, insetWidth, flashFontSize, flashFontColor, flashPause, flashDuration, flashFallDistance,
           optionsFontSize, optionsFontColor, optionsBgColor }) => {
   checkbox.checked = includeSvg as boolean
   cursorEmojiBtn.textContent = cursorEmoji as string
@@ -132,6 +155,7 @@ chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, mult
   flashFontSizeInput.value = String(flashFontSize)
   flashPauseInput.value = String(flashPause)
   flashDurationInput.value = String(flashDuration)
+  flashFallDistanceInput.value = String(flashFallDistance)
   flashFontColorInput.value = flashFontColor as string
   syncSwatch(flashFontColorInput, flashFontColorSwatch)
   optionsFontSizeInput.value = String(optionsFontSize)
@@ -187,6 +211,10 @@ flashPauseInput.addEventListener('change', () => {
 
 flashDurationInput.addEventListener('change', () => {
   chrome.storage.sync.set({ flashDuration: Number(flashDurationInput.value) }).then(showSaved)
+})
+
+flashFallDistanceInput.addEventListener('change', () => {
+  chrome.storage.sync.set({ flashFallDistance: Number(flashFallDistanceInput.value) }).then(showSaved)
 })
 
 wireColor(flashFontColorInput, flashFontColorSwatch, 'flashFontColor')

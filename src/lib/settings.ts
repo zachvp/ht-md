@@ -10,6 +10,7 @@ export const SETTINGS_DEFAULTS = {
   flashFontColor: '#ffffff',
   flashPause: 400,
   flashDuration: 1500,
+  flashFallDistance: 80,
   cursorOffsetX: -6,
   cursorOffsetY: -6,
   facingX: 0,

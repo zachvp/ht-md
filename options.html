@@ -149,24 +149,20 @@
     }
     .plane-coords { opacity: 0.65; min-width: 3.5rem; }
 
+    .section {
+      background: rgba(0,0,0,0.06);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.75rem;
+    }
+
     #status { margin-top: 0.75rem; color: #47C0FF; min-height: 1em; }
   </style>
 </head>
 <body>
   <h1>web→md settings</h1>
 
-  <div class="setting">
-    <label class="checkbox">
-      <input type="checkbox" id="includeSvg">
-      Include SVG in output
-      <span class="info-wrap">
-        <span class="info-icon">ⓘ</span>
-        <span class="info-tip">When on, inline SVGs and SVG data URIs are included in the copied Markdown output.</span>
-      </span>
-    </label>
-  </div>
-
-  <div class="group">
+  <div class="section group">
     <span class="group-label">Cursor</span>
     <div class="group-row">
       <div class="field">pick <div class="emoji-pick-wrap"><button class="emoji-pick-btn" id="cursorEmojiBtn" type="button">📌</button></div></div>
@@ -185,7 +181,7 @@
     </div>
   </div>
 
-  <div class="group">
+  <div class="section group">
     <span class="group-label">Highlight</span>
     <div class="group-row">
       <div class="color-field">
@@ -197,12 +193,13 @@
     </div>
   </div>
 
-  <div class="group">
+  <div class="section group">
     <span class="group-label">Message</span>
     <div class="group-row">
       <div class="field">font <input type="number" id="flashFontSize" min="1" max="1024" step="1"><span class="unit">px</span></div>
       <div class="field">pause <input type="number" id="flashPause" min="0" max="5000" step="50"><span class="unit">ms</span></div>
       <div class="field">fall <input type="number" id="flashDuration" min="100" max="10000" step="100"><span class="unit">ms</span></div>
+      <div class="field">dist <input type="number" id="flashFallDistance" min="0" max="2000" step="10"><span class="unit">px</span></div>
       <div class="color-field">
         <span class="color-swatch" id="flashFontColorSwatch"></span>
         <input type="text" id="flashFontColor" class="color-text" placeholder="color">
@@ -210,7 +207,7 @@
     </div>
   </div>
 
-  <div class="group">
+  <div class="section group">
     <span class="group-label">Options</span>
     <div class="group-row">
       <div class="field">font <input type="number" id="optionsFontSize" min="1" max="1024" step="1"><span class="unit">px</span></div>
@@ -223,6 +220,17 @@
         <input type="text" id="optionsBgColor" class="color-text" placeholder="background">
       </div>
     </div>
+  </div>
+
+  <div class="section setting">
+    <label class="checkbox">
+      <input type="checkbox" id="includeSvg">
+      Include SVG in output
+      <span class="info-wrap">
+        <span class="info-icon">ⓘ</span>
+        <span class="info-tip">When on, inline SVGs and SVG data URIs are included in the copied Markdown output.</span>
+      </span>
+    </label>
   </div>
 
   <p id="status"></p>

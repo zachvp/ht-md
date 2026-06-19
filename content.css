@@ -33,6 +33,6 @@
 }
 
 @keyframes web-md-flash-fall {
-  0%   { transform: translateX(-50%) translateY(0);    opacity: 1; animation-timing-function: ease-in; }
-  100% { transform: translateX(-50%) translateY(80px); opacity: 0; }
+  0%   { transform: translateX(-50%) translateY(-50%);                              opacity: 1; animation-timing-function: ease-in; }
+  100% { transform: translateX(-50%) translateY(calc(-50% + var(--fall-dist, 80px))); opacity: 0; }
 }
