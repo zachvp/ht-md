@@ -13,7 +13,8 @@ const state = {
   outlineStyleEl: null as HTMLStyleElement | null,
   highlightOverlayEl: null as HTMLDivElement | null,
   cursorStyleEl: null as HTMLStyleElement | null,
-  cursorEl: null as HTMLDivElement | null,
+  cursorPosEl: null as HTMLDivElement | null,   // position wrapper (translate)
+  cursorEl: null as HTMLDivElement | null,      // content div (emoji + scale animation)
   cursorMoveHandler: null as ((e: MouseEvent) => void) | null,
 }
 
@@ -27,6 +28,7 @@ const settings = {
   cursorEmoji: '📌',
   multiCursorEmoji: '📝',
   flashFontSize: 13,
+  flashFontColor: '#ffffff',
   cursorOffsetX: -6,
   cursorOffsetY: -6,
 }
@@ -52,8 +54,8 @@ turndownStripped.addRule('stripSvgDataUri', {
 
 chrome.storage.sync.get({
   includeSvg: false, cursorSize: 32, outlineColor: '#ff9900', outlineWidth: 2, insetWidth: 2,
-  cursorEmoji: '📌', multiCursorEmoji: '📝', flashFontSize: 13, cursorOffsetX: -6, cursorOffsetY: -6,
-}).then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth, cursorEmoji, multiCursorEmoji, flashFontSize, cursorOffsetX, cursorOffsetY }) => {
+  cursorEmoji: '📌', multiCursorEmoji: '📝', flashFontSize: 13, flashFontColor: '#ffffff', cursorOffsetX: -6, cursorOffsetY: -6,
+}).then(({ includeSvg, cursorSize, outlineColor, outlineWidth, insetWidth, cursorEmoji, multiCursorEmoji, flashFontSize, flashFontColor, cursorOffsetX, cursorOffsetY }) => {
   settings.includeSvg = includeSvg as boolean
   settings.cursorSize = cursorSize as number
   settings.outlineColor = outlineColor as string
@@ -62,6 +64,7 @@ chrome.storage.sync.get({
   settings.cursorEmoji = cursorEmoji as string
   settings.multiCursorEmoji = multiCursorEmoji as string
   settings.flashFontSize = flashFontSize as number
+  settings.flashFontColor = flashFontColor as string
   settings.cursorOffsetX = cursorOffsetX as number
   settings.cursorOffsetY = cursorOffsetY as number
 })
@@ -75,6 +78,7 @@ chrome.storage.onChanged.addListener(changes => {
   if (changes.cursorEmoji) settings.cursorEmoji = changes.cursorEmoji.newValue
   if (changes.multiCursorEmoji) settings.multiCursorEmoji = changes.multiCursorEmoji.newValue
   if (changes.flashFontSize) settings.flashFontSize = changes.flashFontSize.newValue
+  if (changes.flashFontColor) settings.flashFontColor = changes.flashFontColor.newValue
   if (changes.cursorOffsetX) settings.cursorOffsetX = changes.cursorOffsetX.newValue
   if (changes.cursorOffsetY) settings.cursorOffsetY = changes.cursorOffsetY.newValue
   if (state.pickerActive && (changes.outlineColor || changes.outlineWidth || changes.insetWidth)) {
@@ -148,28 +152,51 @@ function setCursor(emoji: string): void {
     state.cursorStyleEl.textContent = '* { cursor: none !important; }'
     document.head.appendChild(state.cursorStyleEl)
   }
-  if (!state.cursorEl) {
-    const el = document.createElement('div')
-    el.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;user-select:none;line-height:1;'
-    document.body.appendChild(el)
-    state.cursorEl = el
+  if (!state.cursorPosEl) {
+    // Outer div: handles translate position only
+    const pos = document.createElement('div')
+    const initOy = Math.round(settings.cursorSize * 0.875) + settings.cursorOffsetY
+    const sz = settings.cursorSize
+    const initX = Math.max(0, Math.min(window.innerWidth - sz, state.lastMousePos.x + settings.cursorOffsetX))
+    const initY = Math.max(0, Math.min(window.innerHeight - sz, state.lastMousePos.y - initOy))
+    pos.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;'
+    pos.style.transform = `translate(${initX}px,${initY}px)`
+
+    // Inner div: emoji content + scale-up animation
+    const inner = document.createElement('div')
+    inner.style.cssText = 'display:inline-block;user-select:none;line-height:1;transform:scale(0);'
+    pos.appendChild(inner)
+    document.body.appendChild(pos)
+    state.cursorPosEl = pos
+    state.cursorEl = inner
+
+    // Animate scale 0 → 1 with a spring overshoot
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (inner.isConnected) {
+        inner.style.transition = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)'
+        inner.style.transform = 'scale(1)'
+      }
+    }))
+
     state.cursorMoveHandler = (e: MouseEvent) => {
       const oy = Math.round(settings.cursorSize * 0.875) + settings.cursorOffsetY
-      state.cursorEl!.style.transform = `translate(${e.clientX + settings.cursorOffsetX}px,${e.clientY - oy}px)`
+      const sz = settings.cursorSize
+      const x = Math.max(0, Math.min(window.innerWidth - sz, e.clientX + settings.cursorOffsetX))
+      const y = Math.max(0, Math.min(window.innerHeight - sz, e.clientY - oy))
+      state.cursorPosEl!.style.transform = `translate(${x}px,${y}px)`
     }
-    const initOy = Math.round(settings.cursorSize * 0.875) + settings.cursorOffsetY
-    el.style.transform = `translate(${state.lastMousePos.x + settings.cursorOffsetX}px,${state.lastMousePos.y - initOy}px)`
     document.addEventListener('mousemove', state.cursorMoveHandler)
   }
   const fs = Math.round(settings.cursorSize * 0.875)
-  state.cursorEl.textContent = emoji
-  state.cursorEl.style.fontSize = `${fs}px`
+  state.cursorEl!.textContent = emoji
+  state.cursorEl!.style.fontSize = `${fs}px`
 }
 
 function clearCursor(): void {
   state.cursorStyleEl?.remove()
   state.cursorStyleEl = null
-  state.cursorEl?.remove()
+  state.cursorPosEl?.remove()
+  state.cursorPosEl = null
   state.cursorEl = null
   if (state.cursorMoveHandler) {
     document.removeEventListener('mousemove', state.cursorMoveHandler)
@@ -312,6 +339,7 @@ function showFlash(text: string, x: number, y: number, horizontal = false): void
   el.style.left = '0'
   el.style.top = '0'
   el.style.fontSize = `${settings.flashFontSize}px`
+  el.style.color = settings.flashFontColor
   document.body.appendChild(el)
 
   const pad = 8

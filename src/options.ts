@@ -10,6 +10,8 @@ const outlineColorSwatch = document.getElementById('outlineColorSwatch') as HTML
 const outlineWidthInput = document.getElementById('outlineWidth') as HTMLInputElement
 const insetWidthInput = document.getElementById('insetWidth') as HTMLInputElement
 const flashFontSizeInput = document.getElementById('flashFontSize') as HTMLInputElement
+const flashFontColorInput = document.getElementById('flashFontColor') as HTMLInputElement
+const flashFontColorSwatch = document.getElementById('flashFontColorSwatch') as HTMLSpanElement
 const optionsFontSizeInput = document.getElementById('optionsFontSize') as HTMLInputElement
 const optionsFontColorInput = document.getElementById('optionsFontColor') as HTMLInputElement
 const optionsFontColorSwatch = document.getElementById('optionsFontColorSwatch') as HTMLSpanElement
@@ -75,11 +77,12 @@ chrome.storage.sync.get({
   outlineWidth: 2,
   insetWidth: 2,
   flashFontSize: 13,
+  flashFontColor: '#ffffff',
   optionsFontSize: 14,
   optionsFontColor: '#000000',
   optionsBgColor: '#ffffff',
 }).then(({ includeSvg, cursorEmoji, multiCursorEmoji, cursorSize, cursorOffsetX, cursorOffsetY,
-          outlineColor, outlineWidth, insetWidth, flashFontSize,
+          outlineColor, outlineWidth, insetWidth, flashFontSize, flashFontColor,
           optionsFontSize, optionsFontColor, optionsBgColor }) => {
   checkbox.checked = includeSvg as boolean
   cursorEmojiInput.value = cursorEmoji as string
@@ -91,6 +94,8 @@ chrome.storage.sync.get({
   outlineWidthInput.value = String(outlineWidth)
   insetWidthInput.value = String(insetWidth)
   flashFontSizeInput.value = String(flashFontSize)
+  flashFontColorInput.value = flashFontColor as string
+  syncSwatch(flashFontColorInput, flashFontColorSwatch)
   optionsFontSizeInput.value = String(optionsFontSize)
   optionsFontColorInput.value = optionsFontColor as string
   syncSwatch(optionsFontColorInput, optionsFontColorSwatch)
@@ -107,10 +112,12 @@ checkbox.addEventListener('change', () => {
 })
 
 cursorEmojiInput.addEventListener('change', () => {
+  if (!cursorEmojiInput.value) cursorEmojiInput.value = '📌'
   chrome.storage.sync.set({ cursorEmoji: cursorEmojiInput.value }).then(showSaved)
 })
 
 multiCursorEmojiInput.addEventListener('change', () => {
+  if (!multiCursorEmojiInput.value) multiCursorEmojiInput.value = '📝'
   chrome.storage.sync.set({ multiCursorEmoji: multiCursorEmojiInput.value }).then(showSaved)
 })
 
@@ -133,6 +140,11 @@ insetWidthInput.addEventListener('change', () => {
 
 flashFontSizeInput.addEventListener('change', () => {
   chrome.storage.sync.set({ flashFontSize: Number(flashFontSizeInput.value) }).then(showSaved)
+})
+
+flashFontColorInput.addEventListener('input', () => syncSwatch(flashFontColorInput, flashFontColorSwatch))
+flashFontColorInput.addEventListener('change', () => {
+  chrome.storage.sync.set({ flashFontColor: flashFontColorInput.value }).then(showSaved)
 })
 
 optionsFontSizeInput.addEventListener('input', () => {

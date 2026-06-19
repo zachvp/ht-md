@@ -145,7 +145,7 @@
       Include SVG in output
       <span class="info-wrap">
         <span class="info-icon">ⓘ</span>
-        <span class="info-tip">When off, inline SVGs and SVG data URIs are replaced with [SVG image].</span>
+        <span class="info-tip">When on, inline SVGs and SVG data URIs are included in the copied Markdown output.</span>
       </span>
     </label>
   </div>
@@ -153,8 +153,8 @@
   <div class="group">
     <span class="group-label">Cursor</span>
     <div class="group-row">
-      <div class="field">pick <input type="text" id="cursorEmoji" class="emoji-input" maxlength="2" placeholder="📌"></div>
-      <div class="field">multi <input type="text" id="multiCursorEmoji" class="emoji-input" maxlength="2" placeholder="📝"></div>
+      <div class="field">pick <input type="text" id="cursorEmoji" class="emoji-input" maxlength="2"></div>
+      <div class="field">multi <input type="text" id="multiCursorEmoji" class="emoji-input" maxlength="2"></div>
       <div class="field">size <input type="number" id="cursorSize" min="16" max="1024" step="4"><span class="unit">px</span></div>
       <div class="field plane-wrap">
         offset
@@ -184,6 +184,10 @@
     <span class="group-label">Message</span>
     <div class="group-row">
       <div class="field">font <input type="number" id="flashFontSize" min="1" max="1024" step="1"><span class="unit">px</span></div>
+      <div class="color-field">
+        <span class="color-swatch" id="flashFontColorSwatch"></span>
+        <input type="text" id="flashFontColor" class="color-text" placeholder="color">
+      </div>
     </div>
   </div>
 
