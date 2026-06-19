@@ -11,7 +11,10 @@ const state = {
   selectedSet: new Set<Element>(),
   badgeEls: [] as HTMLDivElement[],
   outlineStyleEl: null as HTMLStyleElement | null,
+  highlightOverlayEl: null as HTMLDivElement | null,
   cursorStyleEl: null as HTMLStyleElement | null,
+  cursorEl: null as HTMLDivElement | null,
+  cursorMoveHandler: null as ((e: MouseEvent) => void) | null,
 }
 
 // User-configurable settings, kept in sync with chrome.storage.sync
@@ -90,13 +93,7 @@ function applyOutlineStyles(): void {
     state.outlineStyleEl.className = 'darkreader darkreader--sync'
     document.head.appendChild(state.outlineStyleEl)
   }
-  const highlightRgba = hexToRgba(settings.outlineColor, 0.35)
   state.outlineStyleEl.textContent = `
-    .web-md-highlight {
-      outline: ${settings.outlineWidth}px solid ${settings.outlineColor} !important;
-      outline-offset: 1px !important;
-      box-shadow: inset 0 0 0 ${settings.insetWidth}px ${highlightRgba} !important;
-    }
     .web-md-selected {
       outline: ${settings.outlineWidth}px solid #3399ff !important;
       outline-offset: 1px !important;
@@ -110,33 +107,62 @@ function clearOutlineStyles(): void {
   state.outlineStyleEl = null
 }
 
-function buildCursor(emoji: string, size = 32): string {
-  const canvas = document.createElement('canvas')
-  canvas.width = size
-  canvas.height = size
-  const ctx = canvas.getContext('2d')!
-  ctx.font = `${size * 0.85}px serif`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(emoji, size / 2, size / 2)
-  return canvas.toDataURL()
+function positionHighlight(el: Element): void {
+  if (!state.highlightOverlayEl) {
+    const div = document.createElement('div')
+    div.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483646;box-sizing:border-box;'
+    document.body.appendChild(div)
+    state.highlightOverlayEl = div
+  }
+  const r = el.getBoundingClientRect()
+  const ov = state.highlightOverlayEl
+  const highlightRgba = hexToRgba(settings.outlineColor, 0.35)
+  ov.style.top = `${r.top}px`
+  ov.style.left = `${r.left}px`
+  ov.style.width = `${r.width}px`
+  ov.style.height = `${r.height}px`
+  ov.style.outline = `${settings.outlineWidth}px solid ${settings.outlineColor}`
+  ov.style.outlineOffset = '1px'
+  ov.style.boxShadow = `inset 0 0 0 ${settings.insetWidth}px ${highlightRgba}`
+  ov.style.display = 'block'
+}
+
+function clearHighlight(): void {
+  if (state.highlightOverlayEl) state.highlightOverlayEl.style.display = 'none'
 }
 
 function setCursor(emoji: string): void {
   if (!state.cursorStyleEl) {
     state.cursorStyleEl = document.createElement('style')
     state.cursorStyleEl.className = 'darkreader darkreader--sync'
+    state.cursorStyleEl.textContent = '* { cursor: none !important; }'
     document.head.appendChild(state.cursorStyleEl)
   }
-  const url = buildCursor(emoji, settings.cursorSize)
-  const hx = Math.round(settings.cursorSize * 0.2)
-  const hy = Math.round(settings.cursorSize * 0.85)
-  state.cursorStyleEl.textContent = `* { cursor: url(${url}) ${hx} ${hy}, auto !important; }`
+  if (!state.cursorEl) {
+    const el = document.createElement('div')
+    el.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483647;user-select:none;line-height:1;'
+    el.style.transform = `translate(${state.lastMousePos.x}px,${state.lastMousePos.y}px)`
+    document.body.appendChild(el)
+    state.cursorEl = el
+    state.cursorMoveHandler = (e: MouseEvent) => {
+      state.cursorEl!.style.transform = `translate(${e.clientX}px,${e.clientY}px)`
+    }
+    document.addEventListener('mousemove', state.cursorMoveHandler)
+  }
+  const fs = Math.round(settings.cursorSize * 0.875)
+  state.cursorEl.textContent = emoji
+  state.cursorEl.style.fontSize = `${fs}px`
 }
 
 function clearCursor(): void {
   state.cursorStyleEl?.remove()
   state.cursorStyleEl = null
+  state.cursorEl?.remove()
+  state.cursorEl = null
+  if (state.cursorMoveHandler) {
+    document.removeEventListener('mousemove', state.cursorMoveHandler)
+    state.cursorMoveHandler = null
+  }
 }
 
 function addBadge(el: Element, index: number): void {
@@ -194,7 +220,8 @@ function deactivatePicker(): void {
   clearOutlineStyles()
   clearCursor()
 
-  state.lastHighlighted?.classList.remove('web-md-highlight')
+  state.highlightOverlayEl?.remove()
+  state.highlightOverlayEl = null
   state.lastHighlighted = null
 
   for (const el of state.selectedElements) el.classList.remove('web-md-selected')
@@ -209,11 +236,14 @@ function deactivatePicker(): void {
 
 function onMouseOver(e: MouseEvent): void {
   state.lastMousePos = { x: e.clientX, y: e.clientY }
-  state.lastHighlighted?.classList.remove('web-md-highlight')
   const target = e.target as Element
-  if (target === document.body || target === document.documentElement) return
+  if (target === document.body || target === document.documentElement) {
+    clearHighlight()
+    state.lastHighlighted = null
+    return
+  }
   state.lastHighlighted = target
-  state.lastHighlighted.classList.add('web-md-highlight')
+  positionHighlight(target)
 }
 
 function onClick(e: MouseEvent): void {

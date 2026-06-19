@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "web->md",
-  "version": "6.19.26.3",
+  "version": "6.19.26.4",
   "description": "Pick any element, copy it as Markdown",
   "permissions": ["activeTab", "tabs", "storage"],
   "options_ui": {
