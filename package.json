@@ -11,6 +11,7 @@
     "build:all": "node scripts/build.js all",
     "build": "node scripts/build.js all",
     "sign:firefox": "npm run build:firefox && node scripts/sign-firefox.js",
+    "publish:firefox": "npm run build:firefox && node scripts/publish-firefox.js",
     "typecheck": "tsc --noEmit",
     "gen-icons": "python3 scripts/gen-icons.py",
     "watch": "node scripts/watch.js"
