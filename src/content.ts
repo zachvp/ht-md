@@ -310,6 +310,7 @@ function onKeyDown(e: KeyboardEvent): void {
   if (e.key === 'Escape') {
     e.preventDefault()
     e.stopImmediatePropagation()
+    showMessage('Canceled')
     deactivatePicker()
   } else if ((e.key === 'Backspace' || e.key === 'Delete' || e.key === 'ArrowLeft') && state.selectedElements.length > 0) {
     e.preventDefault()

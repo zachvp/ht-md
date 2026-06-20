@@ -36,7 +36,7 @@
     .group-label { display: block; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.55; margin-bottom: 0.45rem; }
     .group-row { display: flex; align-items: flex-end; gap: 0.75rem; flex-wrap: wrap; }
 
-    .field { display: flex; align-items: baseline; gap: 0.3rem; }
+    .field { display: flex; align-items: flex-end; gap: 0.3rem; }
     .unit { opacity: 0.65; }
 
     /* Number inputs — hide native spinners */
@@ -87,7 +87,6 @@
       border-radius: 2px;
       flex-shrink: 0;
       display: inline-block;
-      align-self: center;
     }
     input.color-text {
       width: 8rem;
@@ -101,7 +100,7 @@
     }
 
     /* Emoji picker button + panel */
-    .emoji-pick-wrap { position: relative; display: inline-block; align-self: center; }
+    .emoji-pick-wrap { position: relative; display: inline-block; }
     .emoji-pick-btn {
       all: unset;
       font-size: 1.4em;
@@ -129,7 +128,7 @@
     }
 
     /* 2D offset plane */
-    .plane-wrap { display: flex; align-items: center; gap: 0.4rem; }
+    .plane-wrap { display: flex; align-items: flex-end; gap: 0.4rem; }
     .plane {
       position: relative; width: 72px; height: 72px;
       border: 1px solid currentColor;
