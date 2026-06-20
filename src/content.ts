@@ -6,11 +6,13 @@ console.log('[web-md] content script loaded')
 // All runtime picker state in one place
 const state = {
   pickerActive: false,
-  lastHighlighted: null as Element | null,
+  // --- pure data: persists across activate/deactivate ---
   lastMousePos: { x: 0, y: 0 },
   selectedElements: [] as Element[],
   selectedSet: new Set<Element>(),
   selectionRedoStack: [] as Element[],
+  // --- DOM refs: always null when picker is inactive ---
+  lastHighlighted: null as Element | null,
   badgeEls: [] as HTMLDivElement[],
   outlineStyleEl: null as HTMLStyleElement | null,
   highlightOverlayEl: null as HTMLDivElement | null,
@@ -216,7 +218,7 @@ function activatePicker(): void {
   }
 }
 
-function deactivatePicker(): void {
+function deactivatePicker(message?: string): void {
   if (!state.pickerActive) return
   state.pickerActive = false
   console.log('[web-md] picker deactivated')
@@ -242,6 +244,8 @@ function deactivatePicker(): void {
   document.removeEventListener('mouseover', onMouseOver)
   document.removeEventListener('click', onClick, true)
   document.removeEventListener('keydown', onKeyDown, true)
+
+  if (message) showMessage(message)
 }
 
 function onMouseOver(e: MouseEvent): void {
@@ -285,10 +289,8 @@ function onClick(e: MouseEvent): void {
   console.log('[web-md] captured element:', el.tagName, '— md length:', md.length)
 
   navigator.clipboard.writeText(md)
-    .then(() => { console.log('[web-md] clipboard write ok'); showMessage('📝 Copied') })
-    .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); showMessage('Error: ' + err.message) })
-
-  deactivatePicker()
+    .then(() => { console.log('[web-md] clipboard write ok'); deactivatePicker('📝 Copied') })
+    .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); deactivatePicker('Error: ' + err.message) })
 }
 
 function undoSelection(): void {
@@ -319,8 +321,7 @@ function onKeyDown(e: KeyboardEvent): void {
   if (e.key === 'Escape') {
     e.preventDefault()
     e.stopImmediatePropagation()
-    deactivatePicker()
-    showMessage('Canceled')
+    deactivatePicker('Canceled')
   } else if ((e.key === 'Backspace' || e.key === 'Delete' || e.key === 'ArrowLeft') && state.selectedElements.length > 0) {
     e.preventDefault()
     e.stopImmediatePropagation()
@@ -335,9 +336,8 @@ function onKeyDown(e: KeyboardEvent): void {
     const md = state.selectedElements.map(el => convert(el.outerHTML)).join('\n')
     console.log('[web-md] committing', state.selectedElements.length, 'elements — md length:', md.length)
     navigator.clipboard.writeText(md)
-      .then(() => { console.log('[web-md] clipboard write ok'); showMessage('📝 Copied') })
-      .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); showMessage('Error: ' + err.message) })
-    deactivatePicker()
+      .then(() => { console.log('[web-md] clipboard write ok'); deactivatePicker('📝 Copied') })
+      .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); deactivatePicker('Error: ' + err.message) })
   }
 }
 
@@ -350,24 +350,18 @@ function showMessage(text: string): void {
   el.style.background = settings.flashBgColor
   el.style.animationDuration = `${settings.flashDuration}ms`
   el.style.setProperty('--fall-dist', `${settings.flashFallDistance}px`)
-  // During the pause: child of cursorEl, centered on cursor via transform, no animation yet.
-  el.style.position = 'absolute'
-  el.style.left = '0'
-  el.style.top = '0'
+  el.style.position = 'fixed'
+  el.style.left = `${state.lastMousePos.x}px`
+  el.style.top = `${state.lastMousePos.y}px`
   el.style.transform = 'translate(-50%, -50%)'
   el.style.animationName = 'none'
-  ;(state.cursorEl ?? document.documentElement).appendChild(el)
+  document.documentElement.appendChild(el)
 
   setTimeout(() => {
-    // Snapshot actual visual bounds (transform is applied, so r = real viewport rect).
     const r = el.getBoundingClientRect()
     const hw = r.width / 2, hh = r.height / 2
-    // Clamp center to viewport, then set as fixed anchor for the animation's translateX/Y(-50%).
     const cx = Math.max(hw, Math.min(window.innerWidth  - hw, r.left + hw))
     const cy = Math.max(hh, Math.min(window.innerHeight - hh, r.top  + hh))
-    el.remove()
-    document.documentElement.appendChild(el)
-    el.style.position = 'fixed'
     el.style.left = `${cx}px`
     el.style.top  = `${cy}px`
     el.style.transform = ''
