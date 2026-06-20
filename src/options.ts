@@ -2,8 +2,6 @@ const checkbox = document.getElementById('includeSvg') as HTMLInputElement
 const cursorEmojiBtn = document.getElementById('cursorEmojiBtn') as HTMLButtonElement
 const multiCursorEmojiBtn = document.getElementById('multiCursorEmojiBtn') as HTMLButtonElement
 const cursorSizeInput = document.getElementById('cursorSize') as HTMLInputElement
-const facingXInput = document.getElementById('facingX') as HTMLInputElement
-const facingYInput = document.getElementById('facingY') as HTMLInputElement
 const offsetPlane = document.getElementById('offsetPlane') as HTMLDivElement
 const offsetDot = document.getElementById('offsetDot') as HTMLDivElement
 const offsetCoords = document.getElementById('offsetCoords') as HTMLSpanElement
@@ -195,7 +193,7 @@ document.addEventListener('mouseup', () => {
 })
 
 // Load
-chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, multiCursorEmoji, cursorSize, cursorOffsetX, cursorOffsetY, facingX, facingY,
+chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, multiCursorEmoji, cursorSize, cursorOffsetX, cursorOffsetY,
           outlineColor, outlineWidth, insetWidth, flashFontSize, flashFontColor, flashBgColor, flashPause, flashDuration, flashFallDistance,
           badgeBgColor, badgeFontColor, badgeFontSize,
           optionsFontSize, optionsFontColor, optionsBgColor, sectionBgColor, offsetMax, savedFlashDuration: sfd }) => {
@@ -205,8 +203,6 @@ chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, mult
   multiCursorEmojiBtn.textContent = multiCursorEmoji as string
   cursorSizeInput.value = String(cursorSize)
   moveDot(cursorOffsetX as number, cursorOffsetY as number)
-  facingXInput.value = String(facingX)
-  facingYInput.value = String(facingY)
   outlineColorInput.value = outlineColor as string
   syncSwatch(outlineColorInput, outlineColorSwatch)
   outlineWidthInput.value = String(outlineWidth)
@@ -259,13 +255,6 @@ makeEmojiPicker(multiCursorEmojiBtn, em => {
 
 cursorSizeInput.addEventListener('change', () => {
   chrome.storage.sync.set({ cursorSize: Number(cursorSizeInput.value) }).then(showSaved)
-})
-
-facingXInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ facingX: Number(facingXInput.value) }).then(showSaved)
-})
-facingYInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ facingY: Number(facingYInput.value) }).then(showSaved)
 })
 
 wireColor(badgeBgColorInput, badgeBgColorSwatch, 'badgeBgColor')

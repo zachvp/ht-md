@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "web->md",
+  "name": "htmd",
   "version": "6.19.26.6",
-  "description": "Pick any element, copy it as Markdown",
+  "description": "Pick any combination of elements, copy it as Markdown",
   "permissions": ["activeTab", "tabs", "storage", "scripting"],
   "options_ui": {
     "page": "options.html",
