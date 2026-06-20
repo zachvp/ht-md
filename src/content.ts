@@ -284,6 +284,19 @@ function onKeyDown(e: KeyboardEvent): void {
     e.preventDefault()
     e.stopImmediatePropagation()
     deactivatePicker()
+  } else if ((e.key === 'Backspace' || e.key === 'Delete') && state.selectedElements.length > 0) {
+    e.preventDefault()
+    e.stopImmediatePropagation()
+    const removed = state.selectedElements.pop()!
+    state.selectedSet.delete(removed)
+    removed.classList.remove(CLASS_SELECTED)
+    state.badgeEls.pop()?.remove()
+    if (state.selectedElements.length === 0) {
+      setCursor(settings.cursorEmoji)
+      showMessage('Selection cleared')
+    } else {
+      showMessage(`${state.selectedElements.length} selected — Enter to copy`)
+    }
   } else if (e.key === 'Enter' && state.selectedElements.length > 0) {
     e.preventDefault()
     e.stopImmediatePropagation()
