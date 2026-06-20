@@ -42,11 +42,15 @@ import 'emoji-picker-element'
 import { SETTINGS_DEFAULTS } from './lib/settings'
 
 function hexToRgb(hex: string): [number, number, number] | null {
-  const m = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i)
+  const m = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i)
   if (m) return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)]
   const s = hex.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i)
   if (s) return [parseInt(s[1] + s[1], 16), parseInt(s[2] + s[2], 16), parseInt(s[3] + s[3], 16)]
   return null
+}
+
+function getAlphaSuffix(hex: string): string {
+  return /^#[0-9a-f]{8}$/i.test(hex) ? hex.slice(7) : ''
 }
 
 function withAlpha(color: string, alpha: number): string {
@@ -139,12 +143,12 @@ function wireColor(
     picker.click()
   })
   picker.addEventListener('input', () => {
-    input.value = picker.value
+    input.value = picker.value + getAlphaSuffix(input.value)
     syncSwatch(input, swatch)
     onInput?.()
   })
   picker.addEventListener('change', () => {
-    input.value = picker.value
+    input.value = picker.value + getAlphaSuffix(input.value)
     syncSwatch(input, swatch)
     onInput?.()
     chrome.storage.sync.set({ [storageKey]: input.value }).then(showSaved)
@@ -213,6 +217,8 @@ chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, mult
   flashFallDistanceInput.value = String(flashFallDistance)
   flashFontColorInput.value = flashFontColor as string
   syncSwatch(flashFontColorInput, flashFontColorSwatch)
+  flashBgColorInput.value = flashBgColor as string
+  syncSwatch(flashBgColorInput, flashBgColorSwatch)
   badgeBgColorInput.value = badgeBgColor as string
   syncSwatch(badgeBgColorInput, badgeBgColorSwatch)
   badgeFontColorInput.value = badgeFontColor as string
@@ -290,6 +296,7 @@ flashFallDistanceInput.addEventListener('change', () => {
 })
 
 wireColor(flashFontColorInput, flashFontColorSwatch, 'flashFontColor')
+wireColor(flashBgColorInput, flashBgColorSwatch, 'flashBgColor')
 
 optionsFontSizeInput.addEventListener('input', () => {
   document.body.style.fontSize = `${optionsFontSizeInput.value}px`

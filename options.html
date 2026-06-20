@@ -80,13 +80,15 @@
     .num-btn:hover { background: var(--ui-overlay-md, rgba(0,0,0,0.12)); opacity: 1; }
     .num-btn:active { background: var(--ui-overlay-lg, rgba(0,0,0,0.22)); }
 
-    /* Color field: swatch + text input */
-    .color-swatch {
-      width: 1.2em; height: 1.2em;
+    /* Color field: hex input + band swatch */
+    .color-band {
+      width: 8rem;
+      height: 0.65rem;
       border: 1px solid currentColor;
       border-radius: 2px;
+      display: block;
+      cursor: pointer;
       flex-shrink: 0;
-      display: inline-block;
     }
     input.color-text {
       width: 8rem;
@@ -97,6 +99,7 @@
       padding: 0.15rem 0.3rem;
       background: var(--ui-overlay-sm, rgba(0,0,0,0.08));
       color: inherit;
+      box-sizing: border-box;
     }
 
     /* Emoji picker button + panel */
@@ -217,25 +220,50 @@
   <div class="section group">
     <span class="group-label">Highlight</span>
     <div class="group-row">
-      <div class="field">
-        <span class="color-swatch" id="outlineColorSwatch"></span>
-        <input type="text" id="outlineColor" class="color-text" placeholder="#rrggbb or rgba(...)">
+      <div class="field-stack">
+        <input type="text" id="outlineColor" class="color-text" placeholder="#rrggbbaa">
+        <span class="color-band" id="outlineColorSwatch"></span>
+        <span class="field-label">outline color</span>
       </div>
-      <div class="field">outer <input type="number" id="outlineWidth" min="1" max="1024" step="1"><span class="unit">px</span></div>
-      <div class="field">inner <input type="number" id="insetWidth" min="0" max="1024" step="1"><span class="unit">px</span></div>
+      <div class="field-stack">
+        <input type="number" id="outlineWidth" min="1" max="1024" step="1">
+        <span class="field-label">outer (px)</span>
+      </div>
+      <div class="field-stack">
+        <input type="number" id="insetWidth" min="0" max="1024" step="1">
+        <span class="field-label">inner (px)</span>
+      </div>
     </div>
   </div>
 
   <div class="section group">
     <span class="group-label">Message</span>
     <div class="group-row">
-      <div class="field">font <input type="number" id="flashFontSize" min="1" max="1024" step="1"><span class="unit">px</span></div>
-      <div class="field">pause <input type="number" id="flashPause" min="0" max="5000" step="50"><span class="unit">ms</span></div>
-      <div class="field">fall <input type="number" id="flashDuration" min="100" max="10000" step="100"><span class="unit">ms</span></div>
-      <div class="field">dist <input type="number" id="flashFallDistance" min="0" max="2000" step="10"><span class="unit">px</span></div>
-      <div class="field">
-        <span class="color-swatch" id="flashFontColorSwatch"></span>
-        <input type="text" id="flashFontColor" class="color-text" placeholder="color">
+      <div class="field-stack">
+        <input type="number" id="flashFontSize" min="1" max="1024" step="1">
+        <span class="field-label">font (px)</span>
+      </div>
+      <div class="field-stack">
+        <input type="number" id="flashPause" min="0" max="5000" step="50">
+        <span class="field-label">pause (ms)</span>
+      </div>
+      <div class="field-stack">
+        <input type="number" id="flashDuration" min="100" max="10000" step="100">
+        <span class="field-label">fall (ms)</span>
+      </div>
+      <div class="field-stack">
+        <input type="number" id="flashFallDistance" min="0" max="2000" step="10">
+        <span class="field-label">dist (px)</span>
+      </div>
+      <div class="field-stack">
+        <input type="text" id="flashFontColor" class="color-text" placeholder="#rrggbbaa">
+        <span class="color-band" id="flashFontColorSwatch"></span>
+        <span class="field-label">font color</span>
+      </div>
+      <div class="field-stack">
+        <input type="text" id="flashBgColor" class="color-text" placeholder="#rrggbbaa">
+        <span class="color-band" id="flashBgColorSwatch"></span>
+        <span class="field-label">bg color</span>
       </div>
     </div>
   </div>
@@ -243,18 +271,24 @@
   <div class="section group">
     <span class="group-label">Options</span>
     <div class="group-row">
-      <div class="field">font <input type="number" id="optionsFontSize" min="1" max="1024" step="1"><span class="unit">px</span></div>
-      <div class="field">font color
-        <span class="color-swatch" id="optionsFontColorSwatch"></span>
-        <input type="text" id="optionsFontColor" class="color-text" placeholder="font color">
+      <div class="field-stack">
+        <input type="number" id="optionsFontSize" min="1" max="1024" step="1">
+        <span class="field-label">font (px)</span>
       </div>
-      <div class="field">bg
-        <span class="color-swatch" id="optionsBgColorSwatch"></span>
-        <input type="text" id="optionsBgColor" class="color-text" placeholder="background">
+      <div class="field-stack">
+        <input type="text" id="optionsFontColor" class="color-text" placeholder="#rrggbbaa">
+        <span class="color-band" id="optionsFontColorSwatch"></span>
+        <span class="field-label">font color</span>
       </div>
-      <div class="field">section
-        <span class="color-swatch" id="sectionBgColorSwatch"></span>
-        <input type="text" id="sectionBgColor" class="color-text" placeholder="section">
+      <div class="field-stack">
+        <input type="text" id="optionsBgColor" class="color-text" placeholder="#rrggbbaa">
+        <span class="color-band" id="optionsBgColorSwatch"></span>
+        <span class="field-label">bg color</span>
+      </div>
+      <div class="field-stack">
+        <input type="text" id="sectionBgColor" class="color-text" placeholder="#rrggbbaa">
+        <span class="color-band" id="sectionBgColorSwatch"></span>
+        <span class="field-label">section bg</span>
       </div>
     </div>
   </div>
@@ -262,23 +296,34 @@
   <div class="section group">
     <span class="group-label">Badge</span>
     <div class="group-row">
-      <div class="field">bg
-        <span class="color-swatch" id="badgeBgColorSwatch"></span>
-        <input type="text" id="badgeBgColor" class="color-text" placeholder="color">
+      <div class="field-stack">
+        <input type="text" id="badgeBgColor" class="color-text" placeholder="#rrggbbaa">
+        <span class="color-band" id="badgeBgColorSwatch"></span>
+        <span class="field-label">bg color</span>
       </div>
-      <div class="field">font color
-        <span class="color-swatch" id="badgeFontColorSwatch"></span>
-        <input type="text" id="badgeFontColor" class="color-text" placeholder="color">
+      <div class="field-stack">
+        <input type="text" id="badgeFontColor" class="color-text" placeholder="#rrggbbaa">
+        <span class="color-band" id="badgeFontColorSwatch"></span>
+        <span class="field-label">font color</span>
       </div>
-      <div class="field">font <input type="number" id="badgeFontSize" min="8" max="64" step="1"><span class="unit">px</span></div>
+      <div class="field-stack">
+        <input type="number" id="badgeFontSize" min="8" max="64" step="1">
+        <span class="field-label">font (px)</span>
+      </div>
     </div>
   </div>
 
   <details class="section">
     <summary style="cursor:pointer;opacity:0.65;letter-spacing:0.08em;text-transform:uppercase;">Advanced</summary>
     <div class="group-row" style="margin-top:0.65rem;">
-      <div class="field">offset range <input type="number" id="offsetMax" min="1" max="1000" step="1"><span class="unit">±</span></div>
-      <div class="field">saved flash <input type="number" id="savedFlashDuration" min="100" max="10000" step="100"><span class="unit">ms</span></div>
+      <div class="field-stack">
+        <input type="number" id="offsetMax" min="1" max="1000" step="1">
+        <span class="field-label">offset max (±)</span>
+      </div>
+      <div class="field-stack">
+        <input type="number" id="savedFlashDuration" min="100" max="10000" step="100">
+        <span class="field-label">saved flash (ms)</span>
+      </div>
       <div class="section setting">
         <label class="checkbox">
           <input type="checkbox" id="includeSvg">

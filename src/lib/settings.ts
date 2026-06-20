@@ -11,7 +11,7 @@ export const SETTINGS_DEFAULTS = {
   badgeFontSize: 13,
   flashFontSize: 20,
   flashFontColor: '#ffffff',
-  flashBgColor: 'rgba(0,0,0,0.8)',
+  flashBgColor: '#000000cc',
   flashPause: 0,
   flashDuration: 2000,
   flashFallDistance: 450,
