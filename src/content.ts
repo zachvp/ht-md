@@ -10,6 +10,7 @@ const state = {
   lastMousePos: { x: 0, y: 0 },
   selectedElements: [] as Element[],
   selectedSet: new Set<Element>(),
+  selectionRedoStack: [] as Element[],
   badgeEls: [] as HTMLDivElement[],
   outlineStyleEl: null as HTMLStyleElement | null,
   highlightOverlayEl: null as HTMLDivElement | null,
@@ -226,6 +227,7 @@ function deactivatePicker(): void {
   for (const el of state.selectedElements) el.classList.remove(CLASS_SELECTED)
   state.selectedElements.length = 0
   state.selectedSet.clear()
+  state.selectionRedoStack.length = 0
   clearBadges()
 
   document.removeEventListener('mouseover', onMouseOver)
@@ -262,6 +264,7 @@ function onClick(e: MouseEvent): void {
       state.selectedSet.add(el)
       el.classList.add(CLASS_SELECTED)
       addBadge(el, state.selectedElements.length)
+      state.selectionRedoStack.length = 0
       if (state.selectedElements.length === 1) setCursor(settings.multiCursorEmoji)
     }
     showMessage(`${state.selectedElements.length} selected — Enter to copy`)
@@ -279,24 +282,43 @@ function onClick(e: MouseEvent): void {
   deactivatePicker()
 }
 
+function undoSelection(): void {
+  const removed = state.selectedElements.pop()!
+  state.selectedSet.delete(removed)
+  removed.classList.remove(CLASS_SELECTED)
+  state.badgeEls.pop()?.remove()
+  state.selectionRedoStack.push(removed)
+  if (state.selectedElements.length === 0) {
+    setCursor(settings.cursorEmoji)
+    showMessage('Selection cleared')
+  } else {
+    showMessage(`${state.selectedElements.length} selected — Enter to copy`)
+  }
+}
+
+function redoSelection(): void {
+  const el = state.selectionRedoStack.pop()!
+  state.selectedElements.push(el)
+  state.selectedSet.add(el)
+  el.classList.add(CLASS_SELECTED)
+  addBadge(el, state.selectedElements.length)
+  if (state.selectedElements.length === 1) setCursor(settings.multiCursorEmoji)
+  showMessage(`${state.selectedElements.length} selected — Enter to copy`)
+}
+
 function onKeyDown(e: KeyboardEvent): void {
   if (e.key === 'Escape') {
     e.preventDefault()
     e.stopImmediatePropagation()
     deactivatePicker()
-  } else if ((e.key === 'Backspace' || e.key === 'Delete') && state.selectedElements.length > 0) {
+  } else if ((e.key === 'Backspace' || e.key === 'Delete' || e.key === 'ArrowLeft') && state.selectedElements.length > 0) {
     e.preventDefault()
     e.stopImmediatePropagation()
-    const removed = state.selectedElements.pop()!
-    state.selectedSet.delete(removed)
-    removed.classList.remove(CLASS_SELECTED)
-    state.badgeEls.pop()?.remove()
-    if (state.selectedElements.length === 0) {
-      setCursor(settings.cursorEmoji)
-      showMessage('Selection cleared')
-    } else {
-      showMessage(`${state.selectedElements.length} selected — Enter to copy`)
-    }
+    undoSelection()
+  } else if (e.key === 'ArrowRight' && state.selectionRedoStack.length > 0) {
+    e.preventDefault()
+    e.stopImmediatePropagation()
+    redoSelection()
   } else if (e.key === 'Enter' && state.selectedElements.length > 0) {
     e.preventDefault()
     e.stopImmediatePropagation()
