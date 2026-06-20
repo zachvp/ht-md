@@ -319,8 +319,8 @@ function onKeyDown(e: KeyboardEvent): void {
   if (e.key === 'Escape') {
     e.preventDefault()
     e.stopImmediatePropagation()
-    showMessage('Canceled')
     deactivatePicker()
+    showMessage('Canceled')
   } else if ((e.key === 'Backspace' || e.key === 'Delete' || e.key === 'ArrowLeft') && state.selectedElements.length > 0) {
     e.preventDefault()
     e.stopImmediatePropagation()
@@ -348,23 +348,33 @@ function showMessage(text: string): void {
   el.style.fontSize = `${settings.flashFontSize}px`
   el.style.color = settings.flashFontColor
   el.style.background = settings.flashBgColor
-  el.style.animationDelay = `${settings.flashPause}ms`
   el.style.animationDuration = `${settings.flashDuration}ms`
   el.style.setProperty('--fall-dist', `${settings.flashFallDistance}px`)
+  // During the pause: child of cursorEl, centered on cursor via transform, no animation yet.
   el.style.position = 'absolute'
   el.style.left = '0'
   el.style.top = '0'
-  const parent = state.cursorEl ?? document.documentElement
-  parent.appendChild(el)
-  // animation's translateX/Y(-50%) makes the element center-anchored on its (left, top).
-  // compute desired center = cursor center, clamped to viewport, then convert to parent-local px.
-  const er = el.getBoundingClientRect()
-  const pr = parent.getBoundingClientRect()
-  const hw = er.width / 2, hh = er.height / 2
-  const cx = Math.max(hw, Math.min(window.innerWidth  - hw, pr.left + pr.width  / 2))
-  const cy = Math.max(hh, Math.min(window.innerHeight - hh, pr.top  + pr.height / 2))
-  el.style.left = `${cx - pr.left}px`
-  el.style.top  = `${cy - pr.top}px`
+  el.style.transform = 'translate(-50%, -50%)'
+  el.style.animationName = 'none'
+  ;(state.cursorEl ?? document.documentElement).appendChild(el)
+
+  setTimeout(() => {
+    // Snapshot actual visual bounds (transform is applied, so r = real viewport rect).
+    const r = el.getBoundingClientRect()
+    const hw = r.width / 2, hh = r.height / 2
+    // Clamp center to viewport, then set as fixed anchor for the animation's translateX/Y(-50%).
+    const cx = Math.max(hw, Math.min(window.innerWidth  - hw, r.left + hw))
+    const cy = Math.max(hh, Math.min(window.innerHeight - hh, r.top  + hh))
+    el.remove()
+    document.documentElement.appendChild(el)
+    el.style.position = 'fixed'
+    el.style.left = `${cx}px`
+    el.style.top  = `${cy}px`
+    el.style.transform = ''
+    el.style.animationName = ''
+    el.style.animationDelay = '0ms'
+  }, settings.flashPause)
+
   setTimeout(() => el.remove(), settings.flashPause + settings.flashDuration)
 }
 
