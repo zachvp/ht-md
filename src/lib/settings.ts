@@ -7,6 +7,8 @@ export const SETTINGS_DEFAULTS = {
   cursorEmoji: '🧲',
   multiCursorEmoji: '🐙',
   badgeBgColor: '#3399ff',
+  badgeFontColor: '#ffffff',
+  badgeFontSize: 13,
   flashFontSize: 20,
   flashFontColor: '#ffffff',
   flashBgColor: 'rgba(0,0,0,0.8)',

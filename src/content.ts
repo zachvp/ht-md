@@ -19,6 +19,7 @@ const state = {
   cursorMoveHandler: null as ((e: MouseEvent) => void) | null,
   cursorEnterHandler: null as (() => void) | null,
   cursorLeaveHandler: null as (() => void) | null,
+  mousePosTracker: null as ((e: MouseEvent) => void) | null,
 }
 
 // User-configurable settings, kept in sync with chrome.storage.sync
@@ -178,6 +179,8 @@ function addBadge(el: Element, index: number): void {
   badge.className = CLASS_BADGE
   badge.textContent = String(index)
   badge.style.background = settings.badgeBgColor
+  badge.style.color = settings.badgeFontColor
+  badge.style.fontSize = `${settings.badgeFontSize}px`
   document.documentElement.appendChild(badge)
   badge.style.top = `${r.top + BADGE_INSET}px`
   badge.style.left = `${r.right - badge.offsetWidth - BADGE_INSET}px`
@@ -201,6 +204,8 @@ function activatePicker(): void {
   try {
     applyOutlineStyles()
     setCursor(settings.cursorEmoji)
+    state.mousePosTracker = (e: MouseEvent) => { state.lastMousePos = { x: e.clientX, y: e.clientY } }
+    document.addEventListener('mousemove', state.mousePosTracker, true)
     document.addEventListener('mouseover', onMouseOver)
     document.addEventListener('click', onClick, true)
     document.addEventListener('keydown', onKeyDown, true)
@@ -230,6 +235,10 @@ function deactivatePicker(): void {
   state.selectionRedoStack.length = 0
   clearBadges()
 
+  if (state.mousePosTracker) {
+    document.removeEventListener('mousemove', state.mousePosTracker, true)
+    state.mousePosTracker = null
+  }
   document.removeEventListener('mouseover', onMouseOver)
   document.removeEventListener('click', onClick, true)
   document.removeEventListener('keydown', onKeyDown, true)
@@ -342,13 +351,20 @@ function showMessage(text: string): void {
   el.style.animationDelay = `${settings.flashPause}ms`
   el.style.animationDuration = `${settings.flashDuration}ms`
   el.style.setProperty('--fall-dist', `${settings.flashFallDistance}px`)
-  const oy = cursorFontSize() / 2 + settings.cursorOffsetY
-  const desiredLeft = state.lastMousePos.x + settings.cursorOffsetX + cursorFontSize() / 2
-  el.style.left = `${desiredLeft}px`
-  el.style.top  = `${state.lastMousePos.y - oy}px`
-  document.documentElement.appendChild(el)
-  const w = el.getBoundingClientRect().width
-  el.style.left = `${Math.max(w / 2, Math.min(window.innerWidth - w / 2, desiredLeft))}px`
+  el.style.position = 'absolute'
+  el.style.left = '0'
+  el.style.top = '0'
+  const parent = state.cursorEl ?? document.documentElement
+  parent.appendChild(el)
+  // animation's translateX/Y(-50%) makes the element center-anchored on its (left, top).
+  // compute desired center = cursor center, clamped to viewport, then convert to parent-local px.
+  const er = el.getBoundingClientRect()
+  const pr = parent.getBoundingClientRect()
+  const hw = er.width / 2, hh = er.height / 2
+  const cx = Math.max(hw, Math.min(window.innerWidth  - hw, pr.left + pr.width  / 2))
+  const cy = Math.max(hh, Math.min(window.innerHeight - hh, pr.top  + pr.height / 2))
+  el.style.left = `${cx - pr.left}px`
+  el.style.top  = `${cy - pr.top}px`
   setTimeout(() => el.remove(), settings.flashPause + settings.flashDuration)
 }
 

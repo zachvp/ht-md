@@ -157,6 +157,20 @@
     }
 
     #status { margin-top: 0.75rem; color: #47C0FF; min-height: 1em; }
+
+    .cfg-btn {
+      all: unset;
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+      border: 1px solid currentColor;
+      border-radius: 3px;
+      padding: 0.2rem 0.6rem;
+      background: var(--ui-overlay-sm, rgba(0,0,0,0.08));
+      cursor: pointer;
+      display: inline-block;
+    }
+    .cfg-btn:hover { background: var(--ui-overlay-md, rgba(0,0,0,0.15)); }
   </style>
 </head>
 <body>
@@ -226,6 +240,21 @@
     </div>
   </div>
 
+  <div class="section group">
+    <span class="group-label">Badge</span>
+    <div class="group-row">
+      <div class="field">bg
+        <span class="color-swatch" id="badgeBgColorSwatch"></span>
+        <input type="text" id="badgeBgColor" class="color-text" placeholder="color">
+      </div>
+      <div class="field">font color
+        <span class="color-swatch" id="badgeFontColorSwatch"></span>
+        <input type="text" id="badgeFontColor" class="color-text" placeholder="color">
+      </div>
+      <div class="field">font <input type="number" id="badgeFontSize" min="8" max="64" step="1"><span class="unit">px</span></div>
+    </div>
+  </div>
+
   <details class="section">
     <summary style="cursor:pointer;opacity:0.65;letter-spacing:0.08em;text-transform:uppercase;">Advanced</summary>
     <div class="group-row" style="margin-top:0.65rem;">
@@ -243,6 +272,17 @@
       </div>
     </div>
   </details>
+
+  <div class="section group">
+    <span class="group-label">Config</span>
+    <div class="group-row" style="margin-bottom:0.6rem;">
+      <button id="copyJsonBtn" class="cfg-btn" type="button">Copy</button>
+      <button id="applyJsonBtn" class="cfg-btn" type="button">Apply</button>
+      <button id="exportBtn" class="cfg-btn" type="button">Download</button>
+      <label class="cfg-btn" style="cursor:pointer;">Load file<input type="file" id="importFile" accept=".json" style="display:none"></label>
+    </div>
+    <textarea id="configJson" spellcheck="false" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:0.8em;height:8rem;resize:vertical;border:1px solid currentColor;border-radius:3px;background:var(--ui-overlay-sm,rgba(0,0,0,0.08));color:inherit;padding:0.3rem 0.4rem;"></textarea>
+  </div>
 
   <p id="status"></p>
   <script src="options.js"></script>

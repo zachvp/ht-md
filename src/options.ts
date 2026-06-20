@@ -21,6 +21,9 @@ const flashBgColorInput = document.getElementById('flashBgColor') as HTMLInputEl
 const flashBgColorSwatch = document.getElementById('flashBgColorSwatch') as HTMLSpanElement
 const badgeBgColorInput = document.getElementById('badgeBgColor') as HTMLInputElement
 const badgeBgColorSwatch = document.getElementById('badgeBgColorSwatch') as HTMLSpanElement
+const badgeFontColorInput = document.getElementById('badgeFontColor') as HTMLInputElement
+const badgeFontColorSwatch = document.getElementById('badgeFontColorSwatch') as HTMLSpanElement
+const badgeFontSizeInput = document.getElementById('badgeFontSize') as HTMLInputElement
 const optionsFontSizeInput = document.getElementById('optionsFontSize') as HTMLInputElement
 const optionsFontColorInput = document.getElementById('optionsFontColor') as HTMLInputElement
 const optionsFontColorSwatch = document.getElementById('optionsFontColorSwatch') as HTMLSpanElement
@@ -31,6 +34,11 @@ const sectionBgColorSwatch = document.getElementById('sectionBgColorSwatch') as 
 const offsetMaxInput = document.getElementById('offsetMax') as HTMLInputElement
 const savedFlashDurationInput = document.getElementById('savedFlashDuration') as HTMLInputElement
 const status = document.getElementById('status') as HTMLParagraphElement
+const exportBtn = document.getElementById('exportBtn') as HTMLButtonElement
+const importFile = document.getElementById('importFile') as HTMLInputElement
+const copyJsonBtn = document.getElementById('copyJsonBtn') as HTMLButtonElement
+const applyJsonBtn = document.getElementById('applyJsonBtn') as HTMLButtonElement
+const configJsonTextarea = document.getElementById('configJson') as HTMLTextAreaElement
 
 import 'emoji-picker-element'
 import { SETTINGS_DEFAULTS } from './lib/settings'
@@ -189,7 +197,8 @@ document.addEventListener('mouseup', () => {
 // Load
 chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, multiCursorEmoji, cursorSize, cursorOffsetX, cursorOffsetY, facingX, facingY,
           outlineColor, outlineWidth, insetWidth, flashFontSize, flashFontColor, flashBgColor, flashPause, flashDuration, flashFallDistance,
-          badgeBgColor, optionsFontSize, optionsFontColor, optionsBgColor, sectionBgColor, offsetMax, savedFlashDuration: sfd }) => {
+          badgeBgColor, badgeFontColor, badgeFontSize,
+          optionsFontSize, optionsFontColor, optionsBgColor, sectionBgColor, offsetMax, savedFlashDuration: sfd }) => {
   OFFSET_MAX = offsetMax as number
   checkbox.checked = includeSvg as boolean
   cursorEmojiBtn.textContent = cursorEmoji as string
@@ -208,6 +217,11 @@ chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, mult
   flashFallDistanceInput.value = String(flashFallDistance)
   flashFontColorInput.value = flashFontColor as string
   syncSwatch(flashFontColorInput, flashFontColorSwatch)
+  badgeBgColorInput.value = badgeBgColor as string
+  syncSwatch(badgeBgColorInput, badgeBgColorSwatch)
+  badgeFontColorInput.value = badgeFontColor as string
+  syncSwatch(badgeFontColorInput, badgeFontColorSwatch)
+  badgeFontSizeInput.value = String(badgeFontSize)
   optionsFontSizeInput.value = String(optionsFontSize)
   optionsFontColorInput.value = optionsFontColor as string
   syncSwatch(optionsFontColorInput, optionsFontColorSwatch)
@@ -225,6 +239,10 @@ chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, mult
   offsetMaxInput.value = String(offsetMax)
   savedFlashDuration = sfd as number
   savedFlashDurationInput.value = String(sfd)
+}).then(() => {
+  chrome.storage.sync.get(SETTINGS_DEFAULTS).then(stored => {
+    configJsonTextarea.value = JSON.stringify(stored, null, 2)
+  })
 })
 
 // Listeners
@@ -248,6 +266,12 @@ facingXInput.addEventListener('change', () => {
 })
 facingYInput.addEventListener('change', () => {
   chrome.storage.sync.set({ facingY: Number(facingYInput.value) }).then(showSaved)
+})
+
+wireColor(badgeBgColorInput, badgeBgColorSwatch, 'badgeBgColor')
+wireColor(badgeFontColorInput, badgeFontColorSwatch, 'badgeFontColor')
+badgeFontSizeInput.addEventListener('change', () => {
+  chrome.storage.sync.set({ badgeFontSize: Number(badgeFontSizeInput.value) }).then(showSaved)
 })
 
 wireColor(outlineColorInput, outlineColorSwatch, 'outlineColor')
@@ -307,6 +331,48 @@ offsetMaxInput.addEventListener('change', () => {
 savedFlashDurationInput.addEventListener('change', () => {
   savedFlashDuration = Number(savedFlashDurationInput.value)
   chrome.storage.sync.set({ savedFlashDuration }).then(showSaved)
+})
+
+// Import / export
+copyJsonBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(configJsonTextarea.value).then(() => showSaved())
+})
+
+applyJsonBtn.addEventListener('click', () => {
+  applyJsonString(configJsonTextarea.value)
+})
+
+function applyJsonString(text: string): void {
+  try {
+    const parsed = JSON.parse(text)
+    const filtered: Record<string, unknown> = {}
+    for (const key of Object.keys(SETTINGS_DEFAULTS) as (keyof typeof SETTINGS_DEFAULTS)[]) {
+      if (key in parsed) filtered[key] = parsed[key]
+    }
+    chrome.storage.sync.set(filtered).then(() => { showSaved(); location.reload() })
+  } catch {
+    status.textContent = 'Invalid JSON'
+  }
+}
+
+exportBtn.addEventListener('click', () => {
+  chrome.storage.sync.get(SETTINGS_DEFAULTS).then(stored => {
+    const json = JSON.stringify(stored, null, 2)
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
+    a.download = 'web-md-settings.json'
+    a.click()
+    URL.revokeObjectURL(a.href)
+  })
+})
+
+importFile.addEventListener('change', () => {
+  const file = importFile.files?.[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = () => applyJsonString(reader.result as string)
+  reader.readAsText(file)
+  importFile.value = ''
 })
 
 // Inject custom pixel spinners — must run after all change listeners are attached
