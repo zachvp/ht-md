@@ -190,6 +190,7 @@ document.addEventListener('mouseup', () => {
 chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, multiCursorEmoji, cursorSize, cursorOffsetX, cursorOffsetY, facingX, facingY,
           outlineColor, outlineWidth, insetWidth, flashFontSize, flashFontColor, flashBgColor, flashPause, flashDuration, flashFallDistance,
           badgeBgColor, optionsFontSize, optionsFontColor, optionsBgColor, sectionBgColor, offsetMax, savedFlashDuration: sfd }) => {
+  OFFSET_MAX = offsetMax as number
   checkbox.checked = includeSvg as boolean
   cursorEmojiBtn.textContent = cursorEmoji as string
   multiCursorEmojiBtn.textContent = multiCursorEmoji as string
@@ -221,7 +222,6 @@ chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, mult
   sectionBgColorInput.value = sectionBgColor as string
   syncSwatch(sectionBgColorInput, sectionBgColorSwatch)
   document.documentElement.style.setProperty('--ui-overlay-xs', sectionBgColor as string)
-  OFFSET_MAX = offsetMax as number
   offsetMaxInput.value = String(offsetMax)
   savedFlashDuration = sfd as number
   savedFlashDurationInput.value = String(sfd)

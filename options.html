@@ -34,9 +34,9 @@
 
     .group { margin-bottom: 1.1rem; }
     .group-label { display: block; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.55; margin-bottom: 0.45rem; }
-    .group-row { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+    .group-row { display: flex; align-items: flex-end; gap: 0.75rem; flex-wrap: wrap; }
 
-    .field { display: flex; align-items: center; gap: 0.3rem; }
+    .field { display: flex; align-items: baseline; gap: 0.3rem; }
     .unit { opacity: 0.65; }
 
     /* Number inputs — hide native spinners */
@@ -81,13 +81,13 @@
     .num-btn:active { background: var(--ui-overlay-lg, rgba(0,0,0,0.22)); }
 
     /* Color field: swatch + text input */
-    .color-field { display: flex; align-items: center; gap: 0.3rem; }
     .color-swatch {
       width: 1.2em; height: 1.2em;
       border: 1px solid currentColor;
       border-radius: 2px;
       flex-shrink: 0;
       display: inline-block;
+      align-self: center;
     }
     input.color-text {
       width: 8rem;
@@ -95,13 +95,13 @@
       font-size: inherit;
       border: 1px solid currentColor;
       border-radius: 3px;
-      padding: 0.12rem 0.3rem;
+      padding: 0.15rem 0.3rem;
       background: var(--ui-overlay-sm, rgba(0,0,0,0.08));
       color: inherit;
     }
 
     /* Emoji picker button + panel */
-    .emoji-pick-wrap { position: relative; display: inline-block; }
+    .emoji-pick-wrap { position: relative; display: inline-block; align-self: center; }
     .emoji-pick-btn {
       all: unset;
       font-size: 1.4em;
@@ -185,7 +185,7 @@
   <div class="section group">
     <span class="group-label">Highlight</span>
     <div class="group-row">
-      <div class="color-field">
+      <div class="field">
         <span class="color-swatch" id="outlineColorSwatch"></span>
         <input type="text" id="outlineColor" class="color-text" placeholder="#rrggbb or rgba(...)">
       </div>
@@ -201,7 +201,7 @@
       <div class="field">pause <input type="number" id="flashPause" min="0" max="5000" step="50"><span class="unit">ms</span></div>
       <div class="field">fall <input type="number" id="flashDuration" min="100" max="10000" step="100"><span class="unit">ms</span></div>
       <div class="field">dist <input type="number" id="flashFallDistance" min="0" max="2000" step="10"><span class="unit">px</span></div>
-      <div class="color-field">
+      <div class="field">
         <span class="color-swatch" id="flashFontColorSwatch"></span>
         <input type="text" id="flashFontColor" class="color-text" placeholder="color">
       </div>
@@ -212,15 +212,15 @@
     <span class="group-label">Options</span>
     <div class="group-row">
       <div class="field">font <input type="number" id="optionsFontSize" min="1" max="1024" step="1"><span class="unit">px</span></div>
-      <div class="color-field">
+      <div class="field">font color
         <span class="color-swatch" id="optionsFontColorSwatch"></span>
         <input type="text" id="optionsFontColor" class="color-text" placeholder="font color">
       </div>
-      <div class="color-field">
+      <div class="field">bg
         <span class="color-swatch" id="optionsBgColorSwatch"></span>
         <input type="text" id="optionsBgColor" class="color-text" placeholder="background">
       </div>
-      <div class="color-field">
+      <div class="field">section
         <span class="color-swatch" id="sectionBgColorSwatch"></span>
         <input type="text" id="sectionBgColor" class="color-text" placeholder="section">
       </div>

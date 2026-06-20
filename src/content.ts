@@ -342,9 +342,12 @@ function showMessage(text: string): void {
   el.style.animationDuration = `${settings.flashDuration}ms`
   el.style.setProperty('--fall-dist', `${settings.flashFallDistance}px`)
   const oy = cursorFontSize() / 2 + settings.cursorOffsetY
-  el.style.left = `${state.lastMousePos.x + settings.cursorOffsetX + cursorFontSize() / 2}px`
+  const desiredLeft = state.lastMousePos.x + settings.cursorOffsetX + cursorFontSize() / 2
+  el.style.left = `${desiredLeft}px`
   el.style.top  = `${state.lastMousePos.y - oy}px`
   document.documentElement.appendChild(el)
+  const w = el.getBoundingClientRect().width
+  el.style.left = `${Math.max(w / 2, Math.min(window.innerWidth - w / 2, desiredLeft))}px`
   setTimeout(() => el.remove(), settings.flashPause + settings.flashDuration)
 }
 
