@@ -40,6 +40,7 @@ const configJsonTextarea = document.getElementById('configJson') as HTMLTextArea
 
 import 'emoji-picker-element'
 import { SETTINGS_DEFAULTS } from './lib/settings'
+import { storage } from './lib/storage'
 
 function hexToRgb(hex: string): [number, number, number] | null {
   const m = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i)
@@ -151,11 +152,11 @@ function wireColor(
     input.value = picker.value + getAlphaSuffix(input.value)
     syncSwatch(input, swatch)
     onInput?.()
-    chrome.storage.sync.set({ [storageKey]: input.value }).then(showSaved)
+    storage.set({ [storageKey]: input.value }).then(showSaved)
   })
 
   input.addEventListener('input', () => { syncSwatch(input, swatch); onInput?.() })
-  input.addEventListener('change', () => chrome.storage.sync.set({ [storageKey]: input.value }).then(showSaved))
+  input.addEventListener('change', () => storage.set({ [storageKey]: input.value }).then(showSaved))
 }
 
 // 2D offset plane
@@ -193,11 +194,11 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('mouseup', () => {
   if (!planeDragging) return
   planeDragging = false
-  chrome.storage.sync.set({ cursorOffsetX: curOffsetX, cursorOffsetY: curOffsetY }).then(showSaved)
+  storage.set({ cursorOffsetX: curOffsetX, cursorOffsetY: curOffsetY }).then(showSaved)
 })
 
 // Load
-chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, multiCursorEmoji, cursorSize, cursorOffsetX, cursorOffsetY,
+storage.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, multiCursorEmoji, cursorSize, cursorOffsetX, cursorOffsetY,
           outlineColor, outlineWidth, insetWidth, flashFontSize, flashFontColor, flashBgColor, flashPause, flashDuration, flashFallDistance,
           badgeBgColor, badgeFontColor, badgeFontSize,
           optionsFontSize, optionsFontColor, optionsBgColor, sectionBgColor, offsetMax, savedFlashDuration: sfd }) => {
@@ -242,57 +243,57 @@ chrome.storage.sync.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, mult
   savedFlashDuration = sfd as number
   savedFlashDurationInput.value = String(sfd)
 }).then(() => {
-  chrome.storage.sync.get(SETTINGS_DEFAULTS).then(stored => {
+  storage.get(SETTINGS_DEFAULTS).then(stored => {
     configJsonTextarea.value = JSON.stringify(stored, null, 2)
   })
 })
 
 // Listeners
 checkbox.addEventListener('change', () => {
-  chrome.storage.sync.set({ includeSvg: checkbox.checked }).then(showSaved)
+  storage.set({ includeSvg: checkbox.checked }).then(showSaved)
 })
 
 makeEmojiPicker(cursorEmojiBtn, em => {
-  chrome.storage.sync.set({ cursorEmoji: em }).then(showSaved)
+  storage.set({ cursorEmoji: em }).then(showSaved)
 })
 makeEmojiPicker(multiCursorEmojiBtn, em => {
-  chrome.storage.sync.set({ multiCursorEmoji: em }).then(showSaved)
+  storage.set({ multiCursorEmoji: em }).then(showSaved)
 })
 
 cursorSizeInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ cursorSize: Number(cursorSizeInput.value) }).then(showSaved)
+  storage.set({ cursorSize: Number(cursorSizeInput.value) }).then(showSaved)
 })
 
 wireColor(badgeBgColorInput, badgeBgColorSwatch, 'badgeBgColor')
 wireColor(badgeFontColorInput, badgeFontColorSwatch, 'badgeFontColor')
 badgeFontSizeInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ badgeFontSize: Number(badgeFontSizeInput.value) }).then(showSaved)
+  storage.set({ badgeFontSize: Number(badgeFontSizeInput.value) }).then(showSaved)
 })
 
 wireColor(outlineColorInput, outlineColorSwatch, 'outlineColor')
 
 outlineWidthInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ outlineWidth: Number(outlineWidthInput.value) }).then(showSaved)
+  storage.set({ outlineWidth: Number(outlineWidthInput.value) }).then(showSaved)
 })
 
 insetWidthInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ insetWidth: Number(insetWidthInput.value) }).then(showSaved)
+  storage.set({ insetWidth: Number(insetWidthInput.value) }).then(showSaved)
 })
 
 flashFontSizeInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ flashFontSize: Number(flashFontSizeInput.value) }).then(showSaved)
+  storage.set({ flashFontSize: Number(flashFontSizeInput.value) }).then(showSaved)
 })
 
 flashPauseInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ flashPause: Number(flashPauseInput.value) }).then(showSaved)
+  storage.set({ flashPause: Number(flashPauseInput.value) }).then(showSaved)
 })
 
 flashDurationInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ flashDuration: Number(flashDurationInput.value) }).then(showSaved)
+  storage.set({ flashDuration: Number(flashDurationInput.value) }).then(showSaved)
 })
 
 flashFallDistanceInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ flashFallDistance: Number(flashFallDistanceInput.value) }).then(showSaved)
+  storage.set({ flashFallDistance: Number(flashFallDistanceInput.value) }).then(showSaved)
 })
 
 wireColor(flashFontColorInput, flashFontColorSwatch, 'flashFontColor')
@@ -302,7 +303,7 @@ optionsFontSizeInput.addEventListener('input', () => {
   document.body.style.fontSize = `${optionsFontSizeInput.value}px`
 })
 optionsFontSizeInput.addEventListener('change', () => {
-  chrome.storage.sync.set({ optionsFontSize: Number(optionsFontSizeInput.value) }).then(showSaved)
+  storage.set({ optionsFontSize: Number(optionsFontSizeInput.value) }).then(showSaved)
 })
 
 wireColor(optionsFontColorInput, optionsFontColorSwatch, 'optionsFontColor', () => {
@@ -321,12 +322,12 @@ wireColor(sectionBgColorInput, sectionBgColorSwatch, 'sectionBgColor', () => {
 
 offsetMaxInput.addEventListener('change', () => {
   OFFSET_MAX = Number(offsetMaxInput.value)
-  chrome.storage.sync.set({ offsetMax: OFFSET_MAX }).then(showSaved)
+  storage.set({ offsetMax: OFFSET_MAX }).then(showSaved)
 })
 
 savedFlashDurationInput.addEventListener('change', () => {
   savedFlashDuration = Number(savedFlashDurationInput.value)
-  chrome.storage.sync.set({ savedFlashDuration }).then(showSaved)
+  storage.set({ savedFlashDuration }).then(showSaved)
 })
 
 // Import / export
@@ -345,14 +346,14 @@ function applyJsonString(text: string): void {
     for (const key of Object.keys(SETTINGS_DEFAULTS) as (keyof typeof SETTINGS_DEFAULTS)[]) {
       if (key in parsed) filtered[key] = parsed[key]
     }
-    chrome.storage.sync.set(filtered).then(() => { showSaved(); location.reload() })
+    storage.set(filtered).then(() => { showSaved(); location.reload() })
   } catch {
     status.textContent = 'Invalid JSON'
   }
 }
 
 exportBtn.addEventListener('click', () => {
-  chrome.storage.sync.get(SETTINGS_DEFAULTS).then(stored => {
+  storage.get(SETTINGS_DEFAULTS).then(stored => {
     const json = JSON.stringify(stored, null, 2)
     const a = document.createElement('a')
     a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }))

@@ -1,4 +1,5 @@
 import { SETTINGS_DEFAULTS, Settings } from './lib/settings'
+import { storage } from './lib/storage'
 import { Z_TOP, Z_OVERLAY, DARKREADER_CLASS, HIGHLIGHT_ALPHA, OUTLINE_OFFSET, BADGE_INSET, CLASS_SELECTED, CLASS_BADGE, CLASS_FLASH } from './lib/constants'
 
 console.log('[web-md] content script loaded')
@@ -51,7 +52,7 @@ function makeTurndown(stripSvg: boolean): TurndownService {
 const turndown = makeTurndown(false)
 const turndownStripped = makeTurndown(true)
 
-chrome.storage.sync.get(SETTINGS_DEFAULTS).then(stored => {
+storage.get(SETTINGS_DEFAULTS).then(stored => {
   Object.assign(settings, stored)
 })
 
