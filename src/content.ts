@@ -266,10 +266,6 @@ function onClick(e: MouseEvent): void {
   e.stopPropagation()
 
   const el = e.target as Element
-  if (el === document.body || el === document.documentElement) {
-    deactivatePicker()
-    return
-  }
 
   if (e.metaKey) {
     if (!state.selectedSet.has(el)) {
@@ -281,6 +277,13 @@ function onClick(e: MouseEvent): void {
       if (state.selectedElements.length === 1) setCursor(settings.multiCursorEmoji)
     }
     showMessage(`${state.selectedElements.length} selected — Enter to copy`)
+    return
+  }
+
+  if (state.selectedElements.length > 0) return
+
+  if (el === document.body || el === document.documentElement) {
+    deactivatePicker()
     return
   }
 
