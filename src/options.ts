@@ -1,9 +1,9 @@
 import 'emoji-picker-element'
-import { SETTINGS_DEFAULTS } from './lib/settings'
+import { SETTINGS_DEFAULTS } from './lib/settings.generated'
 import { storage } from './lib/storage'
 import { SECTIONS, ADVANCED_FIELDS } from './options-fields'
 import type { NumberField, ColorField, EmojiField, PlaneField, CheckboxField, FieldDef } from './options-fields'
-import { els } from './options-elements'
+import { els } from './options-elements.generated'
 
 // #region * Building Blocks *
 

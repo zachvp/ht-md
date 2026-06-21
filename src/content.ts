@@ -1,4 +1,4 @@
-import { SETTINGS_DEFAULTS, Settings } from './lib/settings'
+import { SETTINGS_DEFAULTS, Settings } from './lib/settings.generated'
 import { storage } from './lib/storage'
 import { Z_TOP, Z_OVERLAY, DARKREADER_CLASS, HIGHLIGHT_ALPHA, OUTLINE_OFFSET, BADGE_INSET, CLASS_SELECTED, CLASS_BADGE, CLASS_FLASH } from './lib/constants'
 
