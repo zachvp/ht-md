@@ -1,20 +1,23 @@
 #!/usr/bin/env tsx
-// Publishes the Firefox build to AMO (listed channel) and signs it for local
-// install (unlisted channel) in one step, keeping both versions in sync.
-// Credentials are read from macOS Keychain at run time and only
-// ever exist as env vars for the web-ext subprocess — never written to disk.
-//
-// Setup (run once):
-//   security add-generic-password -a "$USER" -s "ht-md-amo-issuer" -w "<issuer>" -U
-//   security add-generic-password -a "$USER" -s "ht-md-amo-secret" -w "<secret>" -U
-//
-// Usage:
-//   npm run publish:firefox
+/*
+Publishes the Firefox build to AMO (listed channel) and signs it for local
+install (unlisted channel) in one step, keeping both versions in sync.
+Credentials are read from macOS Keychain at run time, and only
+ever exist as env vars for the web-ext subprocess — never written to disk.
+
+Setup (run once):
+  security add-generic-password -a "$USER" -s "ht-md-amo-issuer" -w "<issuer>" -U
+  security add-generic-password -a "$USER" -s "ht-md-amo-secret" -w "<secret>" -U
+
+Usage:
+  npm run publish:firefox
+*/
 
 import { execFileSync, execSync, ExecSyncOptions } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// Supporting data & logic
 const AMO_ISSUER_SERVICE = 'ht-md-amo-issuer';
 const AMO_SECRET_SERVICE = 'ht-md-amo-secret';
 
@@ -39,6 +42,7 @@ function readKeychainSecret(service: string): string {
   }
 }
 
+// Construct and run the commands
 const apiKey    = readKeychainSecret(AMO_ISSUER_SERVICE);
 const apiSecret = readKeychainSecret(AMO_SECRET_SERVICE);
 const env       = { ...process.env, WEB_EXT_API_KEY: apiKey, WEB_EXT_API_SECRET: apiSecret };

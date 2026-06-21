@@ -37,7 +37,7 @@ function checkBackgroundKey(manifest: Record<string, any>, config: { backgroundK
   return null;
 }
 
-function buildTarget(name: string): void {
+function buildTarget(name: string, skipPackage = false): void {
   const config = TARGETS[name];
   const outDir = path.join(ROOT, 'dist', name);
 
@@ -77,7 +77,7 @@ function buildTarget(name: string): void {
   fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(merged, null, 2) + '\n');
 
   let archivePath: string | null = null;
-  if (config.archiveExt) {
+  if (config.archiveExt && !skipPackage) {
     archivePath = path.join(ROOT, 'dist', `${pkg.name}-${name}.${config.archiveExt}`);
     console.log(`[${name}] packaging ${path.relative(ROOT, archivePath)}`);
     fs.rmSync(archivePath, { force: true });
@@ -99,7 +99,9 @@ function buildTarget(name: string): void {
 
 function main(): void {
   // No target (`npm run build`) defaults to "all".
-  const arg = process.argv[2] || 'all';
+  const args = process.argv.slice(2);
+  const skipPackage = args.includes('--no-pack');
+  const arg = args.find(a => !a.startsWith('--')) || 'all';
   const names = arg === 'all' ? Object.keys(TARGETS) : [arg];
 
   if (arg !== 'all' && !TARGETS[arg]) {
@@ -107,7 +109,7 @@ function main(): void {
     process.exit(1);
   }
 
-  names.forEach(buildTarget);
+  names.forEach(name => buildTarget(name, skipPackage));
 }
 
 main();
