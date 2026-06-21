@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "version": "6.19.26.7",
+  "version": "6.21.26.0",
   "description": "Pick any combination of elements, copy it as Markdown",
   "permissions": ["activeTab", "tabs", "storage", "scripting"],
   "options_ui": {
