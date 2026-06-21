@@ -26,17 +26,33 @@ function fieldRow(label: string, forId: string, ...children: HTMLElement[]): HTM
   return labeledControl('field-row', el('label', { className: 'field-label', textContent: label, htmlFor: forId }), ...children)
 }
 
+function makeResetBtn(onClick: () => void): HTMLButtonElement {
+  const btn = el('button', { className: 'reset-btn', textContent: '↪' })
+  btn.type = 'button'
+  btn.addEventListener('click', onClick)
+  return btn
+}
+
+// Bridges build phase → wire phase for keybind reset (wireKeybind runs after storage.get resolves)
+const keybindResetRefs = new Map<string, { fn: () => void }>()
+
 function buildNumberField(f: NumberField): HTMLElement {
   const input = el('input', { id: f.id, min: String(f.min), max: String(f.max), step: String(f.step) })
   input.type = 'number'
-  return fieldStack(f.label, input)
+  const rst = makeResetBtn(() => { input.value = String(f.default); input.dispatchEvent(new Event('change')) })
+  return fieldStack(f.label, rst, input)
 }
 
 function buildColorField(f: ColorField): HTMLElement {
   const input = el('input', { id: f.id, className: 'color-text', placeholder: '#rrggbbaa' })
   input.type = 'text'
   const swatch = el('span', { className: 'color-band', id: `${f.id}Swatch` })
-  return fieldStack(f.label, swatch, input)
+  const rst = makeResetBtn(() => {
+    input.value = f.default
+    input.dispatchEvent(new Event('input'))
+    input.dispatchEvent(new Event('change'))
+  })
+  return fieldStack(f.label, rst, swatch, input)
 }
 
 function buildEmojiField(f: EmojiField): HTMLElement {
@@ -44,7 +60,8 @@ function buildEmojiField(f: EmojiField): HTMLElement {
   const btn = el('button', { className: 'emoji-pick-btn', id: f.id })
   btn.type = 'button'
   wrap.append(btn)
-  return fieldStack(f.label, wrap)
+  const rst = makeResetBtn(() => { btn.textContent = f.default; storage.set({ [f.storageKey]: f.default }).then(showSaved) })
+  return fieldStack(f.label, rst, wrap)
 }
 
 function buildPlaneField(f: PlaneField): HTMLElement {
@@ -52,7 +69,12 @@ function buildPlaneField(f: PlaneField): HTMLElement {
   const plane  = el('div',  { className: 'plane', id: 'offsetPlane' })
   const dot    = el('div',  { className: 'plane-dot', id: 'offsetDot' })
   plane.append(el('div', { className: 'plane-hline' }), el('div', { className: 'plane-vline' }), dot)
-  return fieldStack(f.label, coords, plane)
+  const [defX, defY] = [f.storage[0].default, f.storage[1].default]
+  const rst = makeResetBtn(() => {
+    moveDot(defX, defY)
+    storage.set({ cursorOffsetX: defX, cursorOffsetY: defY }).then(showSaved)
+  })
+  return fieldStack(f.label, rst, coords, plane)
 }
 
 function buildSelectField(f: SelectField): HTMLElement {
@@ -62,13 +84,16 @@ function buildSelectField(f: SelectField): HTMLElement {
     select.append(el('option', { value: opt.value, textContent: opt.label }))
   }
   wrap.append(select)
-  return fieldStack(f.label, wrap)
+  const rst = makeResetBtn(() => { select.value = f.default; select.dispatchEvent(new Event('change')) })
+  return fieldStack(f.label, rst, wrap)
 }
 
 function buildKeybindField(f: KeybindField): HTMLElement {
   const btn = el('button', { id: f.id, className: 'cfg-btn' })
   btn.type = 'button'
-  return fieldStack(f.label, btn)
+  const ref = { fn: () => {} }
+  keybindResetRefs.set(f.id, ref)
+  return fieldStack(f.label, makeResetBtn(() => ref.fn()), btn)
 }
 
 function buildCheckboxField(f: CheckboxField): HTMLElement {
@@ -82,6 +107,7 @@ function buildCheckboxField(f: CheckboxField): HTMLElement {
     wrap.append(icon, tip)
     row.append(wrap)
   }
+  row.append(makeResetBtn(() => { input.checked = f.default; input.dispatchEvent(new Event('change')) }))
   return row
 }
 
@@ -103,8 +129,14 @@ document.title = `${EXT_NAME} settings`
 ;(document.querySelector('h1') as HTMLElement).textContent = `${EXT_NAME} settings`
 
 SECTIONS.forEach(s => {
-  const row = document.getElementById(s.rowId)!
+  const row     = document.getElementById(s.rowId)!
+  const section = row.parentElement!
   s.fields.forEach(f => row.append(buildField(f)))
+  const sectionReset = makeResetBtn(() =>
+    section.querySelectorAll<HTMLButtonElement>('.reset-btn:not(.section-reset)').forEach(b => b.click())
+  )
+  sectionReset.classList.add('section-reset')
+  section.append(sectionReset)
 })
 
 // Group pulse toggle + params into a full-width column: toggle on top, collapsible params below
@@ -202,7 +234,7 @@ function makeEmojiPicker(btn: HTMLButtonElement, onChange: (emoji: string) => vo
   })
 }
 
-function wireKeybind(btn: HTMLButtonElement, storageKey: string, initialValue: string): void {
+function wireKeybind(btn: HTMLButtonElement, storageKey: string, initialValue: string): { reset: (value: string) => void } {
   let current = initialValue
   btn.textContent = current
 
@@ -219,6 +251,14 @@ function wireKeybind(btn: HTMLButtonElement, storageKey: string, initialValue: s
     }
     document.addEventListener('keydown', onKey, true)
   })
+
+  return {
+    reset(value: string) {
+      current = value
+      btn.textContent = value
+      storage.set({ [storageKey]: value }).then(showSaved)
+    }
+  }
 }
 
 let savedFlashDuration = 1500
@@ -309,7 +349,8 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
   for (const f of allFields) {
     if (f.type !== 'keybind') continue
     const btn = els[f.id as keyof typeof els] as HTMLButtonElement
-    wireKeybind(btn, f.id, String(stored[f.id as keyof typeof SETTINGS_DEFAULTS]))
+    const { reset } = wireKeybind(btn, f.id, String(stored[f.id as keyof typeof SETTINGS_DEFAULTS]))
+    keybindResetRefs.get(f.id)!.fn = () => reset(f.default)
   }
   moveDot(stored.cursorOffsetX, stored.cursorOffsetY)
   document.body.style.fontSize = `${stored.optionsFontSize}px`

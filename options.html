@@ -173,6 +173,25 @@
       border-radius: 8px;
       padding: 0.85rem 1rem;
       margin-bottom: 0.75rem;
+      position: relative;
+    }
+
+    .reset-btn {
+      all: unset;
+      font-size: 0.7em;
+      opacity: 0.35;
+      cursor: pointer;
+      padding: 0.05rem 0.2rem;
+      border-radius: 2px;
+      line-height: 1;
+    }
+    .reset-btn:hover { opacity: 1; background: var(--ui-overlay-md, rgba(0,0,0,0.12)); }
+
+    .section-reset {
+      position: absolute;
+      top: 0.6rem;
+      right: 0.75rem;
+      font-size: 0.85em;
     }
 
     #status { margin-top: 0.75rem; color: #47C0FF; min-height: 1em; }
