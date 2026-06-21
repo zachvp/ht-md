@@ -80,6 +80,7 @@ chrome.storage.onChanged.addListener(changes => {
   for (const key of Object.keys(settings) as (keyof Settings)[]) {
     if (key in changes) (settings as Record<string, unknown>)[key] = changes[key].newValue
   }
+  if ('multiSelectKey' in changes) keyMap.multiSelect = resolveModifier(settings.multiSelectKey)
   if (state.pickerActive && (changes.outlineColor || changes.outlineWidth || changes.insetWidth)) {
     applyOutlineStyles()
   }
@@ -230,7 +231,7 @@ function activatePicker(): void {
   console.log(`${LOG} picker activated`)
   try {
     applyOutlineStyles()
-    setCursor(settings.cursorEmoji)
+    setCursor(settings.initialMode === 'multi' ? settings.multiCursorEmoji : settings.cursorEmoji)
     state.mousePosTracker = (e: MouseEvent) => { state.lastMousePos = { x: e.clientX, y: e.clientY } }
     document.addEventListener('mousemove', state.mousePosTracker, true)
     document.addEventListener('mouseover', onMouseOver)
@@ -292,7 +293,7 @@ function onClick(e: MouseEvent): void {
 
   const el = e.target as Element
 
-  if (e[keyMap.multiSelect]) {
+  if (e[keyMap.multiSelect] || settings.initialMode === 'multi') {
     if (!state.selectedSet.has(el)) {
       state.selectedElements.push(el)
       state.selectedSet.add(el)

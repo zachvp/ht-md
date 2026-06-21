@@ -177,6 +177,33 @@
 
     #status { margin-top: 0.75rem; color: #47C0FF; min-height: 1em; }
 
+    .select-wrap {
+      position: relative;
+      display: inline-block;
+    }
+    .select-wrap::after {
+      content: '▾';
+      position: absolute;
+      right: 0.4rem;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      font-size: 0.75em;
+      opacity: 0.65;
+    }
+    select {
+      appearance: none;
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+      border: 1px solid currentColor;
+      border-radius: 3px;
+      padding: 0.15rem 1.5rem 0.15rem 0.3rem;
+      background: var(--ui-overlay-sm, rgba(0,0,0,0.08));
+      cursor: pointer;
+    }
+    select:hover { background: var(--ui-overlay-md, rgba(0,0,0,0.15)); }
+
     .cfg-btn {
       all: unset;
       font-family: inherit;

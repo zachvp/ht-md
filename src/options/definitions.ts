@@ -4,12 +4,19 @@ export type EmojiField    = { type: 'emoji';    id: string; storageKey: string; 
 export type PlaneField    = { type: 'plane';    label: string; ids: Array<{ id: string; tag: keyof HTMLElementTagNameMap }>; storage: Array<{ key: string; default: number }> }
 export type CheckboxField = { type: 'checkbox'; id: string; label: string; tooltip?: string; default: boolean }
 export type KeybindField  = { type: 'keybind';  id: string; label: string; default: string }
-export type FieldDef = NumberField | ColorField | EmojiField | PlaneField | CheckboxField | KeybindField
+export type SelectField   = { type: 'select';   id: string; label: string; default: string; options: Array<{ value: string; label: string }> }
+export type FieldDef = NumberField | ColorField | EmojiField | PlaneField | CheckboxField | KeybindField | SelectField
 export type SectionDef = { rowId: string; fields: FieldDef[] }
 
 export const SECTIONS: SectionDef[] = [
   { rowId: 'row-functionality', fields: [
     { type: 'keybind', id: 'multiSelectKey', label: 'multi-select key', default: 'auto' },
+    { type: 'select',  id: 'initialMode',   label: 'initial mode',     default: 'single',
+      options: [
+        { value: 'single', label: 'single' },
+        { value: 'multi',  label: 'multi'  },
+      ],
+    },
   ]},
   { rowId: 'row-cursor', fields: [
     { type: 'emoji',  id: 'cursorEmojiBtn',      storageKey: 'cursorEmoji',      label: 'cursor',       default: '👆' },

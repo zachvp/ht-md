@@ -3,7 +3,7 @@ import { EXT_NAME } from './lib/constants'
 import { SETTINGS_DEFAULTS } from './lib/settings.generated'
 import { storage } from './lib/storage'
 import { SECTIONS, ADVANCED_FIELDS } from './options/definitions'
-import type { NumberField, ColorField, EmojiField, PlaneField, CheckboxField, KeybindField, FieldDef } from './options/definitions'
+import type { NumberField, ColorField, EmojiField, PlaneField, CheckboxField, KeybindField, SelectField, FieldDef } from './options/definitions'
 import { els } from './options/elements.generated'
 
 // #region * Building Blocks *
@@ -48,6 +48,16 @@ function buildPlaneField(f: PlaneField): HTMLElement {
   return fieldStack(f.label, coords, plane)
 }
 
+function buildSelectField(f: SelectField): HTMLElement {
+  const wrap   = el('div', { className: 'select-wrap' })
+  const select = el('select', { id: f.id })
+  for (const opt of f.options) {
+    select.append(el('option', { value: opt.value, textContent: opt.label }))
+  }
+  wrap.append(select)
+  return fieldStack(f.label, wrap)
+}
+
 function buildKeybindField(f: KeybindField): HTMLElement {
   const btn = el('button', { id: f.id, className: 'cfg-btn' })
   btn.type = 'button'
@@ -78,6 +88,7 @@ const FIELD_BUILDERS = {
   plane:    buildPlaneField,
   checkbox: buildCheckboxField,
   keybind:  buildKeybindField,
+  select:   buildSelectField,
 } as const
 
 function buildField(f: FieldDef): HTMLElement {
@@ -286,6 +297,7 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
   }
   OFFSET_MAX = stored.offsetMax
   savedFlashDuration = stored.savedFlashDuration
+  els.initialMode.value = String(stored.initialMode)
   els.includeSvg.checked = stored.includeSvg
   els.badgePulse.checked = stored.badgePulse
   syncBadgePulseParams()
@@ -311,6 +323,9 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
 })
 
 // Listeners
+els.initialMode.addEventListener('change', () => {
+  storage.set({ initialMode: els.initialMode.value }).then(showSaved)
+})
 els.includeSvg.addEventListener('change', () => {
   storage.set({ includeSvg: els.includeSvg.checked }).then(showSaved)
 })
