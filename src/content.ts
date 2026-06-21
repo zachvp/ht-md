@@ -184,6 +184,10 @@ function addBadge(el: Element, index: number): void {
   badge.style.background = settings.badgeBgColor
   badge.style.color = settings.badgeFontColor
   badge.style.fontSize = `${settings.badgeFontSize}px`
+  if (settings.badgePulse) {
+    badge.style.setProperty('--badge-pulse-scale', String(settings.badgePulseScale / 100))
+    badge.style.animation = `web-md-badge-pulse ${settings.badgePulseDuration}ms ease-in-out infinite`
+  }
   document.documentElement.appendChild(badge)
   badge.style.top = `${r.top + BADGE_INSET}px`
   badge.style.left = `${r.right - badge.offsetWidth - BADGE_INSET}px`

@@ -32,6 +32,11 @@
   animation-fill-mode: forwards;
 }
 
+@keyframes web-md-badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(var(--badge-pulse-scale, 1.2)); }
+}
+
 @keyframes web-md-flash-fall {
   0%   { transform: translateX(-50%) translateY(-50%);                              opacity: 1; animation-timing-function: ease-in; }
   100% { transform: translateX(-50%) translateY(calc(-50% + var(--fall-dist, 80px))); opacity: 0; }

@@ -40,9 +40,12 @@ export const SECTIONS: SectionDef[] = [
     { type: 'color',  id: 'sectionBgColor',   label: 'section bg',                            default: '#121212' },
   ]},
   { rowId: 'row-badge', fields: [
-    { type: 'color',  id: 'badgeBgColor',   label: 'bg color',   default: '#3399ff' },
-    { type: 'color',  id: 'badgeFontColor', label: 'font color', default: '#ffffff'  },
-    { type: 'number', id: 'badgeFontSize',  label: 'font (px)', min: 8, max: 64, step: 1, default: 13 },
+    { type: 'color',    id: 'badgeBgColor',        label: 'bg color',    default: '#3399ff' },
+    { type: 'color',    id: 'badgeFontColor',       label: 'font color',  default: '#ffffff'  },
+    { type: 'number',   id: 'badgeFontSize',        label: 'font (px)',   min: 8,   max: 64,   step: 1,   default: 13   },
+    { type: 'checkbox', id: 'badgePulse',           label: 'pulse',       default: true },
+    { type: 'number',   id: 'badgePulseDuration',   label: 'pulse (ms)',  min: 100, max: 5000, step: 100, default: 1000 },
+    { type: 'number',   id: 'badgePulseScale',      label: 'scale (%)',   min: 100, max: 200,  step: 5,   default: 120  },
   ]},
 ]
 

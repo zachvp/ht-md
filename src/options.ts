@@ -82,6 +82,27 @@ SECTIONS.forEach(s => {
 })
 ADVANCED_FIELDS.forEach(f => document.getElementById('row-advanced')!.append(buildField(f)))
 
+// Group pulse toggle + params into a full-width column: toggle on top, collapsible params below
+const badgePulseParams = (() => {
+  const group  = el('div', { className: 'badge-pulse-group' })
+  const params = el('div', { className: 'badge-pulse-params' })
+
+  const pulseSection = els.badgePulse.closest('.setting') as HTMLElement
+  pulseSection.replaceWith(group)
+  group.append(pulseSection)
+
+  const dur = els.badgePulseDuration.parentElement!
+  dur.replaceWith(params)
+  params.append(dur, els.badgePulseScale.parentElement!)
+  group.append(params)
+
+  return params
+})()
+
+function syncBadgePulseParams(): void {
+  badgePulseParams.hidden = !els.badgePulse.checked
+}
+
 function hexToRgb(hex: string): [number, number, number] | null {
   const m = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i)
   if (m) return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)]
@@ -236,6 +257,8 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
   OFFSET_MAX = stored.offsetMax
   savedFlashDuration = stored.savedFlashDuration
   els.includeSvg.checked = stored.includeSvg
+  els.badgePulse.checked = stored.badgePulse
+  syncBadgePulseParams()
   els.cursorEmojiBtn.textContent = stored.cursorEmoji
   els.multiCursorEmojiBtn.textContent = stored.multiCursorEmoji
   moveDot(stored.cursorOffsetX, stored.cursorOffsetY)
@@ -255,6 +278,10 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
 // Listeners
 els.includeSvg.addEventListener('change', () => {
   storage.set({ includeSvg: els.includeSvg.checked }).then(showSaved)
+})
+els.badgePulse.addEventListener('change', () => {
+  storage.set({ badgePulse: els.badgePulse.checked }).then(showSaved)
+  syncBadgePulseParams()
 })
 
 for (const f of allFields) {
