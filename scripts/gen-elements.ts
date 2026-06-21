@@ -1,8 +1,8 @@
 import { readFileSync, writeFileSync, rmSync, existsSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { SECTIONS, ADVANCED_FIELDS } from '../src/options-fields'
-import type { FieldDef } from '../src/options-fields'
+import { SECTIONS, ADVANCED_FIELDS } from '../src/options/definitions'
+import type { FieldDef } from '../src/options/definitions'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
@@ -63,11 +63,11 @@ const elLines = allEntries.map(({ id, tag }) => {
   return `  get ${padded}() { return document.getElementById('${id}') as ${htmlType(tag)} },`
 })
 
-writeFileSync(resolve(root, 'src/options-elements.generated.ts'), `export const els = {
+writeFileSync(resolve(root, 'src/options/elements.generated.ts'), `export const els = {
 ${elLines.join('\n')}
 }
 `)
-console.log(`wrote src/options-elements.generated.ts (${allEntries.length} entries)`)
+console.log(`wrote src/options/elements.generated.ts (${allEntries.length} entries)`)
 
 // --- settings.generated.ts ---
 
@@ -100,7 +100,7 @@ export type Settings = typeof SETTINGS_DEFAULTS
 console.log(`wrote src/lib/settings.generated.ts (${storageEntries.length} keys)`)
 
 // Remove old non-suffixed files if they exist
-for (const old of ['src/options-elements.ts', 'src/lib/settings.ts']) {
+for (const old of ['src/options-elements.ts', 'src/options-elements.generated.ts', 'src/lib/settings.ts']) {
   const p = resolve(root, old)
   if (existsSync(p)) { rmSync(p); console.log(`removed ${old}`) }
 }
