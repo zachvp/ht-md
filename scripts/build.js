@@ -90,6 +90,19 @@ function buildTarget(name) {
   );
 
   if (name === 'firefox') {
+    // addons-linter (used by web-ext) flags any innerHTML assignment via the
+    // no-unsanitized ESLint rule. The two hits are in bundled third-party code
+    // (uhtml template parser and a replaceChildren polyfill) where the values
+    // are safe, so suppress the rule inline before linting.
+    for (const jsFile of fs.readdirSync(outDir).filter(f => f.endsWith('.js'))) {
+      const filePath = path.join(outDir, jsFile);
+      const patched = fs.readFileSync(filePath, 'utf8').replace(
+        /^([ \t]*.+\.innerHTML\s*=)/gm,
+        '// eslint-disable-next-line no-unsanitized/property\n$1'
+      );
+      fs.writeFileSync(filePath, patched);
+    }
+
     console.log(`[${name}] linting with web-ext`);
     execSync(`npx web-ext lint --source-dir=${JSON.stringify(outDir)} --self-hosted`, {
       cwd: ROOT,
