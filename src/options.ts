@@ -221,10 +221,11 @@ function planeVals(e: MouseEvent): { x: number; y: number } {
 
 // #region * Page Wiring *
 
+const allFields = [...SECTIONS.flatMap(s => s.fields), ...ADVANCED_FIELDS]
+
 // Load
 storage.get(SETTINGS_DEFAULTS).then(s => {
   const stored = s as typeof SETTINGS_DEFAULTS
-  const allFields = [...SECTIONS.flatMap(s => s.fields), ...ADVANCED_FIELDS]
   for (const f of allFields) {
     if (f.type === 'number' || f.type === 'color') {
       const input = document.getElementById(f.id) as HTMLInputElement
@@ -256,16 +257,17 @@ els.includeSvg.addEventListener('change', () => {
   storage.set({ includeSvg: els.includeSvg.checked }).then(showSaved)
 })
 
-makeEmojiPicker(els.cursorEmojiBtn, em => {
-  storage.set({ cursorEmoji: em }).then(showSaved)
-})
-makeEmojiPicker(els.multiCursorEmojiBtn, em => {
-  storage.set({ multiCursorEmoji: em }).then(showSaved)
-})
+for (const f of allFields) {
+  if (f.type !== 'emoji') continue
+  const btn = els[f.id as keyof typeof els] as HTMLButtonElement
+  makeEmojiPicker(btn, em => { storage.set({ [f.storageKey]: em }).then(showSaved) })
+}
 
-els.cursorSize.addEventListener('change', () => {
-  storage.set({ cursorSize: Number(els.cursorSize.value) }).then(showSaved)
-})
+for (const f of allFields) {
+  if (f.type !== 'number') continue
+  const input = els[f.id as keyof typeof els] as HTMLInputElement
+  input.addEventListener('change', () => { storage.set({ [f.id]: Number(input.value) }).then(showSaved) })
+}
 
 els.offsetPlane.addEventListener('mousedown', (e) => {
   planeDragging = true
@@ -285,44 +287,13 @@ document.addEventListener('mouseup', () => {
 
 wireColor(els.badgeBgColor)
 wireColor(els.badgeFontColor)
-els.badgeFontSize.addEventListener('change', () => {
-  storage.set({ badgeFontSize: Number(els.badgeFontSize.value) }).then(showSaved)
-})
-
 wireColor(els.outlineColor)
-
-els.outlineWidth.addEventListener('change', () => {
-  storage.set({ outlineWidth: Number(els.outlineWidth.value) }).then(showSaved)
-})
-
-els.insetWidth.addEventListener('change', () => {
-  storage.set({ insetWidth: Number(els.insetWidth.value) }).then(showSaved)
-})
-
-els.toastFontSize.addEventListener('change', () => {
-  storage.set({ toastFontSize: Number(els.toastFontSize.value) }).then(showSaved)
-})
-
-els.flashPause.addEventListener('change', () => {
-  storage.set({ flashPause: Number(els.flashPause.value) }).then(showSaved)
-})
-
-els.flashDuration.addEventListener('change', () => {
-  storage.set({ flashDuration: Number(els.flashDuration.value) }).then(showSaved)
-})
-
-els.flashFallDistance.addEventListener('change', () => {
-  storage.set({ flashFallDistance: Number(els.flashFallDistance.value) }).then(showSaved)
-})
 
 wireColor(els.flashFontColor)
 wireColor(els.flashBgColor)
 
 els.optionsFontSize.addEventListener('input', () => {
   document.body.style.fontSize = `${els.optionsFontSize.value}px`
-})
-els.optionsFontSize.addEventListener('change', () => {
-  storage.set({ optionsFontSize: Number(els.optionsFontSize.value) }).then(showSaved)
 })
 
 wireColor(els.optionsFontColor, () => {
@@ -339,15 +310,8 @@ wireColor(els.sectionBgColor, () => {
   document.documentElement.style.setProperty('--ui-overlay-xs', els.sectionBgColor.value)
 })
 
-els.offsetMax.addEventListener('change', () => {
-  OFFSET_MAX = Number(els.offsetMax.value)
-  storage.set({ offsetMax: OFFSET_MAX }).then(showSaved)
-})
-
-els.savedFlashDuration.addEventListener('change', () => {
-  savedFlashDuration = Number(els.savedFlashDuration.value)
-  storage.set({ savedFlashDuration }).then(showSaved)
-})
+els.offsetMax.addEventListener('change', () => { OFFSET_MAX = Number(els.offsetMax.value) })
+els.savedFlashDuration.addEventListener('change', () => { savedFlashDuration = Number(els.savedFlashDuration.value) })
 
 // Import / export
 els.copyJsonBtn.addEventListener('click', () => {
