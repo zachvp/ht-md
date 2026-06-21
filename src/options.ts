@@ -138,7 +138,6 @@ const offsetPlane = document.getElementById('offsetPlane') as HTMLDivElement
 const offsetDot = document.getElementById('offsetDot') as HTMLDivElement
 const offsetCoords = document.getElementById('offsetCoords') as HTMLSpanElement
 const outlineColorInput = document.getElementById('outlineColor') as HTMLInputElement
-const outlineColorSwatch = document.getElementById('outlineColorSwatch') as HTMLSpanElement
 const outlineWidthInput = document.getElementById('outlineWidth') as HTMLInputElement
 const insetWidthInput = document.getElementById('insetWidth') as HTMLInputElement
 const flashFontSizeInput = document.getElementById('flashFontSize') as HTMLInputElement
@@ -146,21 +145,14 @@ const flashPauseInput = document.getElementById('flashPause') as HTMLInputElemen
 const flashDurationInput = document.getElementById('flashDuration') as HTMLInputElement
 const flashFallDistanceInput = document.getElementById('flashFallDistance') as HTMLInputElement
 const flashFontColorInput = document.getElementById('flashFontColor') as HTMLInputElement
-const flashFontColorSwatch = document.getElementById('flashFontColorSwatch') as HTMLSpanElement
 const flashBgColorInput = document.getElementById('flashBgColor') as HTMLInputElement
-const flashBgColorSwatch = document.getElementById('flashBgColorSwatch') as HTMLSpanElement
 const badgeBgColorInput = document.getElementById('badgeBgColor') as HTMLInputElement
-const badgeBgColorSwatch = document.getElementById('badgeBgColorSwatch') as HTMLSpanElement
 const badgeFontColorInput = document.getElementById('badgeFontColor') as HTMLInputElement
-const badgeFontColorSwatch = document.getElementById('badgeFontColorSwatch') as HTMLSpanElement
 const badgeFontSizeInput = document.getElementById('badgeFontSize') as HTMLInputElement
 const optionsFontSizeInput = document.getElementById('optionsFontSize') as HTMLInputElement
 const optionsFontColorInput = document.getElementById('optionsFontColor') as HTMLInputElement
-const optionsFontColorSwatch = document.getElementById('optionsFontColorSwatch') as HTMLSpanElement
 const optionsBgColorInput = document.getElementById('optionsBgColor') as HTMLInputElement
-const optionsBgColorSwatch = document.getElementById('optionsBgColorSwatch') as HTMLSpanElement
 const sectionBgColorInput = document.getElementById('sectionBgColor') as HTMLInputElement
-const sectionBgColorSwatch = document.getElementById('sectionBgColorSwatch') as HTMLSpanElement
 const offsetMaxInput = document.getElementById('offsetMax') as HTMLInputElement
 const savedFlashDurationInput = document.getElementById('savedFlashDuration') as HTMLInputElement
 const status = document.getElementById('status') as HTMLParagraphElement
@@ -255,12 +247,8 @@ function syncSwatch(input: HTMLInputElement, swatch: HTMLElement): void {
   swatch.style.background = input.value
 }
 
-function wireColor(
-  input: HTMLInputElement,
-  swatch: HTMLElement,
-  storageKey: string,
-  onInput?: () => void,
-): void {
+function wireColor(input: HTMLInputElement, onInput?: () => void): void {
+  const swatch = document.getElementById(`${input.id}Swatch`) as HTMLElement
   const picker = document.createElement('input')
   picker.type = 'color'
   picker.style.cssText = 'position:absolute;width:0;height:0;opacity:0;pointer-events:none'
@@ -280,11 +268,11 @@ function wireColor(
     input.value = picker.value + getAlphaSuffix(input.value)
     syncSwatch(input, swatch)
     onInput?.()
-    storage.set({ [storageKey]: input.value }).then(showSaved)
+    storage.set({ [input.id]: input.value }).then(showSaved)
   })
 
   input.addEventListener('input', () => { syncSwatch(input, swatch); onInput?.() })
-  input.addEventListener('change', () => storage.set({ [storageKey]: input.value }).then(showSaved))
+  input.addEventListener('change', () => storage.set({ [input.id]: input.value }).then(showSaved))
 }
 
 // 2D offset plane
@@ -326,50 +314,29 @@ document.addEventListener('mouseup', () => {
 })
 
 // Load
-storage.get(SETTINGS_DEFAULTS).then(({ includeSvg, cursorEmoji, multiCursorEmoji, cursorSize, cursorOffsetX, cursorOffsetY,
-          outlineColor, outlineWidth, insetWidth, flashFontSize, flashFontColor, flashBgColor, flashPause, flashDuration, flashFallDistance,
-          badgeBgColor, badgeFontColor, badgeFontSize,
-          optionsFontSize, optionsFontColor, optionsBgColor, sectionBgColor, offsetMax, savedFlashDuration: sfd }) => {
-  OFFSET_MAX = offsetMax as number
-  checkbox.checked = includeSvg as boolean
-  cursorEmojiBtn.textContent = cursorEmoji as string
-  multiCursorEmojiBtn.textContent = multiCursorEmoji as string
-  cursorSizeInput.value = String(cursorSize)
-  moveDot(cursorOffsetX as number, cursorOffsetY as number)
-  outlineColorInput.value = outlineColor as string
-  syncSwatch(outlineColorInput, outlineColorSwatch)
-  outlineWidthInput.value = String(outlineWidth)
-  insetWidthInput.value = String(insetWidth)
-  flashFontSizeInput.value = String(flashFontSize)
-  flashPauseInput.value = String(flashPause)
-  flashDurationInput.value = String(flashDuration)
-  flashFallDistanceInput.value = String(flashFallDistance)
-  flashFontColorInput.value = flashFontColor as string
-  syncSwatch(flashFontColorInput, flashFontColorSwatch)
-  flashBgColorInput.value = flashBgColor as string
-  syncSwatch(flashBgColorInput, flashBgColorSwatch)
-  badgeBgColorInput.value = badgeBgColor as string
-  syncSwatch(badgeBgColorInput, badgeBgColorSwatch)
-  badgeFontColorInput.value = badgeFontColor as string
-  syncSwatch(badgeFontColorInput, badgeFontColorSwatch)
-  badgeFontSizeInput.value = String(badgeFontSize)
-  optionsFontSizeInput.value = String(optionsFontSize)
-  optionsFontColorInput.value = optionsFontColor as string
-  syncSwatch(optionsFontColorInput, optionsFontColorSwatch)
-  optionsBgColorInput.value = optionsBgColor as string
-  syncSwatch(optionsBgColorInput, optionsBgColorSwatch)
-  document.body.style.fontSize = `${optionsFontSize}px`
-  document.body.style.color = optionsFontColor as string
-  document.body.style.background = optionsBgColor as string
-  pickerColors.fontColor = optionsFontColor as string
-  pickerColors.bgColor = optionsBgColor as string
-  applyDocumentTheme(optionsFontColor as string, optionsBgColor as string)
-  sectionBgColorInput.value = sectionBgColor as string
-  syncSwatch(sectionBgColorInput, sectionBgColorSwatch)
-  document.documentElement.style.setProperty('--ui-overlay-xs', sectionBgColor as string)
-  offsetMaxInput.value = String(offsetMax)
-  savedFlashDuration = sfd as number
-  savedFlashDurationInput.value = String(sfd)
+storage.get(SETTINGS_DEFAULTS).then(s => {
+  const stored = s as typeof SETTINGS_DEFAULTS
+  const allFields = [...SECTIONS.flatMap(s => s.fields), ...ADVANCED_FIELDS]
+  for (const f of allFields) {
+    if (f.type === 'number' || f.type === 'color') {
+      const input = document.getElementById(f.id) as HTMLInputElement
+      input.value = String(stored[f.id as keyof typeof SETTINGS_DEFAULTS])
+      if (f.type === 'color') syncSwatch(input, document.getElementById(`${f.id}Swatch`) as HTMLElement)
+    }
+  }
+  OFFSET_MAX = stored.offsetMax
+  savedFlashDuration = stored.savedFlashDuration
+  checkbox.checked = stored.includeSvg
+  cursorEmojiBtn.textContent = stored.cursorEmoji
+  multiCursorEmojiBtn.textContent = stored.multiCursorEmoji
+  moveDot(stored.cursorOffsetX, stored.cursorOffsetY)
+  document.body.style.fontSize = `${stored.optionsFontSize}px`
+  document.body.style.color = stored.optionsFontColor
+  document.body.style.background = stored.optionsBgColor
+  pickerColors.fontColor = stored.optionsFontColor
+  pickerColors.bgColor = stored.optionsBgColor
+  applyDocumentTheme(stored.optionsFontColor, stored.optionsBgColor)
+  document.documentElement.style.setProperty('--ui-overlay-xs', stored.sectionBgColor)
 }).then(() => {
   storage.get(SETTINGS_DEFAULTS).then(stored => {
     configJsonTextarea.value = JSON.stringify(stored, null, 2)
@@ -392,13 +359,13 @@ cursorSizeInput.addEventListener('change', () => {
   storage.set({ cursorSize: Number(cursorSizeInput.value) }).then(showSaved)
 })
 
-wireColor(badgeBgColorInput, badgeBgColorSwatch, 'badgeBgColor')
-wireColor(badgeFontColorInput, badgeFontColorSwatch, 'badgeFontColor')
+wireColor(badgeBgColorInput)
+wireColor(badgeFontColorInput)
 badgeFontSizeInput.addEventListener('change', () => {
   storage.set({ badgeFontSize: Number(badgeFontSizeInput.value) }).then(showSaved)
 })
 
-wireColor(outlineColorInput, outlineColorSwatch, 'outlineColor')
+wireColor(outlineColorInput)
 
 outlineWidthInput.addEventListener('change', () => {
   storage.set({ outlineWidth: Number(outlineWidthInput.value) }).then(showSaved)
@@ -424,8 +391,8 @@ flashFallDistanceInput.addEventListener('change', () => {
   storage.set({ flashFallDistance: Number(flashFallDistanceInput.value) }).then(showSaved)
 })
 
-wireColor(flashFontColorInput, flashFontColorSwatch, 'flashFontColor')
-wireColor(flashBgColorInput, flashBgColorSwatch, 'flashBgColor')
+wireColor(flashFontColorInput)
+wireColor(flashBgColorInput)
 
 optionsFontSizeInput.addEventListener('input', () => {
   document.body.style.fontSize = `${optionsFontSizeInput.value}px`
@@ -434,17 +401,17 @@ optionsFontSizeInput.addEventListener('change', () => {
   storage.set({ optionsFontSize: Number(optionsFontSizeInput.value) }).then(showSaved)
 })
 
-wireColor(optionsFontColorInput, optionsFontColorSwatch, 'optionsFontColor', () => {
+wireColor(optionsFontColorInput, () => {
   document.body.style.color = optionsFontColorInput.value
   pickerColors.fontColor = optionsFontColorInput.value
   applyDocumentTheme(optionsFontColorInput.value, optionsBgColorInput.value)
 })
-wireColor(optionsBgColorInput, optionsBgColorSwatch, 'optionsBgColor', () => {
+wireColor(optionsBgColorInput, () => {
   document.body.style.background = optionsBgColorInput.value
   pickerColors.bgColor = optionsBgColorInput.value
   applyDocumentTheme(optionsFontColorInput.value, optionsBgColorInput.value)
 })
-wireColor(sectionBgColorInput, sectionBgColorSwatch, 'sectionBgColor', () => {
+wireColor(sectionBgColorInput, () => {
   document.documentElement.style.setProperty('--ui-overlay-xs', sectionBgColorInput.value)
 })
 
