@@ -2,7 +2,8 @@ import 'emoji-picker-element'
 import { SETTINGS_DEFAULTS } from './lib/settings'
 import { storage } from './lib/storage'
 
-// ---- Types ----
+// #region * Building Blocks *
+
 type NumberField   = { type: 'number';   id: string; label: string; min: number; max: number; step: number }
 type ColorField    = { type: 'color';    id: string; label: string }
 type EmojiField    = { type: 'emoji';    id: string; label: string }
@@ -11,7 +12,6 @@ type CheckboxField = { type: 'checkbox'; id: string; label: string; tooltip?: st
 type FieldDef = NumberField | ColorField | EmojiField | PlaneField | CheckboxField
 type SectionDef = { rowId: string; fields: FieldDef[] }
 
-// ---- Data ----
 const SECTIONS: SectionDef[] = [
   { rowId: 'row-cursor', fields: [
     { type: 'emoji',  id: 'cursorEmojiBtn',      label: 'cursor' },
@@ -45,7 +45,6 @@ const SECTIONS: SectionDef[] = [
   ]},
 ]
 
-// ---- Builders ----
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Partial<HTMLElementTagNameMap[K]> = {}): HTMLElementTagNameMap[K] {
   return Object.assign(document.createElement(tag), attrs)
 }
@@ -122,7 +121,6 @@ const ADVANCED_FIELDS: FieldDef[] = [
     tooltip: 'When on, inline SVGs and SVG data URIs are included in the copied Markdown output.' },
 ]
 
-// ---- Render — inject fields into HTML-defined section rows ----
 SECTIONS.forEach(s => {
   const row = document.getElementById(s.rowId)!
   s.fields.forEach(f => row.append(buildField(f)))
@@ -264,7 +262,10 @@ function planeVals(e: MouseEvent): { x: number; y: number } {
   }
 }
 
-// ---- Element refs ----
+// #endregion
+
+// #region * Page Wiring *
+
 const checkbox = document.getElementById('includeSvg') as HTMLInputElement
 const cursorEmojiBtn = document.getElementById('cursorEmojiBtn') as HTMLButtonElement
 const multiCursorEmojiBtn = document.getElementById('multiCursorEmojiBtn') as HTMLButtonElement
@@ -489,3 +490,5 @@ document.querySelectorAll<HTMLInputElement>('input[type=number]').forEach(input 
   }
   wrap.appendChild(btns)
 })
+
+// #endregion
