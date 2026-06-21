@@ -20,7 +20,7 @@ export const SETTINGS_DEFAULTS = {
   optionsBgColor    : '#000000',
   sectionBgColor    : '#121212',
   resetBtnSize      : 14,
-  resetBtnColor     : '#ffffff',
+  resetBtnColor     : '#ffffff66',
   offsetMax         : 16,
   savedFlashDuration: 1500,
   includeSvg        : false,
