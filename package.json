@@ -11,8 +11,8 @@
     "build:all": "node scripts/build.js all",
     "gen:elements": "tsx scripts/gen-elements.ts",
     "build": "npm run gen:elements && node scripts/build.js all",
-    "sign:firefox": "npm run build:firefox && node scripts/sign-firefox.js",
-    "publish:firefox": "npm run build:firefox && node scripts/publish-firefox.js",
+    "sign:firefox": "npm run build:firefox && node scripts/firefox-amo.js unlisted",
+    "publish:firefox": "npm run build:firefox && node scripts/firefox-amo.js listed",
     "typecheck": "tsc --noEmit",
     "gen-icons": "tsx scripts/gen-icons.ts",
     "watch": "node scripts/watch.js"

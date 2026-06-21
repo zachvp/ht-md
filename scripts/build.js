@@ -54,9 +54,7 @@ function buildTarget(name) {
   );
 
   console.log(`[${name}] copying static assets`);
-  const cssSource = fs.readFileSync(path.join(ROOT, 'content.css'), 'utf8')
-    .replace(/\{\{EXT_NAME\}\}/g, pkg.name);
-  fs.writeFileSync(path.join(outDir, 'content.css'), cssSource);
+  fs.copyFileSync(path.join(ROOT, 'content.css'), path.join(outDir, 'content.css'));
   fs.copyFileSync(path.join(ROOT, 'turndown.js'), path.join(outDir, 'turndown.js'));
   fs.copyFileSync(path.join(ROOT, 'options.html'), path.join(outDir, 'options.html'));
   fs.cpSync(path.join(ROOT, 'icons'), path.join(outDir, 'icons'), { recursive: true });
@@ -70,7 +68,7 @@ function buildTarget(name) {
   const override = Object.fromEntries(
     Object.entries(overrideRaw).filter(([key]) => !key.startsWith('_'))
   );
-  const merged = { ...base, name: pkg.name, ...override };
+  const merged = { ...base, ...override };
 
   const manifestError = checkBackgroundKey(merged, config);
   if (manifestError) {
@@ -93,19 +91,6 @@ function buildTarget(name) {
   );
 
   if (name === 'firefox') {
-    // addons-linter (used by web-ext) flags any innerHTML assignment via the
-    // no-unsanitized ESLint rule. The two hits are in bundled third-party code
-    // (uhtml template parser and a replaceChildren polyfill) where the values
-    // are safe, so suppress the rule inline before linting.
-    for (const jsFile of fs.readdirSync(outDir).filter(f => f.endsWith('.js'))) {
-      const filePath = path.join(outDir, jsFile);
-      const src = fs.readFileSync(filePath, 'utf8');
-      const patched = src.includes('.innerHTML')
-        ? '/* eslint-disable no-unsanitized/property */\n' + src
-        : src;
-      fs.writeFileSync(filePath, patched);
-    }
-
     console.log(`[${name}] linting with web-ext`);
     execSync(`npx web-ext lint --source-dir=${JSON.stringify(outDir)} --self-hosted`, {
       cwd: ROOT,
