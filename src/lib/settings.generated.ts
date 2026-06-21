@@ -19,15 +19,15 @@ export const SETTINGS_DEFAULTS = {
   optionsFontColor  : '#ffffff',
   optionsBgColor    : '#000000',
   sectionBgColor    : '#121212',
+  offsetMax         : 16,
+  savedFlashDuration: 1500,
+  includeSvg        : false,
   badgeBgColor      : '#3399ff',
   badgeFontColor    : '#ffffff',
   badgeFontSize     : 13,
   badgePulse        : true,
   badgePulseDuration: 1000,
   badgePulseScale   : 120,
-  offsetMax         : 16,
-  savedFlashDuration: 1500,
-  includeSvg        : false,
 }
 
 export type Settings = typeof SETTINGS_DEFAULTS

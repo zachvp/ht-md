@@ -45,10 +45,14 @@ export const SECTIONS: SectionDef[] = [
     { type: 'color',  id: 'flashBgColor',      label: 'bg color',   default: '#000000cc' },
   ]},
   { rowId: 'row-options', fields: [
-    { type: 'number', id: 'optionsFontSize',  label: 'font (px)', min: 1, max: 1024, step: 1, default: 22       },
-    { type: 'color',  id: 'optionsFontColor', label: 'font color',                            default: '#ffffff' },
-    { type: 'color',  id: 'optionsBgColor',   label: 'bg color',                              default: '#000000' },
-    { type: 'color',  id: 'sectionBgColor',   label: 'section bg',                            default: '#121212' },
+    { type: 'number',   id: 'optionsFontSize',    label: 'font (px)',        min: 1,   max: 1024,  step: 1,   default: 22       },
+    { type: 'color',    id: 'optionsFontColor',   label: 'font color',                                        default: '#ffffff' },
+    { type: 'color',    id: 'optionsBgColor',     label: 'bg color',                                          default: '#000000' },
+    { type: 'color',    id: 'sectionBgColor',     label: 'section bg',                                        default: '#121212' },
+    { type: 'number',   id: 'offsetMax',          label: 'offset max (±)',   min: 1,   max: 1000,  step: 1,   default: 16       },
+    { type: 'number',   id: 'savedFlashDuration', label: 'saved flash (ms)', min: 100, max: 10000, step: 100, default: 1500     },
+    { type: 'checkbox', id: 'includeSvg', label: 'Include SVG in output', default: false,
+      tooltip: 'When on, inline SVGs and SVG data URIs are included in the copied Markdown output.' },
   ]},
   { rowId: 'row-badge', fields: [
     { type: 'color',    id: 'badgeBgColor',        label: 'bg color',    default: '#3399ff' },
@@ -60,9 +64,3 @@ export const SECTIONS: SectionDef[] = [
   ]},
 ]
 
-export const ADVANCED_FIELDS: FieldDef[] = [
-  { type: 'number',   id: 'offsetMax',          label: 'offset max (±)',   min: 1,   max: 1000,  step: 1,   default: 16   },
-  { type: 'number',   id: 'savedFlashDuration', label: 'saved flash (ms)', min: 100, max: 10000, step: 100, default: 1500 },
-  { type: 'checkbox', id: 'includeSvg', label: 'Include SVG in output', default: false,
-    tooltip: 'When on, inline SVGs and SVG data URIs are included in the copied Markdown output.' },
-]

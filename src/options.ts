@@ -2,7 +2,7 @@ import 'emoji-picker-element'
 import { EXT_NAME } from './lib/constants'
 import { SETTINGS_DEFAULTS } from './lib/settings.generated'
 import { storage } from './lib/storage'
-import { SECTIONS, ADVANCED_FIELDS } from './options/definitions'
+import { SECTIONS } from './options/definitions'
 import type { NumberField, ColorField, EmojiField, PlaneField, CheckboxField, KeybindField, SelectField, FieldDef } from './options/definitions'
 import { els } from './options/elements.generated'
 
@@ -12,11 +12,18 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Partial<HTMLEl
   return Object.assign(document.createElement(tag), attrs)
 }
 
-function fieldStack(label: string, ...children: HTMLElement[]): HTMLDivElement {
-  const div = el('div', { className: 'field-stack' })
-  const lbl = el('span', { className: 'field-label', textContent: label })
+function labeledControl(className: string, lbl: HTMLElement, ...children: HTMLElement[]): HTMLDivElement {
+  const div = el('div', { className })
   div.append(...children, lbl)
   return div
+}
+
+function fieldStack(label: string, ...children: HTMLElement[]): HTMLDivElement {
+  return labeledControl('field-stack', el('span', { className: 'field-label', textContent: label }), ...children)
+}
+
+function fieldRow(label: string, forId: string, ...children: HTMLElement[]): HTMLDivElement {
+  return labeledControl('field-row', el('label', { className: 'field-label', textContent: label, htmlFor: forId }), ...children)
 }
 
 function buildNumberField(f: NumberField): HTMLElement {
@@ -65,20 +72,17 @@ function buildKeybindField(f: KeybindField): HTMLElement {
 }
 
 function buildCheckboxField(f: CheckboxField): HTMLElement {
-  const section = el('div', { className: 'section setting' })
-  const label   = el('label', { className: 'checkbox' })
-  const input   = el('input', { id: f.id })
+  const input = el('input', { id: f.id })
   input.type = 'checkbox'
-  label.append(input, document.createTextNode(` ${f.label}`))
+  const row = fieldRow(f.label, f.id, input)
   if (f.tooltip) {
     const wrap = el('span', { className: 'info-wrap' })
     const icon = el('span', { className: 'info-icon', textContent: 'ⓘ' })
     const tip  = el('span', { className: 'info-tip',  textContent: f.tooltip })
     wrap.append(icon, tip)
-    label.append(wrap)
+    row.append(wrap)
   }
-  section.append(label)
-  return section
+  return row
 }
 
 const FIELD_BUILDERS = {
@@ -102,14 +106,13 @@ SECTIONS.forEach(s => {
   const row = document.getElementById(s.rowId)!
   s.fields.forEach(f => row.append(buildField(f)))
 })
-ADVANCED_FIELDS.forEach(f => document.getElementById('row-advanced')!.append(buildField(f)))
 
 // Group pulse toggle + params into a full-width column: toggle on top, collapsible params below
 const badgePulseParams = (() => {
   const group  = el('div', { className: 'badge-pulse-group' })
   const params = el('div', { className: 'badge-pulse-params' })
 
-  const pulseSection = els.badgePulse.closest('.setting') as HTMLElement
+  const pulseSection = els.badgePulse.closest('.field-row') as HTMLElement
   pulseSection.replaceWith(group)
   group.append(pulseSection)
 
@@ -283,7 +286,7 @@ function planeVals(e: MouseEvent): { x: number; y: number } {
 
 // #region * Page Wiring *
 
-const allFields = [...SECTIONS.flatMap(s => s.fields), ...ADVANCED_FIELDS]
+const allFields = SECTIONS.flatMap(s => s.fields)
 
 // Load
 storage.get(SETTINGS_DEFAULTS).then(s => {

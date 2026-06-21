@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, rmSync, existsSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { SECTIONS, ADVANCED_FIELDS } from '../src/options/definitions'
+import { SECTIONS } from '../src/options/definitions'
 import type { FieldDef } from '../src/options/definitions'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -30,7 +30,7 @@ function htmlType(tag: keyof HTMLElementTagNameMap): string {
   return TAG_TO_HTML_TYPE[tag] ?? 'HTMLElement'
 }
 
-const allFields = [...SECTIONS.flatMap(s => s.fields), ...ADVANCED_FIELDS]
+const allFields = SECTIONS.flatMap(s => s.fields)
 
 // --- options-elements.generated.ts ---
 
