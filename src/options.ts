@@ -39,20 +39,22 @@ const keybindResetRefs = new Map<string, { fn: () => void }>()
 function buildNumberField(f: NumberField): HTMLElement {
   const input = el('input', { id: f.id, min: String(f.min), max: String(f.max), step: String(f.step) })
   input.type = 'number'
-  const rst = makeResetBtn(() => { input.value = String(f.default); input.dispatchEvent(new Event('change')) })
-  return fieldStack(f.label, rst, input)
+  const stack = fieldStack(f.label, input)
+  stack.append(makeResetBtn(() => { input.value = String(f.default); input.dispatchEvent(new Event('change')) }))
+  return stack
 }
 
 function buildColorField(f: ColorField): HTMLElement {
   const input = el('input', { id: f.id, className: 'color-text', placeholder: '#rrggbbaa' })
   input.type = 'text'
   const swatch = el('span', { className: 'color-band', id: `${f.id}Swatch` })
-  const rst = makeResetBtn(() => {
+  const stack = fieldStack(f.label, swatch, input)
+  stack.append(makeResetBtn(() => {
     input.value = f.default
     input.dispatchEvent(new Event('input'))
     input.dispatchEvent(new Event('change'))
-  })
-  return fieldStack(f.label, rst, swatch, input)
+  }))
+  return stack
 }
 
 function buildEmojiField(f: EmojiField): HTMLElement {
@@ -60,8 +62,9 @@ function buildEmojiField(f: EmojiField): HTMLElement {
   const btn = el('button', { className: 'emoji-pick-btn', id: f.id })
   btn.type = 'button'
   wrap.append(btn)
-  const rst = makeResetBtn(() => { btn.textContent = f.default; storage.set({ [f.storageKey]: f.default }).then(showSaved) })
-  return fieldStack(f.label, rst, wrap)
+  const stack = fieldStack(f.label, wrap)
+  stack.append(makeResetBtn(() => { btn.textContent = f.default; storage.set({ [f.storageKey]: f.default }).then(showSaved) }))
+  return stack
 }
 
 function buildPlaneField(f: PlaneField): HTMLElement {
@@ -70,11 +73,12 @@ function buildPlaneField(f: PlaneField): HTMLElement {
   const dot    = el('div',  { className: 'plane-dot', id: 'offsetDot' })
   plane.append(el('div', { className: 'plane-hline' }), el('div', { className: 'plane-vline' }), dot)
   const [defX, defY] = [f.storage[0].default, f.storage[1].default]
-  const rst = makeResetBtn(() => {
+  const stack = fieldStack(f.label, coords, plane)
+  stack.append(makeResetBtn(() => {
     moveDot(defX, defY)
     storage.set({ cursorOffsetX: defX, cursorOffsetY: defY }).then(showSaved)
-  })
-  return fieldStack(f.label, rst, coords, plane)
+  }))
+  return stack
 }
 
 function buildSelectField(f: SelectField): HTMLElement {
@@ -84,8 +88,9 @@ function buildSelectField(f: SelectField): HTMLElement {
     select.append(el('option', { value: opt.value, textContent: opt.label }))
   }
   wrap.append(select)
-  const rst = makeResetBtn(() => { select.value = f.default; select.dispatchEvent(new Event('change')) })
-  return fieldStack(f.label, rst, wrap)
+  const stack = fieldStack(f.label, wrap)
+  stack.append(makeResetBtn(() => { select.value = f.default; select.dispatchEvent(new Event('change')) }))
+  return stack
 }
 
 function buildKeybindField(f: KeybindField): HTMLElement {
@@ -93,7 +98,9 @@ function buildKeybindField(f: KeybindField): HTMLElement {
   btn.type = 'button'
   const ref = { fn: () => {} }
   keybindResetRefs.set(f.id, ref)
-  return fieldStack(f.label, makeResetBtn(() => ref.fn()), btn)
+  const stack = fieldStack(f.label, btn)
+  stack.append(makeResetBtn(() => ref.fn()))
+  return stack
 }
 
 function buildCheckboxField(f: CheckboxField): HTMLElement {
@@ -360,6 +367,8 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
   pickerColors.bgColor = stored.optionsBgColor
   applyDocumentTheme(stored.optionsFontColor, stored.optionsBgColor)
   document.documentElement.style.setProperty('--ui-overlay-xs', stored.sectionBgColor)
+  document.documentElement.style.setProperty('--reset-btn-size',  `${stored.resetBtnSize}px`)
+  document.documentElement.style.setProperty('--reset-btn-color', stored.resetBtnColor)
 }).then(() => {
   storage.get(SETTINGS_DEFAULTS).then(stored => {
     els.configJson.value = JSON.stringify(stored, null, 2)
@@ -416,6 +425,9 @@ wireColor(els.flashBgColor)
 els.optionsFontSize.addEventListener('input', () => {
   document.body.style.fontSize = `${els.optionsFontSize.value}px`
 })
+els.resetBtnSize.addEventListener('input', () => {
+  document.documentElement.style.setProperty('--reset-btn-size', `${els.resetBtnSize.value}px`)
+})
 
 wireColor(els.optionsFontColor, () => {
   document.body.style.color = els.optionsFontColor.value
@@ -429,6 +441,9 @@ wireColor(els.optionsBgColor, () => {
 })
 wireColor(els.sectionBgColor, () => {
   document.documentElement.style.setProperty('--ui-overlay-xs', els.sectionBgColor.value)
+})
+wireColor(els.resetBtnColor, () => {
+  document.documentElement.style.setProperty('--reset-btn-color', els.resetBtnColor.value)
 })
 
 els.offsetMax.addEventListener('change', () => { OFFSET_MAX = Number(els.offsetMax.value) })

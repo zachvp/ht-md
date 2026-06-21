@@ -20,6 +20,8 @@ export const els = {
   get optionsFontColor   () { return document.getElementById('optionsFontColor') as HTMLInputElement },
   get optionsBgColor     () { return document.getElementById('optionsBgColor') as HTMLInputElement },
   get sectionBgColor     () { return document.getElementById('sectionBgColor') as HTMLInputElement },
+  get resetBtnSize       () { return document.getElementById('resetBtnSize') as HTMLInputElement },
+  get resetBtnColor      () { return document.getElementById('resetBtnColor') as HTMLInputElement },
   get offsetMax          () { return document.getElementById('offsetMax') as HTMLInputElement },
   get savedFlashDuration () { return document.getElementById('savedFlashDuration') as HTMLInputElement },
   get includeSvg         () { return document.getElementById('includeSvg') as HTMLInputElement },

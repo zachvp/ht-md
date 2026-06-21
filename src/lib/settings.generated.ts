@@ -19,6 +19,8 @@ export const SETTINGS_DEFAULTS = {
   optionsFontColor  : '#ffffff',
   optionsBgColor    : '#000000',
   sectionBgColor    : '#121212',
+  resetBtnSize      : 14,
+  resetBtnColor     : '#ffffff',
   offsetMax         : 16,
   savedFlashDuration: 1500,
   includeSvg        : false,
