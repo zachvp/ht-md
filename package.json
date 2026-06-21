@@ -9,7 +9,8 @@
     "build:firefox": "node scripts/build.js firefox",
     "build:chrome": "node scripts/build.js chrome",
     "build:all": "node scripts/build.js all",
-    "build": "node scripts/build.js all",
+    "gen:elements": "tsx scripts/gen-elements.ts",
+    "build": "npm run gen:elements && node scripts/build.js all",
     "sign:firefox": "npm run build:firefox && node scripts/sign-firefox.js",
     "publish:firefox": "npm run build:firefox && node scripts/publish-firefox.js",
     "typecheck": "tsc --noEmit",
@@ -27,6 +28,7 @@
     "esbuild": "^0.28.0",
     "eslint": "^10.4.0",
     "globals": "^17.6.0",
+    "tsx": "^4.22.4",
     "typescript": "^6.0.3",
     "web-ext": "^10.4.0"
   },

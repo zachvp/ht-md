@@ -1,49 +1,11 @@
 import 'emoji-picker-element'
 import { SETTINGS_DEFAULTS } from './lib/settings'
 import { storage } from './lib/storage'
+import { SECTIONS, ADVANCED_FIELDS } from './options-fields'
+import type { NumberField, ColorField, EmojiField, PlaneField, CheckboxField, FieldDef } from './options-fields'
+import { els } from './options-elements'
 
 // #region * Building Blocks *
-
-type NumberField   = { type: 'number';   id: string; label: string; min: number; max: number; step: number }
-type ColorField    = { type: 'color';    id: string; label: string }
-type EmojiField    = { type: 'emoji';    id: string; label: string }
-type PlaneField    = { type: 'plane';    label: string }
-type CheckboxField = { type: 'checkbox'; id: string; label: string; tooltip?: string }
-type FieldDef = NumberField | ColorField | EmojiField | PlaneField | CheckboxField
-type SectionDef = { rowId: string; fields: FieldDef[] }
-
-const SECTIONS: SectionDef[] = [
-  { rowId: 'row-cursor', fields: [
-    { type: 'emoji',  id: 'cursorEmojiBtn',      label: 'cursor' },
-    { type: 'emoji',  id: 'multiCursorEmojiBtn', label: 'multiselect' },
-    { type: 'number', id: 'cursorSize',           label: 'size (px)',  min: 16,  max: 1024,  step: 4   },
-    { type: 'plane',  label: 'offset (px)' },
-  ]},
-  { rowId: 'row-highlight', fields: [
-    { type: 'color',  id: 'outlineColor', label: 'outline color' },
-    { type: 'number', id: 'outlineWidth', label: 'outer (px)', min: 1, max: 1024, step: 1 },
-    { type: 'number', id: 'insetWidth',   label: 'inner (px)', min: 0, max: 1024, step: 1 },
-  ]},
-  { rowId: 'row-message', fields: [
-    { type: 'number', id: 'flashFontSize',     label: 'font (px)',  min: 1,   max: 1024,  step: 1   },
-    { type: 'number', id: 'flashPause',        label: 'pause (ms)', min: 0,   max: 5000,  step: 50  },
-    { type: 'number', id: 'flashDuration',     label: 'fall (ms)',  min: 100, max: 10000, step: 100 },
-    { type: 'number', id: 'flashFallDistance', label: 'dist (px)',  min: 0,   max: 2000,  step: 10  },
-    { type: 'color',  id: 'flashFontColor',    label: 'font color' },
-    { type: 'color',  id: 'flashBgColor',      label: 'bg color' },
-  ]},
-  { rowId: 'row-options', fields: [
-    { type: 'number', id: 'optionsFontSize',  label: 'font (px)', min: 1, max: 1024, step: 1 },
-    { type: 'color',  id: 'optionsFontColor', label: 'font color' },
-    { type: 'color',  id: 'optionsBgColor',   label: 'bg color' },
-    { type: 'color',  id: 'sectionBgColor',   label: 'section bg' },
-  ]},
-  { rowId: 'row-badge', fields: [
-    { type: 'color',  id: 'badgeBgColor',   label: 'bg color' },
-    { type: 'color',  id: 'badgeFontColor', label: 'font color' },
-    { type: 'number', id: 'badgeFontSize',  label: 'font (px)', min: 8, max: 64, step: 1 },
-  ]},
-]
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Partial<HTMLElementTagNameMap[K]> = {}): HTMLElementTagNameMap[K] {
   return Object.assign(document.createElement(tag), attrs)
@@ -113,13 +75,6 @@ const FIELD_BUILDERS = {
 function buildField(f: FieldDef): HTMLElement {
   return (FIELD_BUILDERS[f.type] as (f: FieldDef) => HTMLElement)(f)
 }
-
-const ADVANCED_FIELDS: FieldDef[] = [
-  { type: 'number',   id: 'offsetMax',          label: 'offset max (±)',   min: 1,   max: 1000,  step: 1   },
-  { type: 'number',   id: 'savedFlashDuration', label: 'saved flash (ms)', min: 100, max: 10000, step: 100 },
-  { type: 'checkbox', id: 'includeSvg', label: 'Include SVG in output',
-    tooltip: 'When on, inline SVGs and SVG data URIs are included in the copied Markdown output.' },
-]
 
 SECTIONS.forEach(s => {
   const row = document.getElementById(s.rowId)!
@@ -204,8 +159,8 @@ function makeEmojiPicker(btn: HTMLButtonElement, onChange: (emoji: string) => vo
 let savedFlashDuration = 1500
 
 function showSaved(): void {
-  status.textContent = 'Saved'
-  setTimeout(() => { status.textContent = '' }, savedFlashDuration)
+  els.status.textContent = 'Saved'
+  setTimeout(() => { els.status.textContent = '' }, savedFlashDuration)
 }
 
 function syncSwatch(input: HTMLInputElement, swatch: HTMLElement): void {
@@ -249,13 +204,13 @@ let curOffsetY = 0
 function moveDot(x: number, y: number): void {
   curOffsetX = Math.max(-OFFSET_MAX, Math.min(OFFSET_MAX, Math.round(x)))
   curOffsetY = Math.max(-OFFSET_MAX, Math.min(OFFSET_MAX, Math.round(y)))
-  offsetDot.style.left = `${(curOffsetX + OFFSET_MAX) / (OFFSET_MAX * 2) * 100}%`
-  offsetDot.style.top = `${(OFFSET_MAX - curOffsetY) / (OFFSET_MAX * 2) * 100}%`
-  offsetCoords.textContent = `${curOffsetX}, ${curOffsetY}`
+  els.offsetDot.style.left = `${(curOffsetX + OFFSET_MAX) / (OFFSET_MAX * 2) * 100}%`
+  els.offsetDot.style.top = `${(OFFSET_MAX - curOffsetY) / (OFFSET_MAX * 2) * 100}%`
+  els.offsetCoords.textContent = `${curOffsetX}, ${curOffsetY}`
 }
 
 function planeVals(e: MouseEvent): { x: number; y: number } {
-  const r = offsetPlane.getBoundingClientRect()
+  const r = els.offsetPlane.getBoundingClientRect()
   return {
     x: (e.clientX - r.left) / r.width * (OFFSET_MAX * 2) - OFFSET_MAX,
     y: OFFSET_MAX - (e.clientY - r.top) / r.height * (OFFSET_MAX * 2),
@@ -265,38 +220,6 @@ function planeVals(e: MouseEvent): { x: number; y: number } {
 // #endregion
 
 // #region * Page Wiring *
-
-const checkbox = document.getElementById('includeSvg') as HTMLInputElement
-const cursorEmojiBtn = document.getElementById('cursorEmojiBtn') as HTMLButtonElement
-const multiCursorEmojiBtn = document.getElementById('multiCursorEmojiBtn') as HTMLButtonElement
-const cursorSizeInput = document.getElementById('cursorSize') as HTMLInputElement
-const offsetPlane = document.getElementById('offsetPlane') as HTMLDivElement
-const offsetDot = document.getElementById('offsetDot') as HTMLDivElement
-const offsetCoords = document.getElementById('offsetCoords') as HTMLSpanElement
-const outlineColorInput = document.getElementById('outlineColor') as HTMLInputElement
-const outlineWidthInput = document.getElementById('outlineWidth') as HTMLInputElement
-const insetWidthInput = document.getElementById('insetWidth') as HTMLInputElement
-const flashFontSizeInput = document.getElementById('flashFontSize') as HTMLInputElement
-const flashPauseInput = document.getElementById('flashPause') as HTMLInputElement
-const flashDurationInput = document.getElementById('flashDuration') as HTMLInputElement
-const flashFallDistanceInput = document.getElementById('flashFallDistance') as HTMLInputElement
-const flashFontColorInput = document.getElementById('flashFontColor') as HTMLInputElement
-const flashBgColorInput = document.getElementById('flashBgColor') as HTMLInputElement
-const badgeBgColorInput = document.getElementById('badgeBgColor') as HTMLInputElement
-const badgeFontColorInput = document.getElementById('badgeFontColor') as HTMLInputElement
-const badgeFontSizeInput = document.getElementById('badgeFontSize') as HTMLInputElement
-const optionsFontSizeInput = document.getElementById('optionsFontSize') as HTMLInputElement
-const optionsFontColorInput = document.getElementById('optionsFontColor') as HTMLInputElement
-const optionsBgColorInput = document.getElementById('optionsBgColor') as HTMLInputElement
-const sectionBgColorInput = document.getElementById('sectionBgColor') as HTMLInputElement
-const offsetMaxInput = document.getElementById('offsetMax') as HTMLInputElement
-const savedFlashDurationInput = document.getElementById('savedFlashDuration') as HTMLInputElement
-const status = document.getElementById('status') as HTMLParagraphElement
-const exportBtn = document.getElementById('exportBtn') as HTMLButtonElement
-const importFile = document.getElementById('importFile') as HTMLInputElement
-const copyJsonBtn = document.getElementById('copyJsonBtn') as HTMLButtonElement
-const applyJsonBtn = document.getElementById('applyJsonBtn') as HTMLButtonElement
-const configJsonTextarea = document.getElementById('configJson') as HTMLTextAreaElement
 
 // Load
 storage.get(SETTINGS_DEFAULTS).then(s => {
@@ -311,9 +234,9 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
   }
   OFFSET_MAX = stored.offsetMax
   savedFlashDuration = stored.savedFlashDuration
-  checkbox.checked = stored.includeSvg
-  cursorEmojiBtn.textContent = stored.cursorEmoji
-  multiCursorEmojiBtn.textContent = stored.multiCursorEmoji
+  els.includeSvg.checked = stored.includeSvg
+  els.cursorEmojiBtn.textContent = stored.cursorEmoji
+  els.multiCursorEmojiBtn.textContent = stored.multiCursorEmoji
   moveDot(stored.cursorOffsetX, stored.cursorOffsetY)
   document.body.style.fontSize = `${stored.optionsFontSize}px`
   document.body.style.color = stored.optionsFontColor
@@ -324,27 +247,27 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
   document.documentElement.style.setProperty('--ui-overlay-xs', stored.sectionBgColor)
 }).then(() => {
   storage.get(SETTINGS_DEFAULTS).then(stored => {
-    configJsonTextarea.value = JSON.stringify(stored, null, 2)
+    els.configJson.value = JSON.stringify(stored, null, 2)
   })
 })
 
 // Listeners
-checkbox.addEventListener('change', () => {
-  storage.set({ includeSvg: checkbox.checked }).then(showSaved)
+els.includeSvg.addEventListener('change', () => {
+  storage.set({ includeSvg: els.includeSvg.checked }).then(showSaved)
 })
 
-makeEmojiPicker(cursorEmojiBtn, em => {
+makeEmojiPicker(els.cursorEmojiBtn, em => {
   storage.set({ cursorEmoji: em }).then(showSaved)
 })
-makeEmojiPicker(multiCursorEmojiBtn, em => {
+makeEmojiPicker(els.multiCursorEmojiBtn, em => {
   storage.set({ multiCursorEmoji: em }).then(showSaved)
 })
 
-cursorSizeInput.addEventListener('change', () => {
-  storage.set({ cursorSize: Number(cursorSizeInput.value) }).then(showSaved)
+els.cursorSize.addEventListener('change', () => {
+  storage.set({ cursorSize: Number(els.cursorSize.value) }).then(showSaved)
 })
 
-offsetPlane.addEventListener('mousedown', (e) => {
+els.offsetPlane.addEventListener('mousedown', (e) => {
   planeDragging = true
   const { x, y } = planeVals(e)
   moveDot(x, y)
@@ -360,79 +283,79 @@ document.addEventListener('mouseup', () => {
   storage.set({ cursorOffsetX: curOffsetX, cursorOffsetY: curOffsetY }).then(showSaved)
 })
 
-wireColor(badgeBgColorInput)
-wireColor(badgeFontColorInput)
-badgeFontSizeInput.addEventListener('change', () => {
-  storage.set({ badgeFontSize: Number(badgeFontSizeInput.value) }).then(showSaved)
+wireColor(els.badgeBgColor)
+wireColor(els.badgeFontColor)
+els.badgeFontSize.addEventListener('change', () => {
+  storage.set({ badgeFontSize: Number(els.badgeFontSize.value) }).then(showSaved)
 })
 
-wireColor(outlineColorInput)
+wireColor(els.outlineColor)
 
-outlineWidthInput.addEventListener('change', () => {
-  storage.set({ outlineWidth: Number(outlineWidthInput.value) }).then(showSaved)
-})
-
-insetWidthInput.addEventListener('change', () => {
-  storage.set({ insetWidth: Number(insetWidthInput.value) }).then(showSaved)
+els.outlineWidth.addEventListener('change', () => {
+  storage.set({ outlineWidth: Number(els.outlineWidth.value) }).then(showSaved)
 })
 
-flashFontSizeInput.addEventListener('change', () => {
-  storage.set({ flashFontSize: Number(flashFontSizeInput.value) }).then(showSaved)
+els.insetWidth.addEventListener('change', () => {
+  storage.set({ insetWidth: Number(els.insetWidth.value) }).then(showSaved)
 })
 
-flashPauseInput.addEventListener('change', () => {
-  storage.set({ flashPause: Number(flashPauseInput.value) }).then(showSaved)
+els.flashFontSize.addEventListener('change', () => {
+  storage.set({ flashFontSize: Number(els.flashFontSize.value) }).then(showSaved)
 })
 
-flashDurationInput.addEventListener('change', () => {
-  storage.set({ flashDuration: Number(flashDurationInput.value) }).then(showSaved)
+els.flashPause.addEventListener('change', () => {
+  storage.set({ flashPause: Number(els.flashPause.value) }).then(showSaved)
 })
 
-flashFallDistanceInput.addEventListener('change', () => {
-  storage.set({ flashFallDistance: Number(flashFallDistanceInput.value) }).then(showSaved)
+els.flashDuration.addEventListener('change', () => {
+  storage.set({ flashDuration: Number(els.flashDuration.value) }).then(showSaved)
 })
 
-wireColor(flashFontColorInput)
-wireColor(flashBgColorInput)
-
-optionsFontSizeInput.addEventListener('input', () => {
-  document.body.style.fontSize = `${optionsFontSizeInput.value}px`
-})
-optionsFontSizeInput.addEventListener('change', () => {
-  storage.set({ optionsFontSize: Number(optionsFontSizeInput.value) }).then(showSaved)
+els.flashFallDistance.addEventListener('change', () => {
+  storage.set({ flashFallDistance: Number(els.flashFallDistance.value) }).then(showSaved)
 })
 
-wireColor(optionsFontColorInput, () => {
-  document.body.style.color = optionsFontColorInput.value
-  pickerColors.fontColor = optionsFontColorInput.value
-  applyDocumentTheme(optionsFontColorInput.value, optionsBgColorInput.value)
+wireColor(els.flashFontColor)
+wireColor(els.flashBgColor)
+
+els.optionsFontSize.addEventListener('input', () => {
+  document.body.style.fontSize = `${els.optionsFontSize.value}px`
 })
-wireColor(optionsBgColorInput, () => {
-  document.body.style.background = optionsBgColorInput.value
-  pickerColors.bgColor = optionsBgColorInput.value
-  applyDocumentTheme(optionsFontColorInput.value, optionsBgColorInput.value)
-})
-wireColor(sectionBgColorInput, () => {
-  document.documentElement.style.setProperty('--ui-overlay-xs', sectionBgColorInput.value)
+els.optionsFontSize.addEventListener('change', () => {
+  storage.set({ optionsFontSize: Number(els.optionsFontSize.value) }).then(showSaved)
 })
 
-offsetMaxInput.addEventListener('change', () => {
-  OFFSET_MAX = Number(offsetMaxInput.value)
+wireColor(els.optionsFontColor, () => {
+  document.body.style.color = els.optionsFontColor.value
+  pickerColors.fontColor = els.optionsFontColor.value
+  applyDocumentTheme(els.optionsFontColor.value, els.optionsBgColor.value)
+})
+wireColor(els.optionsBgColor, () => {
+  document.body.style.background = els.optionsBgColor.value
+  pickerColors.bgColor = els.optionsBgColor.value
+  applyDocumentTheme(els.optionsFontColor.value, els.optionsBgColor.value)
+})
+wireColor(els.sectionBgColor, () => {
+  document.documentElement.style.setProperty('--ui-overlay-xs', els.sectionBgColor.value)
+})
+
+els.offsetMax.addEventListener('change', () => {
+  OFFSET_MAX = Number(els.offsetMax.value)
   storage.set({ offsetMax: OFFSET_MAX }).then(showSaved)
 })
 
-savedFlashDurationInput.addEventListener('change', () => {
-  savedFlashDuration = Number(savedFlashDurationInput.value)
+els.savedFlashDuration.addEventListener('change', () => {
+  savedFlashDuration = Number(els.savedFlashDuration.value)
   storage.set({ savedFlashDuration }).then(showSaved)
 })
 
 // Import / export
-copyJsonBtn.addEventListener('click', () => {
-  navigator.clipboard.writeText(configJsonTextarea.value).then(() => showSaved())
+els.copyJsonBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(els.configJson.value).then(() => showSaved())
 })
 
-applyJsonBtn.addEventListener('click', () => {
-  applyJsonString(configJsonTextarea.value)
+els.applyJsonBtn.addEventListener('click', () => {
+  applyJsonString(els.configJson.value)
 })
 
 function applyJsonString(text: string): void {
@@ -444,11 +367,11 @@ function applyJsonString(text: string): void {
     }
     storage.set(filtered).then(() => { showSaved(); location.reload() })
   } catch {
-    status.textContent = 'Invalid JSON'
+    els.status.textContent = 'Invalid JSON'
   }
 }
 
-exportBtn.addEventListener('click', () => {
+els.exportBtn.addEventListener('click', () => {
   storage.get(SETTINGS_DEFAULTS).then(stored => {
     const json = JSON.stringify(stored, null, 2)
     const a = document.createElement('a')
@@ -459,13 +382,13 @@ exportBtn.addEventListener('click', () => {
   })
 })
 
-importFile.addEventListener('change', () => {
-  const file = importFile.files?.[0]
+els.importFile.addEventListener('change', () => {
+  const file = els.importFile.files?.[0]
   if (!file) return
   const reader = new FileReader()
   reader.onload = () => applyJsonString(reader.result as string)
   reader.readAsText(file)
-  importFile.value = ''
+  els.importFile.value = ''
 })
 
 // Inject custom pixel spinners — must run after all change listeners are attached
