@@ -1,37 +1,35 @@
-#!/usr/bin/env node
-// Builds the extension for one or more browser targets into dist/<target>/,
-// and packages each into a browser-appropriate archive under dist/.
-//
-// Usage:
-//   node scripts/build.js firefox
-//   node scripts/build.js chrome
-//   node scripts/build.js all
+#!/usr/bin/env tsx
+/*
+Builds the extension for one or more browser targets into dist/<target>/
+and packages each into a browser-appropriate archive under dist/.
 
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+Usage:
+  npm run build              # all targets
+  npm run build:firefox
+  npm run build:chrome
+*/
 
-const ROOT = path.join(__dirname, '..');
-const pkg  = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Firefox's MV3 doesn't support service workers yet, so its background page
-// uses the scripts-array form; Chromium (Chrome/Brave/Edge) requires
-// service_worker and silently ignores "scripts" — which is exactly the bug
-// that motivated checkBackgroundKey below.
-const TARGETS = {
-  // No root-level archive for firefox: an unsigned .xpi can't be installed
-  // permanently anyway (see scripts/sign-firefox.js for the real
-  // distributable), and keeping one around just invites grabbing the wrong
-  // file. dist/firefox/ (unpacked) is enough for temporary-add-on testing.
-  firefox: { manifestOverride: 'manifest.firefox.json', archiveExt: null, backgroundKey: 'scripts' },
-  chrome: { manifestOverride: 'manifest.chrome.json', archiveExt: 'zip', backgroundKey: 'service_worker' },
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const pkg: { name: string } = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+
+const TARGETS: Record<string, { manifestOverride: string; archiveExt: string | null; backgroundKey: string }> = {
+  firefox: { manifestOverride: 'manifest.firefox.json', archiveExt: null,  backgroundKey: 'scripts' },
+  chrome:  { manifestOverride: 'manifest.chrome.json',  archiveExt: 'zip', backgroundKey: 'service_worker' },
 };
 
-// All MV3 background keys this manifest could plausibly carry. Used to make
-// sure only the target's own key is present.
+/*
+Firefox MV3 uses event pages (scripts array), while
+Chromium requires service_worker and silently ignores
+scripts. This check catches a manifest that accidentally ships the wrong key for a given target.
+*/
 const BACKGROUND_KEYS = ['scripts', 'service_worker'];
 
-function checkBackgroundKey(manifest, config) {
+function checkBackgroundKey(manifest: Record<string, any>, config: { backgroundKey: string }): string | null {
   const present = BACKGROUND_KEYS.filter((key) => manifest.background?.[key] !== undefined);
   if (present.length !== 1 || present[0] !== config.backgroundKey) {
     return `expected only background.${config.backgroundKey}, found: ${present.join(', ') || '(none)'}`;
@@ -39,7 +37,7 @@ function checkBackgroundKey(manifest, config) {
   return null;
 }
 
-function buildTarget(name) {
+function buildTarget(name: string): void {
   const config = TARGETS[name];
   const outDir = path.join(ROOT, 'dist', name);
 
@@ -60,8 +58,8 @@ function buildTarget(name) {
   fs.cpSync(path.join(ROOT, 'icons'), path.join(outDir, 'icons'), { recursive: true });
 
   console.log(`[${name}] writing manifest`);
-  const base = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.base.json'), 'utf8'));
-  const overrideRaw = JSON.parse(
+  const base: Record<string, any> = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.base.json'), 'utf8'));
+  const overrideRaw: Record<string, any> = JSON.parse(
     fs.readFileSync(path.join(ROOT, config.manifestOverride), 'utf8')
   );
   // Strip documentation-only keys (e.g. "_comment") before merging.
@@ -78,7 +76,7 @@ function buildTarget(name) {
 
   fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(merged, null, 2) + '\n');
 
-  let archivePath = null;
+  let archivePath: string | null = null;
   if (config.archiveExt) {
     archivePath = path.join(ROOT, 'dist', `${pkg.name}-${name}.${config.archiveExt}`);
     console.log(`[${name}] packaging ${path.relative(ROOT, archivePath)}`);
@@ -99,15 +97,13 @@ function buildTarget(name) {
   }
 }
 
-function main() {
-  // No target (e.g. plain `npm run build`) defaults to "all" rather than
-  // guessing a single browser — building every target is always correct,
-  // unlike the old default-to-firefox behavior that broke Brave/Chrome.
+function main(): void {
+  // No target (`npm run build`) defaults to "all".
   const arg = process.argv[2] || 'all';
   const names = arg === 'all' ? Object.keys(TARGETS) : [arg];
 
   if (arg !== 'all' && !TARGETS[arg]) {
-    console.error(`Usage: node scripts/build.js <${Object.keys(TARGETS).join('|')}|all>`);
+    console.error(`Usage: node scripts/build.ts <${Object.keys(TARGETS).join('|')}|all>`);
     process.exit(1);
   }
 

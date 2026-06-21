@@ -6,12 +6,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint 'src/*.ts'",
-    "build:firefox": "node scripts/build.js firefox",
-    "build:chrome": "node scripts/build.js chrome",
-    "build:all": "node scripts/build.js all",
+    "build:firefox": "tsx scripts/build.ts firefox",
+    "build:chrome": "tsx scripts/build.ts chrome",
+    "build:all": "tsx scripts/build.ts all",
     "gen:elements": "tsx scripts/gen-elements.ts",
-    "build": "npm run gen:elements && node scripts/build.js all",
-    "publish:firefox": "npm run build:firefox && node scripts/firefox-amo.js",
+    "build": "npm run gen:elements && tsx scripts/build.ts all",
+    "publish:firefox": "npm run build:firefox && tsx scripts/firefox-publish.ts",
     "typecheck": "tsc --noEmit",
     "gen-icons": "tsx scripts/gen-icons.ts",
     "watch": "node scripts/watch.js"
