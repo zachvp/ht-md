@@ -26,7 +26,7 @@ export const SECTIONS: SectionDef[] = [
     { type: 'number', id: 'insetWidth',   label: 'inner (px)', min: 0, max: 1024, step: 1, default: 4 },
   ]},
   { rowId: 'row-message', fields: [
-    { type: 'number', id: 'flashFontSize',     label: 'font (px)',  min: 1,   max: 1024,  step: 1,   default: 20   },
+    { type: 'number', id: 'toastFontSize',     label: 'font (px)',  min: 1,   max: 1024,  step: 1,   default: 20   },
     { type: 'number', id: 'flashPause',        label: 'pause (ms)', min: 0,   max: 5000,  step: 50,  default: 0    },
     { type: 'number', id: 'flashDuration',     label: 'fall (ms)',  min: 100, max: 10000, step: 100, default: 2000 },
     { type: 'number', id: 'flashFallDistance', label: 'dist (px)',  min: 0,   max: 2000,  step: 10,  default: 450  },

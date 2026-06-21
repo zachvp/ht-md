@@ -349,7 +349,7 @@ function showMessage(text: string): void {
   const el = document.createElement('div')
   el.className = CLASS_FLASH
   el.textContent = text
-  el.style.fontSize = `${settings.flashFontSize}px`
+  el.style.fontSize = `${settings.toastFontSize}px`
   el.style.color = settings.flashFontColor
   el.style.background = settings.flashBgColor
   el.style.animationDuration = `${settings.flashDuration}ms`

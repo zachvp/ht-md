@@ -9,7 +9,7 @@ export const els = {
   get outlineColor       () { return document.getElementById('outlineColor') as HTMLInputElement },
   get outlineWidth       () { return document.getElementById('outlineWidth') as HTMLInputElement },
   get insetWidth         () { return document.getElementById('insetWidth') as HTMLInputElement },
-  get flashFontSize      () { return document.getElementById('flashFontSize') as HTMLInputElement },
+  get toastFontSize      () { return document.getElementById('toastFontSize') as HTMLInputElement },
   get flashPause         () { return document.getElementById('flashPause') as HTMLInputElement },
   get flashDuration      () { return document.getElementById('flashDuration') as HTMLInputElement },
   get flashFallDistance  () { return document.getElementById('flashFallDistance') as HTMLInputElement },

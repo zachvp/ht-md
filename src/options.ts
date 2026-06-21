@@ -299,8 +299,8 @@ els.insetWidth.addEventListener('change', () => {
   storage.set({ insetWidth: Number(els.insetWidth.value) }).then(showSaved)
 })
 
-els.flashFontSize.addEventListener('change', () => {
-  storage.set({ flashFontSize: Number(els.flashFontSize.value) }).then(showSaved)
+els.toastFontSize.addEventListener('change', () => {
+  storage.set({ toastFontSize: Number(els.toastFontSize.value) }).then(showSaved)
 })
 
 els.flashPause.addEventListener('change', () => {
