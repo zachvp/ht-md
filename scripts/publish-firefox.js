@@ -45,7 +45,7 @@ console.log(`Publishing ${path.relative(ROOT, SOURCE_DIR)} to AMO (listed channe
 execSync(
   `npx web-ext sign --source-dir=${JSON.stringify(SOURCE_DIR)} --channel=listed --artifacts-dir=${JSON.stringify(
     ARTIFACTS_DIR
-  )}`,
+  )} --amo-metadata=${JSON.stringify(path.join(ROOT, 'amo-metadata.json'))}`,
   {
     cwd: ROOT,
     stdio: 'inherit',

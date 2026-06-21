@@ -70,9 +70,6 @@ function buildTarget(name) {
   const override = Object.fromEntries(
     Object.entries(overrideRaw).filter(([key]) => !key.startsWith('_'))
   );
-  if (override.browser_specific_settings?.gecko) {
-    override.browser_specific_settings.gecko.id = `${pkg.name}@local`;
-  }
   const merged = { ...base, name: pkg.name, ...override };
 
   const manifestError = checkBackgroundKey(merged, config);
