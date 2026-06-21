@@ -14,7 +14,7 @@
     "sign:firefox": "npm run build:firefox && node scripts/sign-firefox.js",
     "publish:firefox": "npm run build:firefox && node scripts/publish-firefox.js",
     "typecheck": "tsc --noEmit",
-    "gen-icons": "python3 scripts/gen-icons.py",
+    "gen-icons": "tsx scripts/gen-icons.ts",
     "watch": "node scripts/watch.js"
   },
   "keywords": [],
@@ -24,16 +24,21 @@
   "devDependencies": {
     "@types/chrome": "^0.1.42",
     "@types/node": "^26.0.0",
+    "@types/sharp": "^0.31.1",
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.4",
     "esbuild": "^0.28.0",
     "eslint": "^10.4.0",
     "globals": "^17.6.0",
+    "sharp": "^0.35.2",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3",
     "web-ext": "^10.4.0"
   },
   "dependencies": {
     "emoji-picker-element": "^1.29.1"
+  },
+  "allowScripts": {
+    "sharp@0.35.2": true
   }
 }
