@@ -1,5 +1,5 @@
 
-.web-md-badge {
+.{{EXT_NAME}}-badge {
   all: initial;
   display: block;
   position: fixed;
@@ -16,7 +16,7 @@
   box-sizing: border-box;
 }
 
-.web-md-flash {
+.{{EXT_NAME}}-flash {
   all: initial;
   display: block;
   position: fixed;
@@ -28,16 +28,16 @@
   pointer-events: none;
   white-space: nowrap;
   z-index: 2147483647; /* Z_TOP — keep in sync with src/lib/constants.ts */
-  animation-name: web-md-flash-fall;
+  animation-name: {{EXT_NAME}}-flash-fall;
   animation-fill-mode: forwards;
 }
 
-@keyframes web-md-badge-pulse {
+@keyframes {{EXT_NAME}}-badge-pulse {
   0%, 100% { transform: scale(1); }
   50%       { transform: scale(var(--badge-pulse-scale, 1.2)); }
 }
 
-@keyframes web-md-flash-fall {
+@keyframes {{EXT_NAME}}-flash-fall {
   0%   { transform: translateX(-50%) translateY(-50%);                              opacity: 1; animation-timing-function: ease-in; }
   100% { transform: translateX(-50%) translateY(calc(-50% + var(--fall-dist, 80px))); opacity: 0; }
 }

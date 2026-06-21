@@ -1,4 +1,4 @@
-# web-md
+# ht-md
 
 Pick any element on a webpage and copy it as Markdown.
 
@@ -18,7 +18,7 @@ Pick any element on a webpage and copy it as Markdown.
 2. Build for a specific browser target, or all of them:
    ```
    npm run build:firefox   # dist/firefox/  (load unpacked, or as a temporary add-on)
-   npm run build:chrome    # dist/chrome/, dist/web-md-chrome.zip  (also loads in Brave, Edge)
+   npm run build:chrome    # dist/chrome/, dist/<name>-chrome.zip  (also loads in Brave, Edge)
    npm run build            # both (same as build:all) — no single manifest works
                              # correctly across Firefox and Chromium, so each
                              # target gets its own dist/ dir and manifest
@@ -31,10 +31,11 @@ browser, e.g. `background`).
 3. To install permanently in Firefox (not just as a temporary add-on), the
    build must be signed by Mozilla first:
    ```
-   npm run sign:firefox   # dist/web-ext-artifacts/web_md-<version>.xpi (signed)
+   npm run sign:firefox   # dist/web-ext-artifacts/<name>_<version>.xpi (signed)
    ```
-   This reads AMO API credentials from macOS Keychain (`web-md-amo-issuer` /
-   `web-md-amo-secret`) — see `scripts/sign-firefox.js` for setup. Each run
+   This reads AMO API credentials from macOS Keychain (`<name>-amo-issuer` /
+   `<name>-amo-secret`, where `<name>` is the `name` field in `package.json`) —
+   see `scripts/sign-firefox.js` for setup. Each run
    registers that exact version with AMO, so bump `manifest.base.json`'s
    `version` before re-signing.
 

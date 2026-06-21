@@ -10,15 +10,24 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
+const pkg  = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 const OUT_DIR = path.join(ROOT, 'dist', 'chrome');
 const BRAVE_BINARY = '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser';
 
 const STATIC_FILES = ['content.css', 'turndown.js', 'options.html'];
 
-function copyStatics() {
-  for (const file of STATIC_FILES) {
+function copyStatic(file) {
+  if (file === 'content.css') {
+    const css = fs.readFileSync(path.join(ROOT, file), 'utf8')
+      .replace(/\{\{EXT_NAME\}\}/g, pkg.name);
+    fs.writeFileSync(path.join(OUT_DIR, file), css);
+  } else {
     fs.copyFileSync(path.join(ROOT, file), path.join(OUT_DIR, file));
   }
+}
+
+function copyStatics() {
+  for (const file of STATIC_FILES) copyStatic(file);
   fs.cpSync(path.join(ROOT, 'icons'), path.join(OUT_DIR, 'icons'), { recursive: true });
 }
 
@@ -30,7 +39,7 @@ function writeManifest() {
   );
   fs.writeFileSync(
     path.join(OUT_DIR, 'manifest.json'),
-    JSON.stringify({ ...base, ...override }, null, 2) + '\n'
+    JSON.stringify({ ...base, name: pkg.name, ...override }, null, 2) + '\n'
   );
 }
 
@@ -50,7 +59,7 @@ console.log('[watch] ready\n');
 for (const file of STATIC_FILES) {
   fs.watch(path.join(ROOT, file), () => {
     console.log(`[watch] ${file} changed`);
-    fs.copyFileSync(path.join(ROOT, file), path.join(OUT_DIR, file));
+    copyStatic(file);
   });
 }
 

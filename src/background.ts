@@ -1,4 +1,8 @@
-console.log('[web-md] background loaded')
+import { EXT_NAME } from './lib/constants'
+
+const LOG = `[${EXT_NAME}]`
+
+console.log(`${LOG} background loaded`)
 
 chrome.runtime.onMessage.addListener((msg: { action: string; active?: boolean }, sender) => {
   if (msg.action === 'pickerState' && sender.tab?.id != null) {
@@ -14,7 +18,7 @@ chrome.runtime.onMessage.addListener((msg: { action: string; active?: boolean },
 
 chrome.action.onClicked.addListener(async (tab) => {
   const tabId = tab.id!
-  console.log('[web-md] toolbar clicked, tab:', tabId)
+  console.log(`${LOG} toolbar clicked, tab:`, tabId)
   try {
     await chrome.tabs.sendMessage(tabId, { action: 'toggle' })
   } catch {
@@ -25,7 +29,7 @@ chrome.action.onClicked.addListener(async (tab) => {
       await chrome.scripting.insertCSS({ target: { tabId }, files: ['content.css'] })
       await chrome.tabs.sendMessage(tabId, { action: 'toggle' })
     } catch (err2) {
-      console.warn('[web-md] sendMessage after inject:', (err2 as Error).message)
+      console.warn(`${LOG} sendMessage after inject:`, (err2 as Error).message)
     }
   }
 })

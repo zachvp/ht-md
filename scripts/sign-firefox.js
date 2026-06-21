@@ -5,16 +5,19 @@
 // ever exist as env vars for the web-ext subprocess — never written to disk.
 //
 // Setup (run once, with your real AMO issuer/secret):
-//   security add-generic-password -a "$USER" -s "web-md-amo-issuer" -w "<issuer>" -U
-//   security add-generic-password -a "$USER" -s "web-md-amo-secret" -w "<secret>" -U
+//   security add-generic-password -a "$USER" -s "<name>-amo-issuer" -w "<issuer>" -U
+//   security add-generic-password -a "$USER" -s "<name>-amo-secret" -w "<secret>" -U
+// (where <name> is the "name" field in package.json)
 //
 // Usage:
 //   npm run sign:firefox
 
 const { execFileSync, execSync } = require('child_process');
+const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
+const pkg  = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 const SOURCE_DIR = path.join(ROOT, 'dist', 'firefox');
 
 function readKeychainSecret(service) {
@@ -34,8 +37,8 @@ function readKeychainSecret(service) {
   }
 }
 
-const apiKey = readKeychainSecret('web-md-amo-issuer');
-const apiSecret = readKeychainSecret('web-md-amo-secret');
+const apiKey    = readKeychainSecret(`${pkg.name}-amo-issuer`);
+const apiSecret = readKeychainSecret(`${pkg.name}-amo-secret`);
 
 const ARTIFACTS_DIR = path.join(ROOT, 'dist', 'web-ext-artifacts');
 

@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
+const pkg  = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
 // Firefox's MV3 doesn't support service workers yet, so its background page
 // uses the scripts-array form; Chromium (Chrome/Brave/Edge) requires
@@ -53,7 +54,9 @@ function buildTarget(name) {
   );
 
   console.log(`[${name}] copying static assets`);
-  fs.copyFileSync(path.join(ROOT, 'content.css'), path.join(outDir, 'content.css'));
+  const cssSource = fs.readFileSync(path.join(ROOT, 'content.css'), 'utf8')
+    .replace(/\{\{EXT_NAME\}\}/g, pkg.name);
+  fs.writeFileSync(path.join(outDir, 'content.css'), cssSource);
   fs.copyFileSync(path.join(ROOT, 'turndown.js'), path.join(outDir, 'turndown.js'));
   fs.copyFileSync(path.join(ROOT, 'options.html'), path.join(outDir, 'options.html'));
   fs.cpSync(path.join(ROOT, 'icons'), path.join(outDir, 'icons'), { recursive: true });
@@ -67,7 +70,10 @@ function buildTarget(name) {
   const override = Object.fromEntries(
     Object.entries(overrideRaw).filter(([key]) => !key.startsWith('_'))
   );
-  const merged = { ...base, ...override };
+  if (override.browser_specific_settings?.gecko) {
+    override.browser_specific_settings.gecko.id = `${pkg.name}@local`;
+  }
+  const merged = { ...base, name: pkg.name, ...override };
 
   const manifestError = checkBackgroundKey(merged, config);
   if (manifestError) {
@@ -79,7 +85,7 @@ function buildTarget(name) {
 
   let archivePath = null;
   if (config.archiveExt) {
-    archivePath = path.join(ROOT, 'dist', `web-md-${name}.${config.archiveExt}`);
+    archivePath = path.join(ROOT, 'dist', `${pkg.name}-${name}.${config.archiveExt}`);
     console.log(`[${name}] packaging ${path.relative(ROOT, archivePath)}`);
     fs.rmSync(archivePath, { force: true });
     execSync(`zip -rq ${JSON.stringify(archivePath)} .`, { cwd: outDir, stdio: 'inherit' });

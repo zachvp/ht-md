@@ -1,8 +1,10 @@
 import { SETTINGS_DEFAULTS, Settings } from './lib/settings.generated'
 import { storage } from './lib/storage'
-import { Z_TOP, Z_OVERLAY, DARKREADER_CLASS, HIGHLIGHT_ALPHA, OUTLINE_OFFSET, BADGE_INSET, CLASS_SELECTED, CLASS_BADGE, CLASS_FLASH } from './lib/constants'
+import { EXT_NAME, Z_TOP, Z_OVERLAY, DARKREADER_CLASS, HIGHLIGHT_ALPHA, OUTLINE_OFFSET, BADGE_INSET, CLASS_SELECTED, CLASS_BADGE, CLASS_FLASH } from './lib/constants'
 
-console.log('[web-md] content script loaded')
+const LOG = `[${EXT_NAME}]`
+
+console.log(`${LOG} content script loaded`)
 
 // All runtime picker state in one place
 const state = {
@@ -186,7 +188,7 @@ function addBadge(el: Element, index: number): void {
   badge.style.fontSize = `${settings.badgeFontSize}px`
   if (settings.badgePulse) {
     badge.style.setProperty('--badge-pulse-scale', String(settings.badgePulseScale / 100))
-    badge.style.animation = `web-md-badge-pulse ${settings.badgePulseDuration}ms ease-in-out infinite`
+    badge.style.animation = `${CLASS_BADGE}-pulse ${settings.badgePulseDuration}ms ease-in-out infinite`
   }
   document.documentElement.appendChild(badge)
   badge.style.top = `${r.top + BADGE_INSET}px`
@@ -207,7 +209,7 @@ function notifyPickerState(active: boolean): void {
 function activatePicker(): void {
   if (state.pickerActive) return
   state.pickerActive = true
-  console.log('[web-md] picker activated')
+  console.log(`${LOG} picker activated`)
   try {
     applyOutlineStyles()
     setCursor(settings.cursorEmoji)
@@ -218,7 +220,7 @@ function activatePicker(): void {
     document.addEventListener('keydown', onKeyDown, true)
     notifyPickerState(true)
   } catch (err) {
-    console.error('[web-md] activatePicker failed:', err)
+    console.error(`${LOG} activatePicker failed:`, err)
     deactivatePicker()
   }
 }
@@ -226,7 +228,7 @@ function activatePicker(): void {
 function deactivatePicker(message?: string): void {
   if (!state.pickerActive) return
   state.pickerActive = false
-  console.log('[web-md] picker deactivated')
+  console.log(`${LOG} picker deactivated`)
   notifyPickerState(false)
 
   clearOutlineStyles()
@@ -294,11 +296,11 @@ function onClick(e: MouseEvent): void {
 
   const html = el.outerHTML
   const md = convert(html)
-  console.log('[web-md] captured element:', el.tagName, '— md length:', md.length)
+  console.log(`${LOG} captured element:`, el.tagName, '— md length:', md.length)
 
   navigator.clipboard.writeText(md)
-    .then(() => { console.log('[web-md] clipboard write ok'); deactivatePicker('📝 Copied') })
-    .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); deactivatePicker('Error: ' + err.message) })
+    .then(() => { console.log(`${LOG} clipboard write ok`); deactivatePicker('📝 Copied') })
+    .catch((err: Error) => { console.error(`${LOG} clipboard write failed:`, err.message); deactivatePicker('Error: ' + err.message) })
 }
 
 function undoSelection(): void {
@@ -342,10 +344,10 @@ function onKeyDown(e: KeyboardEvent): void {
     e.preventDefault()
     e.stopImmediatePropagation()
     const md = state.selectedElements.map(el => convert(el.outerHTML)).join('\n')
-    console.log('[web-md] committing', state.selectedElements.length, 'elements — md length:', md.length)
+    console.log(`${LOG} committing`, state.selectedElements.length, 'elements — md length:', md.length)
     navigator.clipboard.writeText(md)
-      .then(() => { console.log('[web-md] clipboard write ok'); deactivatePicker('📝 Copied') })
-      .catch((err: Error) => { console.error('[web-md] clipboard write failed:', err.message); deactivatePicker('Error: ' + err.message) })
+      .then(() => { console.log(`${LOG} clipboard write ok`); deactivatePicker('📝 Copied') })
+      .catch((err: Error) => { console.error(`${LOG} clipboard write failed:`, err.message); deactivatePicker('Error: ' + err.message) })
   }
 }
 
@@ -381,7 +383,7 @@ function showMessage(text: string): void {
 }
 
 chrome.runtime.onMessage.addListener((msg: { action: string }) => {
-  console.log('[web-md] message received:', msg)
+  console.log(`${LOG} message received:`, msg)
   if (msg.action === 'toggle' || msg.action === 'activate') {
     if (state.pickerActive) deactivatePicker()
     else activatePicker()

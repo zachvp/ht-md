@@ -14,7 +14,9 @@ export const OUTLINE_OFFSET = '1px'
 // Pixel gap from element corner when positioning multi-select badges.
 export const BADGE_INSET = 4
 
+export const EXT_NAME = 'ht-md'
+
 // CSS class names applied to page elements or injected nodes.
-export const CLASS_SELECTED = 'web-md-selected'
-export const CLASS_BADGE    = 'web-md-badge'
-export const CLASS_FLASH    = 'web-md-flash'
+export const CLASS_SELECTED = `${EXT_NAME}-selected`
+export const CLASS_BADGE    = `${EXT_NAME}-badge`
+export const CLASS_FLASH    = `${EXT_NAME}-flash`

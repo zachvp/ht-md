@@ -1,4 +1,5 @@
 import 'emoji-picker-element'
+import { EXT_NAME } from './lib/constants'
 import { SETTINGS_DEFAULTS } from './lib/settings.generated'
 import { storage } from './lib/storage'
 import { SECTIONS, ADVANCED_FIELDS } from './options/definitions'
@@ -75,6 +76,9 @@ const FIELD_BUILDERS = {
 function buildField(f: FieldDef): HTMLElement {
   return (FIELD_BUILDERS[f.type] as (f: FieldDef) => HTMLElement)(f)
 }
+
+document.title = `${EXT_NAME} settings`
+;(document.querySelector('h1') as HTMLElement).textContent = `${EXT_NAME} settings`
 
 SECTIONS.forEach(s => {
   const row = document.getElementById(s.rowId)!
@@ -367,7 +371,7 @@ els.exportBtn.addEventListener('click', () => {
     const json = JSON.stringify(stored, null, 2)
     const a = document.createElement('a')
     a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
-    a.download = 'web-md-settings.json'
+    a.download = `${EXT_NAME}-settings.json`
     a.click()
     URL.revokeObjectURL(a.href)
   })
