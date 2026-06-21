@@ -12,6 +12,7 @@ const FIELD_TYPE_TO_TAG: Partial<Record<FieldDef['type'], keyof HTMLElementTagNa
   color:    'input',
   checkbox: 'input',
   emoji:    'button',
+  keybind:  'button',
 }
 
 const TAG_TO_HTML_TYPE: Partial<Record<keyof HTMLElementTagNameMap, string>> = {

@@ -1,4 +1,5 @@
 export const SETTINGS_DEFAULTS = {
+  multiSelectKey    : 'auto',
   cursorEmoji       : '👆',
   multiCursorEmoji  : '📋',
   cursorSize        : 32,

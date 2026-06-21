@@ -30,6 +30,23 @@ const state = {
 // User-configurable settings, kept in sync with chrome.storage.sync
 const settings: Settings = { ...SETTINGS_DEFAULTS }
 
+const isMac = navigator.platform.startsWith('Mac')
+const KEY_TO_PROP: Partial<Record<string, keyof MouseEvent>> = {
+  Meta:    'metaKey',
+  Control: 'ctrlKey',
+  Alt:     'altKey',
+  Shift:   'shiftKey',
+}
+
+function resolveModifier(key: string): keyof MouseEvent {
+  if (key === 'auto') return isMac ? 'metaKey' : 'ctrlKey'
+  return KEY_TO_PROP[key] ?? (isMac ? 'metaKey' : 'ctrlKey')
+}
+
+const keyMap = {
+  multiSelect: resolveModifier('auto'),
+}
+
 function makeTurndown(stripSvg: boolean): TurndownService {
   const td = new TurndownService()
   td.remove(['style', 'script', 'noscript'])
@@ -56,6 +73,7 @@ const turndownStripped = makeTurndown(true)
 
 storage.get(SETTINGS_DEFAULTS).then(stored => {
   Object.assign(settings, stored)
+  keyMap.multiSelect = resolveModifier(settings.multiSelectKey)
 })
 
 chrome.storage.onChanged.addListener(changes => {
@@ -274,7 +292,7 @@ function onClick(e: MouseEvent): void {
 
   const el = e.target as Element
 
-  if (e.metaKey) {
+  if (e[keyMap.multiSelect]) {
     if (!state.selectedSet.has(el)) {
       state.selectedElements.push(el)
       state.selectedSet.add(el)

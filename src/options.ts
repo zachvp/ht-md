@@ -3,7 +3,7 @@ import { EXT_NAME } from './lib/constants'
 import { SETTINGS_DEFAULTS } from './lib/settings.generated'
 import { storage } from './lib/storage'
 import { SECTIONS, ADVANCED_FIELDS } from './options/definitions'
-import type { NumberField, ColorField, EmojiField, PlaneField, CheckboxField, FieldDef } from './options/definitions'
+import type { NumberField, ColorField, EmojiField, PlaneField, CheckboxField, KeybindField, FieldDef } from './options/definitions'
 import { els } from './options/elements.generated'
 
 // #region * Building Blocks *
@@ -48,6 +48,12 @@ function buildPlaneField(f: PlaneField): HTMLElement {
   return fieldStack(f.label, coords, plane)
 }
 
+function buildKeybindField(f: KeybindField): HTMLElement {
+  const btn = el('button', { id: f.id, className: 'cfg-btn' })
+  btn.type = 'button'
+  return fieldStack(f.label, btn)
+}
+
 function buildCheckboxField(f: CheckboxField): HTMLElement {
   const section = el('div', { className: 'section setting' })
   const label   = el('label', { className: 'checkbox' })
@@ -71,6 +77,7 @@ const FIELD_BUILDERS = {
   emoji:    buildEmojiField,
   plane:    buildPlaneField,
   checkbox: buildCheckboxField,
+  keybind:  buildKeybindField,
 } as const
 
 function buildField(f: FieldDef): HTMLElement {
@@ -181,6 +188,25 @@ function makeEmojiPicker(btn: HTMLButtonElement, onChange: (emoji: string) => vo
   })
 }
 
+function wireKeybind(btn: HTMLButtonElement, storageKey: string, initialValue: string): void {
+  let current = initialValue
+  btn.textContent = current
+
+  btn.addEventListener('click', () => {
+    btn.textContent = 'press a key...'
+    function onKey(e: KeyboardEvent): void {
+      e.preventDefault()
+      e.stopPropagation()
+      document.removeEventListener('keydown', onKey, true)
+      if (e.key === 'Escape') { btn.textContent = current; return }
+      current = e.key
+      btn.textContent = current
+      storage.set({ [storageKey]: current }).then(showSaved)
+    }
+    document.addEventListener('keydown', onKey, true)
+  })
+}
+
 let savedFlashDuration = 1500
 
 function showSaved(): void {
@@ -265,6 +291,11 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
   syncBadgePulseParams()
   els.cursorEmojiBtn.textContent = stored.cursorEmoji
   els.multiCursorEmojiBtn.textContent = stored.multiCursorEmoji
+  for (const f of allFields) {
+    if (f.type !== 'keybind') continue
+    const btn = els[f.id as keyof typeof els] as HTMLButtonElement
+    wireKeybind(btn, f.id, String(stored[f.id as keyof typeof SETTINGS_DEFAULTS]))
+  }
   moveDot(stored.cursorOffsetX, stored.cursorOffsetY)
   document.body.style.fontSize = `${stored.optionsFontSize}px`
   document.body.style.color = stored.optionsFontColor
