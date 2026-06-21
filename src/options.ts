@@ -129,39 +129,6 @@ SECTIONS.forEach(s => {
 })
 ADVANCED_FIELDS.forEach(f => document.getElementById('row-advanced')!.append(buildField(f)))
 
-// ---- Element refs ----
-const checkbox = document.getElementById('includeSvg') as HTMLInputElement
-const cursorEmojiBtn = document.getElementById('cursorEmojiBtn') as HTMLButtonElement
-const multiCursorEmojiBtn = document.getElementById('multiCursorEmojiBtn') as HTMLButtonElement
-const cursorSizeInput = document.getElementById('cursorSize') as HTMLInputElement
-const offsetPlane = document.getElementById('offsetPlane') as HTMLDivElement
-const offsetDot = document.getElementById('offsetDot') as HTMLDivElement
-const offsetCoords = document.getElementById('offsetCoords') as HTMLSpanElement
-const outlineColorInput = document.getElementById('outlineColor') as HTMLInputElement
-const outlineWidthInput = document.getElementById('outlineWidth') as HTMLInputElement
-const insetWidthInput = document.getElementById('insetWidth') as HTMLInputElement
-const flashFontSizeInput = document.getElementById('flashFontSize') as HTMLInputElement
-const flashPauseInput = document.getElementById('flashPause') as HTMLInputElement
-const flashDurationInput = document.getElementById('flashDuration') as HTMLInputElement
-const flashFallDistanceInput = document.getElementById('flashFallDistance') as HTMLInputElement
-const flashFontColorInput = document.getElementById('flashFontColor') as HTMLInputElement
-const flashBgColorInput = document.getElementById('flashBgColor') as HTMLInputElement
-const badgeBgColorInput = document.getElementById('badgeBgColor') as HTMLInputElement
-const badgeFontColorInput = document.getElementById('badgeFontColor') as HTMLInputElement
-const badgeFontSizeInput = document.getElementById('badgeFontSize') as HTMLInputElement
-const optionsFontSizeInput = document.getElementById('optionsFontSize') as HTMLInputElement
-const optionsFontColorInput = document.getElementById('optionsFontColor') as HTMLInputElement
-const optionsBgColorInput = document.getElementById('optionsBgColor') as HTMLInputElement
-const sectionBgColorInput = document.getElementById('sectionBgColor') as HTMLInputElement
-const offsetMaxInput = document.getElementById('offsetMax') as HTMLInputElement
-const savedFlashDurationInput = document.getElementById('savedFlashDuration') as HTMLInputElement
-const status = document.getElementById('status') as HTMLParagraphElement
-const exportBtn = document.getElementById('exportBtn') as HTMLButtonElement
-const importFile = document.getElementById('importFile') as HTMLInputElement
-const copyJsonBtn = document.getElementById('copyJsonBtn') as HTMLButtonElement
-const applyJsonBtn = document.getElementById('applyJsonBtn') as HTMLButtonElement
-const configJsonTextarea = document.getElementById('configJson') as HTMLTextAreaElement
-
 function hexToRgb(hex: string): [number, number, number] | null {
   const m = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i)
   if (m) return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)]
@@ -297,21 +264,38 @@ function planeVals(e: MouseEvent): { x: number; y: number } {
   }
 }
 
-offsetPlane.addEventListener('mousedown', (e) => {
-  planeDragging = true
-  const { x, y } = planeVals(e)
-  moveDot(x, y)
-  e.preventDefault()
-})
-document.addEventListener('mousemove', (e) => {
-  if (!planeDragging) return
-  moveDot(...Object.values(planeVals(e)) as [number, number])
-})
-document.addEventListener('mouseup', () => {
-  if (!planeDragging) return
-  planeDragging = false
-  storage.set({ cursorOffsetX: curOffsetX, cursorOffsetY: curOffsetY }).then(showSaved)
-})
+// ---- Element refs ----
+const checkbox = document.getElementById('includeSvg') as HTMLInputElement
+const cursorEmojiBtn = document.getElementById('cursorEmojiBtn') as HTMLButtonElement
+const multiCursorEmojiBtn = document.getElementById('multiCursorEmojiBtn') as HTMLButtonElement
+const cursorSizeInput = document.getElementById('cursorSize') as HTMLInputElement
+const offsetPlane = document.getElementById('offsetPlane') as HTMLDivElement
+const offsetDot = document.getElementById('offsetDot') as HTMLDivElement
+const offsetCoords = document.getElementById('offsetCoords') as HTMLSpanElement
+const outlineColorInput = document.getElementById('outlineColor') as HTMLInputElement
+const outlineWidthInput = document.getElementById('outlineWidth') as HTMLInputElement
+const insetWidthInput = document.getElementById('insetWidth') as HTMLInputElement
+const flashFontSizeInput = document.getElementById('flashFontSize') as HTMLInputElement
+const flashPauseInput = document.getElementById('flashPause') as HTMLInputElement
+const flashDurationInput = document.getElementById('flashDuration') as HTMLInputElement
+const flashFallDistanceInput = document.getElementById('flashFallDistance') as HTMLInputElement
+const flashFontColorInput = document.getElementById('flashFontColor') as HTMLInputElement
+const flashBgColorInput = document.getElementById('flashBgColor') as HTMLInputElement
+const badgeBgColorInput = document.getElementById('badgeBgColor') as HTMLInputElement
+const badgeFontColorInput = document.getElementById('badgeFontColor') as HTMLInputElement
+const badgeFontSizeInput = document.getElementById('badgeFontSize') as HTMLInputElement
+const optionsFontSizeInput = document.getElementById('optionsFontSize') as HTMLInputElement
+const optionsFontColorInput = document.getElementById('optionsFontColor') as HTMLInputElement
+const optionsBgColorInput = document.getElementById('optionsBgColor') as HTMLInputElement
+const sectionBgColorInput = document.getElementById('sectionBgColor') as HTMLInputElement
+const offsetMaxInput = document.getElementById('offsetMax') as HTMLInputElement
+const savedFlashDurationInput = document.getElementById('savedFlashDuration') as HTMLInputElement
+const status = document.getElementById('status') as HTMLParagraphElement
+const exportBtn = document.getElementById('exportBtn') as HTMLButtonElement
+const importFile = document.getElementById('importFile') as HTMLInputElement
+const copyJsonBtn = document.getElementById('copyJsonBtn') as HTMLButtonElement
+const applyJsonBtn = document.getElementById('applyJsonBtn') as HTMLButtonElement
+const configJsonTextarea = document.getElementById('configJson') as HTMLTextAreaElement
 
 // Load
 storage.get(SETTINGS_DEFAULTS).then(s => {
@@ -357,6 +341,22 @@ makeEmojiPicker(multiCursorEmojiBtn, em => {
 
 cursorSizeInput.addEventListener('change', () => {
   storage.set({ cursorSize: Number(cursorSizeInput.value) }).then(showSaved)
+})
+
+offsetPlane.addEventListener('mousedown', (e) => {
+  planeDragging = true
+  const { x, y } = planeVals(e)
+  moveDot(x, y)
+  e.preventDefault()
+})
+document.addEventListener('mousemove', (e) => {
+  if (!planeDragging) return
+  moveDot(...Object.values(planeVals(e)) as [number, number])
+})
+document.addEventListener('mouseup', () => {
+  if (!planeDragging) return
+  planeDragging = false
+  storage.set({ cursorOffsetX: curOffsetX, cursorOffsetY: curOffsetY }).then(showSaved)
 })
 
 wireColor(badgeBgColorInput)
