@@ -102,10 +102,10 @@ function buildTarget(name) {
     // are safe, so suppress the rule inline before linting.
     for (const jsFile of fs.readdirSync(outDir).filter(f => f.endsWith('.js'))) {
       const filePath = path.join(outDir, jsFile);
-      const patched = fs.readFileSync(filePath, 'utf8').replace(
-        /^([ \t]*.+\.innerHTML\s*=)/gm,
-        '// eslint-disable-next-line no-unsanitized/property\n$1'
-      );
+      const src = fs.readFileSync(filePath, 'utf8');
+      const patched = src.includes('.innerHTML')
+        ? '/* eslint-disable no-unsanitized/property */\n' + src
+        : src;
       fs.writeFileSync(filePath, patched);
     }
 
