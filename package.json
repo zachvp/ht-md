@@ -15,10 +15,7 @@
     "typecheck": "tsc --noEmit",
     "gen-icons": "tsx scripts/gen-icons.ts",
     "build:chrome:dev": "tsx scripts/build.ts chrome --no-pack",
-    "watch:ts": "esbuild 'src/*.ts' --bundle --platform=browser --outdir=dist/chrome --watch",
-    "watch:static": "chokidar 'content.css' 'turndown.js' 'options.html' 'icons/**' -c 'tsx scripts/copy-static.ts {path}'",
-    "watch:ext": "test -n \"$CHROMIUM_BINARY\" || (echo '[watch] CHROMIUM_BINARY is not set' && exit 1) && wait-on dist/chrome/manifest.json && web-ext run --target chromium --chromium-binary \"$CHROMIUM_BINARY\" --source-dir dist/chrome",
-    "watch": "npm run build:chrome:dev && concurrently \"npm run watch:ts\" \"npm run watch:static\" \"npm run watch:ext\""
+    "watch": "tsx scripts/watch.ts"
   },
   "keywords": [],
   "author": "",
@@ -30,15 +27,13 @@
     "@types/sharp": "^0.31.1",
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.4",
-    "chokidar-cli": "^3.0.0",
-    "concurrently": "^10.0.3",
+    "chokidar": "^5.0.0",
     "esbuild": "^0.28.0",
     "eslint": "^10.4.0",
     "globals": "^17.6.0",
     "sharp": "^0.35.2",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3",
-    "wait-on": "^9.0.10",
     "web-ext": "^10.4.0"
   },
   "dependencies": {
