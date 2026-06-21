@@ -28,7 +28,7 @@ function buildColorField(f: ColorField): HTMLElement {
   const input = el('input', { id: f.id, className: 'color-text', placeholder: '#rrggbbaa' })
   input.type = 'text'
   const swatch = el('span', { className: 'color-band', id: `${f.id}Swatch` })
-  return fieldStack(f.label, input, swatch)
+  return fieldStack(f.label, swatch, input)
 }
 
 function buildEmojiField(f: EmojiField): HTMLElement {
