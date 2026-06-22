@@ -44,8 +44,7 @@ function resolveModifier(key: string): keyof MouseEvent {
 }
 
 const keyMap = {
-  multiSelect:  resolveModifier('auto'),
-  passthrough:  resolveModifier('Alt'),
+  multiSelect: resolveModifier('auto'),
 }
 
 function makeTurndown(stripSvg: boolean): TurndownService {
@@ -75,7 +74,6 @@ const turndownStripped = makeTurndown(true)
 storage.get(SETTINGS_DEFAULTS).then(stored => {
   Object.assign(settings, stored)
   keyMap.multiSelect = resolveModifier(settings.multiSelectKey)
-  keyMap.passthrough = resolveModifier(settings.passthroughKey)
 })
 
 chrome.storage.onChanged.addListener(changes => {
@@ -83,7 +81,6 @@ chrome.storage.onChanged.addListener(changes => {
     if (key in changes) (settings as Record<string, unknown>)[key] = changes[key].newValue
   }
   if ('multiSelectKey' in changes) keyMap.multiSelect = resolveModifier(settings.multiSelectKey)
-  if ('passthroughKey' in changes) keyMap.passthrough = resolveModifier(settings.passthroughKey)
   if (state.pickerActive && (changes.outlineColor || changes.outlineWidth || changes.insetWidth)) {
     applyOutlineStyles()
   }
@@ -291,11 +288,15 @@ function onMouseOver(e: MouseEvent): void {
 
 function onClick(e: MouseEvent): void {
   if (!e.isTrusted) return
-  if (e[keyMap.passthrough]) return
-  e.preventDefault()
-  e.stopPropagation()
 
   const el = e.target as Element
+  const inMultiMode = settings.initialMode === 'multi' || state.selectedElements.length > 0
+
+  // In multi-select mode, bare clicks pass through so the user can interact with the page
+  if (inMultiMode && !e[keyMap.multiSelect]) return
+
+  e.preventDefault()
+  e.stopPropagation()
 
   if (e[keyMap.multiSelect] || settings.initialMode === 'multi') {
     if (!state.selectedSet.has(el)) {
@@ -309,8 +310,6 @@ function onClick(e: MouseEvent): void {
     showMessage(`${state.selectedElements.length} selected — Enter to copy`)
     return
   }
-
-  if (state.selectedElements.length > 0) return
 
   if (el === document.body || el === document.documentElement) {
     deactivatePicker()

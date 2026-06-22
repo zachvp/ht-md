@@ -11,8 +11,7 @@ export type SectionDef = { rowId: string; fields: FieldDef[] }
 
 export const SECTIONS: SectionDef[] = [
   { rowId: 'row-functionality', fields: [
-    { type: 'keybind', id: 'multiSelectKey',  label: 'multi-select key',  default: 'auto' },
-    { type: 'keybind', id: 'passthroughKey', label: 'passthrough key',  default: 'Alt'  },
+    { type: 'keybind', id: 'multiSelectKey', label: 'multi-select key', default: 'auto' },
     { type: 'select',  id: 'initialMode',   label: 'initial mode',     default: 'single',
       options: [
         { value: 'single', label: 'single' },

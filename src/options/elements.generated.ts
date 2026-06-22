@@ -1,6 +1,5 @@
 export const els = {
   get multiSelectKey     () { return document.getElementById('multiSelectKey') as HTMLButtonElement },
-  get passthroughKey     () { return document.getElementById('passthroughKey') as HTMLButtonElement },
   get initialMode        () { return document.getElementById('initialMode') as HTMLSelectElement },
   get cursorEmojiBtn     () { return document.getElementById('cursorEmojiBtn') as HTMLButtonElement },
   get multiCursorEmojiBtn() { return document.getElementById('multiCursorEmojiBtn') as HTMLButtonElement },
