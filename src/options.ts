@@ -500,6 +500,12 @@ els.importFile.addEventListener('change', () => {
   els.importFile.value = ''
 })
 
+chrome.storage.onChanged.addListener(() => {
+  storage.get(SETTINGS_DEFAULTS).then(stored => {
+    els.configJson.value = JSON.stringify(stored, null, 2)
+  })
+})
+
 // Inject custom pixel spinners — must run after all change listeners are attached
 document.querySelectorAll<HTMLInputElement>('input[type=number]').forEach(input => {
   const wrap = document.createElement('div')
