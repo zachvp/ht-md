@@ -1,18 +1,19 @@
 
 .ht-md-badge {
   all: initial;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: fixed;
   background: #3399ff;
   color: #fff;
-  font: bold 11px/16px Monaco, Menlo, ui-monospace, 'Courier New', monospace;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 8px;
+  font: bold 11px/1 Monaco, Menlo, ui-monospace, 'Courier New', monospace;
+  padding: 0.3em;
+  min-width: 1.6em;
+  aspect-ratio: 1;
+  border-radius: 50%;
   z-index: 2147483647; /* Z_TOP — keep in sync with src/lib/constants.ts */
   pointer-events: none;
-  text-align: center;
   box-sizing: border-box;
 }
 
