@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ht-md",
-  "version": "6.22.26.0",
+  "version": "6.22.26.1",
   "description": "Pick any combination of webpage elements, copy it as Markdown",
   "permissions": ["activeTab", "tabs", "storage", "scripting"],
   "options_ui": {
