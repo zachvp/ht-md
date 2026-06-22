@@ -20,3 +20,5 @@ export const EXT_NAME = 'ht-md'
 export const CLASS_SELECTED = `${EXT_NAME}-selected`
 export const CLASS_BADGE    = `${EXT_NAME}-badge`
 export const CLASS_FLASH    = `${EXT_NAME}-flash`
+export const CLASS_CURSOR   = `${EXT_NAME}-cursor`
+export const CLASS_OVERLAY  = `${EXT_NAME}-overlay`

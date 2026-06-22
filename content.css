@@ -1,13 +1,35 @@
 
+.ht-md-cursor {
+  all: initial;
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 2147483647; /* Z_TOP — keep in sync with src/lib/constants.ts */
+  user-select: none;
+  line-height: 1;
+}
+
+.ht-md-overlay {
+  position: fixed;
+  pointer-events: none;
+  z-index: 2147483646; /* Z_OVERLAY — keep in sync with src/lib/constants.ts */
+  box-sizing: border-box;
+}
+
 .ht-md-badge {
   all: initial;
   display: flex;
   align-items: center;
   justify-content: center;
   position: fixed;
-  background: #3399ff;
-  color: #fff;
-  font: bold 11px/1 Monaco, Menlo, ui-monospace, 'Courier New', monospace;
+  background: var(--badge-bg, #3399ff);
+  color: var(--badge-color, #fff);
+  font-weight: bold;
+  font-size: var(--badge-font-size, 13px);
+  line-height: 1;
+  font-family: Monaco, Menlo, ui-monospace, 'Courier New', monospace;
   padding: 0.3em;
   min-width: 1.6em;
   aspect-ratio: 1;
@@ -17,19 +39,26 @@
   box-sizing: border-box;
 }
 
+.ht-md-badge-pulse {
+  animation: ht-md-badge-pulse var(--badge-pulse-duration, 1000ms) ease-in-out infinite;
+}
+
 .ht-md-flash {
   all: initial;
   display: block;
   position: fixed;
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
+  background: var(--flash-bg, #000000cc);
+  color: var(--flash-color, #fff);
   padding: 8px 14px;
   border-radius: 6px;
-  font: 13px/1.4 Monaco, Menlo, ui-monospace, 'Courier New', monospace;
+  font-size: var(--flash-font-size, 20px);
+  line-height: 1.4;
+  font-family: Monaco, Menlo, ui-monospace, 'Courier New', monospace;
   pointer-events: none;
   white-space: nowrap;
   z-index: 2147483647; /* Z_TOP — keep in sync with src/lib/constants.ts */
   animation-name: ht-md-flash-fall;
+  animation-duration: var(--flash-duration, 2000ms);
   animation-fill-mode: forwards;
 }
 

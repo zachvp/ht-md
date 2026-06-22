@@ -1,6 +1,6 @@
 import { SETTINGS_DEFAULTS, Settings } from './lib/settings.generated'
 import { storage } from './lib/storage'
-import { EXT_NAME, Z_TOP, Z_OVERLAY, DARKREADER_CLASS, HIGHLIGHT_ALPHA, OUTLINE_OFFSET, BADGE_INSET, CLASS_SELECTED, CLASS_BADGE, CLASS_FLASH } from './lib/constants'
+import { EXT_NAME, DARKREADER_CLASS, HIGHLIGHT_ALPHA, OUTLINE_OFFSET, BADGE_INSET, CLASS_SELECTED, CLASS_BADGE, CLASS_FLASH, CLASS_CURSOR, CLASS_OVERLAY } from './lib/constants'
 
 const LOG = `[${EXT_NAME}]`
 
@@ -72,9 +72,24 @@ function makeTurndown(stripSvg: boolean): TurndownService {
 const turndown = makeTurndown(false)
 const turndownStripped = makeTurndown(true)
 
+function applySettingsVars(): void {
+  const s = document.documentElement.style
+  s.setProperty('--badge-bg', settings.badgeBgColor)
+  s.setProperty('--badge-color', settings.badgeFontColor)
+  s.setProperty('--badge-font-size', `${settings.badgeFontSize}px`)
+  s.setProperty('--badge-pulse-scale', String(settings.badgePulseScale / 100))
+  s.setProperty('--badge-pulse-duration', `${settings.badgePulseDuration}ms`)
+  s.setProperty('--flash-bg', settings.flashBgColor)
+  s.setProperty('--flash-color', settings.flashFontColor)
+  s.setProperty('--flash-font-size', `${settings.toastFontSize}px`)
+  s.setProperty('--flash-duration', `${settings.flashDuration}ms`)
+  s.setProperty('--fall-dist', `${settings.flashFallDistance}px`)
+}
+
 storage.get(SETTINGS_DEFAULTS).then(stored => {
   Object.assign(settings, stored)
   keyMap.multiSelect = resolveModifier(settings.multiSelectKey)
+  applySettingsVars()
 })
 
 chrome.storage.onChanged.addListener(changes => {
@@ -85,6 +100,7 @@ chrome.storage.onChanged.addListener(changes => {
   if (state.pickerActive && (changes.outlineColor || changes.outlineWidth || changes.insetWidth)) {
     applyOutlineStyles()
   }
+  applySettingsVars()
 })
 
 function convert(html: string): string {
@@ -127,7 +143,7 @@ function clearOutlineStyles(): void {
 function positionHighlight(el: Element): void {
   if (!state.highlightOverlayEl) {
     const div = document.createElement('div')
-    div.style.cssText = `position:fixed;pointer-events:none;z-index:${Z_OVERLAY};box-sizing:border-box;`
+    div.className = CLASS_OVERLAY
     document.documentElement.appendChild(div)
     state.highlightOverlayEl = div
   }
@@ -160,7 +176,7 @@ function setCursor(emoji: string): void {
   }
   if (!state.cursorEl) {
     const el = document.createElement('div')
-    el.style.cssText = `position:fixed;top:0;left:0;pointer-events:none;z-index:${Z_TOP};user-select:none;line-height:1;`
+    el.className = CLASS_CURSOR
     const initOy = cursorFontSize() + settings.cursorOffsetY
     el.style.transform = `translate(${state.lastMousePos.x + settings.cursorOffsetX}px,${state.lastMousePos.y - initOy}px)`
     document.documentElement.appendChild(el)
@@ -203,13 +219,7 @@ function addBadge(el: Element, index: number): void {
   const badge = document.createElement('div')
   badge.className = CLASS_BADGE
   badge.textContent = String(index)
-  badge.style.background = settings.badgeBgColor
-  badge.style.color = settings.badgeFontColor
-  badge.style.fontSize = `${settings.badgeFontSize}px`
-  if (settings.badgePulse) {
-    badge.style.setProperty('--badge-pulse-scale', String(settings.badgePulseScale / 100))
-    badge.style.animation = `${CLASS_BADGE}-pulse ${settings.badgePulseDuration}ms ease-in-out infinite`
-  }
+  if (settings.badgePulse) badge.classList.add(`${CLASS_BADGE}-pulse`)
   document.documentElement.appendChild(badge)
   badge.style.top = `${r.top + BADGE_INSET}px`
   badge.style.left = `${r.right - badge.offsetWidth - BADGE_INSET}px`
@@ -385,12 +395,6 @@ function showMessage(text: string): void {
   const el = document.createElement('div')
   el.className = CLASS_FLASH
   el.textContent = text
-  el.style.fontSize = `${settings.toastFontSize}px`
-  el.style.color = settings.flashFontColor
-  el.style.background = settings.flashBgColor
-  el.style.animationDuration = `${settings.flashDuration}ms`
-  el.style.setProperty('--fall-dist', `${settings.flashFallDistance}px`)
-  el.style.position = 'fixed'
   el.style.left = `${state.lastMousePos.x}px`
   el.style.top = `${state.lastMousePos.y}px`
   el.style.transform = 'translate(-50%, -50%)'
