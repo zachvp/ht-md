@@ -17,7 +17,6 @@ const state = {
   // --- DOM refs: always null when picker is inactive ---
   lastHighlighted: null as Element | null,
   hoverRoot: null as Element | null,
-  modifierHeld: false,
   badgeEls: [] as HTMLDivElement[],
   outlineStyleEl: null as HTMLStyleElement | null,
   highlightOverlayEl: null as HTMLDivElement | null,
@@ -27,9 +26,6 @@ const state = {
   cursorEnterHandler: null as (() => void) | null,
   cursorLeaveHandler: null as (() => void) | null,
   mousePosTracker: null as ((e: MouseEvent) => void) | null,
-  modifierDownHandler: null as ((e: KeyboardEvent) => void) | null,
-  modifierUpHandler: null as ((e: KeyboardEvent) => void) | null,
-  windowBlurHandler: null as (() => void) | null,
 }
 
 // User-configurable settings, kept in sync with chrome.storage.sync
@@ -41,9 +37,6 @@ const KEY_TO_PROP: Partial<Record<string, keyof MouseEvent>> = {
   Control: 'ctrlKey',
   Alt:     'altKey',
   Shift:   'shiftKey',
-}
-const PROP_TO_KEY: Partial<Record<keyof MouseEvent, string>> = {
-  metaKey: 'Meta', ctrlKey: 'Control', altKey: 'Alt', shiftKey: 'Shift',
 }
 
 function resolveModifier(key: string): keyof MouseEvent {
@@ -242,32 +235,10 @@ function activatePicker(): void {
     setCursor(settings.initialMode === 'multi' ? settings.multiCursorEmoji : settings.cursorEmoji)
     state.mousePosTracker = (e: MouseEvent) => { state.lastMousePos = { x: e.clientX, y: e.clientY } }
 
-    const multiKeyName = PROP_TO_KEY[keyMap.multiSelect]
-    const onModifierDown = (e: KeyboardEvent) => {
-      if (e.key !== multiKeyName || !isMultiMode()) return
-      state.modifierHeld = true
-      if (state.lastHighlighted) positionHighlight(state.lastHighlighted)
-    }
-    const onModifierUp = (e: KeyboardEvent) => {
-      if (e.key !== multiKeyName) return
-      state.modifierHeld = false
-      if (isMultiMode()) clearHighlight()
-    }
-    const onWindowBlur = () => {
-      state.modifierHeld = false
-      if (isMultiMode()) clearHighlight()
-    }
-    state.modifierDownHandler = onModifierDown
-    state.modifierUpHandler = onModifierUp
-    state.windowBlurHandler = onWindowBlur
-
     document.addEventListener('mousemove', state.mousePosTracker, true)
     document.addEventListener('mouseover', onMouseOver)
     document.addEventListener('click', onClick, true)
     document.addEventListener('keydown', onKeyDown, true)
-    document.addEventListener('keydown', onModifierDown, true)
-    document.addEventListener('keyup', onModifierUp, true)
-    window.addEventListener('blur', onWindowBlur)
     notifyPickerState(true)
   } catch (err) {
     console.error(`${LOG} activatePicker failed:`, err)
@@ -295,32 +266,15 @@ function deactivatePicker(message?: string): void {
   state.selectionRedoStack.length = 0
   clearBadges()
 
-  state.modifierHeld = false
   if (state.mousePosTracker) {
     document.removeEventListener('mousemove', state.mousePosTracker, true)
     state.mousePosTracker = null
-  }
-  if (state.modifierDownHandler) {
-    document.removeEventListener('keydown', state.modifierDownHandler, true)
-    state.modifierDownHandler = null
-  }
-  if (state.modifierUpHandler) {
-    document.removeEventListener('keyup', state.modifierUpHandler, true)
-    state.modifierUpHandler = null
-  }
-  if (state.windowBlurHandler) {
-    window.removeEventListener('blur', state.windowBlurHandler)
-    state.windowBlurHandler = null
   }
   document.removeEventListener('mouseover', onMouseOver)
   document.removeEventListener('click', onClick, true)
   document.removeEventListener('keydown', onKeyDown, true)
 
   if (message) showMessage(message)
-}
-
-function isMultiMode(): boolean {
-  return settings.initialMode === 'multi' || state.selectedElements.length > 0
 }
 
 function onMouseOver(e: MouseEvent): void {
@@ -334,7 +288,7 @@ function onMouseOver(e: MouseEvent): void {
   }
   state.hoverRoot = target
   state.lastHighlighted = target
-  if (!isMultiMode() || state.modifierHeld) positionHighlight(target)
+  positionHighlight(target)
 }
 
 function onClick(e: MouseEvent): void {
@@ -342,7 +296,7 @@ function onClick(e: MouseEvent): void {
 
   const el = (state.lastHighlighted ?? e.target) as Element
   // In multi-select mode, bare clicks pass through so the user can interact with the page
-  if (isMultiMode() && !e[keyMap.multiSelect]) return
+  if (settings.initialMode === 'multi' && !e[keyMap.multiSelect]) return
 
   e.preventDefault()
   e.stopPropagation()
@@ -431,11 +385,12 @@ function onKeyDown(e: KeyboardEvent): void {
       state.lastHighlighted = el
       positionHighlight(el)
     }
-  } else if (e.key === 'Enter' && state.selectedElements.length > 0) {
+  } else if (e.key === 'Enter' && (state.selectedElements.length > 0 || state.lastHighlighted)) {
     e.preventDefault()
     e.stopImmediatePropagation()
-    const md = state.selectedElements.map(el => convert(el.outerHTML)).join('\n')
-    console.log(`${LOG} committing`, state.selectedElements.length, 'elements — md length:', md.length)
+    const elements = state.selectedElements.length > 0 ? state.selectedElements : [state.lastHighlighted!]
+    const md = elements.map(el => convert(el.outerHTML)).join('\n')
+    console.log(`${LOG} committing`, elements.length, 'elements — md length:', md.length)
     navigator.clipboard.writeText(md)
       .then(() => { console.log(`${LOG} clipboard write ok`); deactivatePicker('📝 Copied') })
       .catch((err: Error) => { console.error(`${LOG} clipboard write failed:`, err.message); deactivatePicker('Error: ' + err.message) })
