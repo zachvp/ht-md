@@ -264,16 +264,14 @@
     .avatar-section .group-label { cursor: pointer; }
     .avatar-section .group-label:hover { opacity: 0.75; }
 
-    /* Badge avatar: override fixed-px class props with relative sizing */
+    /* Badge avatar: em-based sizing so font size drives the badge dimensions */
     #badgePreview .ht-md-badge {
       position: static;
-      width: 60%;
       height: auto;
+      padding: 0.3em;
+      min-width: 1.6em;
       aspect-ratio: 1;
-      padding: 0;
-      min-width: unset;
       border-radius: 50%;
-      font-size: calc(var(--avatar-size) * 0.22);
       display: flex;
       align-items: center;
       justify-content: center;

@@ -526,6 +526,7 @@ document.getElementById('badgePreview')!.appendChild(badgePill)
 function updateBadgePreview(): void {
   badgePill.style.background = els.badgeBgColor.value
   badgePill.style.color = els.badgeFontColor.value
+  badgePill.style.fontSize = `${els.badgeFontSize.value}px`
   if (els.badgePulse.checked) {
     badgePill.style.setProperty('--badge-pulse-scale', String(Number(els.badgePulseScale.value) / 100))
     badgePill.style.animation = `ht-md-badge-pulse ${els.badgePulseDuration.value}ms ease-in-out infinite`
@@ -592,7 +593,7 @@ function updateOptionsPreview(): void {
 }
 
 // Number field input listeners for live preview
-for (const id of ['badgePulseDuration', 'badgePulseScale']) {
+for (const id of ['badgeFontSize', 'badgePulseDuration', 'badgePulseScale']) {
   document.getElementById(id)!.addEventListener('input', updateBadgePreview)
 }
 for (const id of ['outlineWidth', 'insetWidth']) {
