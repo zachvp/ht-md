@@ -232,7 +232,7 @@ function activatePicker(): void {
   console.log(`${LOG} picker activated`)
   try {
     applyOutlineStyles()
-    setCursor(settings.initialMode === 'multi' ? settings.multiCursorEmoji : settings.cursorEmoji)
+    setCursor(settings.cursorEmoji)
     state.mousePosTracker = (e: MouseEvent) => { state.lastMousePos = { x: e.clientX, y: e.clientY } }
 
     document.addEventListener('mousemove', state.mousePosTracker, true)
@@ -294,38 +294,22 @@ function onMouseOver(e: MouseEvent): void {
 function onClick(e: MouseEvent): void {
   if (!e.isTrusted) return
 
-  const el = (state.lastHighlighted ?? e.target) as Element
-  // In multi-select mode, bare clicks pass through so the user can interact with the page
-  if (settings.initialMode === 'multi' && !e[keyMap.multiSelect]) return
+  // Bare clicks pass through so the user can interact with the page
+  if (!e[keyMap.multiSelect]) return
 
+  const el = (state.lastHighlighted ?? e.target) as Element
   e.preventDefault()
   e.stopPropagation()
 
-  if (e[keyMap.multiSelect] || settings.initialMode === 'multi') {
-    if (!state.selectedSet.has(el)) {
-      state.selectedElements.push(el)
-      state.selectedSet.add(el)
-      el.classList.add(CLASS_SELECTED)
-      addBadge(el, state.selectedElements.length)
-      state.selectionRedoStack.length = 0
-      if (state.selectedElements.length === 1) setCursor(settings.multiCursorEmoji)
-    }
-    showMessage(`${state.selectedElements.length} selected — Enter to copy`)
-    return
+  if (!state.selectedSet.has(el)) {
+    state.selectedElements.push(el)
+    state.selectedSet.add(el)
+    el.classList.add(CLASS_SELECTED)
+    addBadge(el, state.selectedElements.length)
+    state.selectionRedoStack.length = 0
+    if (state.selectedElements.length === 1) setCursor(settings.multiCursorEmoji)
   }
-
-  if (el === document.body || el === document.documentElement) {
-    deactivatePicker()
-    return
-  }
-
-  const html = el.outerHTML
-  const md = convert(html)
-  console.log(`${LOG} captured element:`, el.tagName, '— md length:', md.length)
-
-  navigator.clipboard.writeText(md)
-    .then(() => { console.log(`${LOG} clipboard write ok`); deactivatePicker('📝 Copied') })
-    .catch((err: Error) => { console.error(`${LOG} clipboard write failed:`, err.message); deactivatePicker('Error: ' + err.message) })
+  showMessage(`${state.selectedElements.length} selected — Enter to copy`)
 }
 
 function undoSelection(): void {

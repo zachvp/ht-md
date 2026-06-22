@@ -346,8 +346,7 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
   }
   OFFSET_MAX = stored.offsetMax
   savedFlashDuration = stored.savedFlashDuration
-  els.initialMode.value = String(stored.initialMode)
-  els.includeSvg.checked = stored.includeSvg
+els.includeSvg.checked = stored.includeSvg
   els.badgePulse.checked = stored.badgePulse
   syncBadgePulseParams()
   els.cursorEmojiBtn.textContent = stored.cursorEmoji
@@ -381,9 +380,6 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
 })
 
 // Listeners
-els.initialMode.addEventListener('change', () => {
-  storage.set({ initialMode: els.initialMode.value }).then(showSaved)
-})
 els.includeSvg.addEventListener('change', () => {
   storage.set({ includeSvg: els.includeSvg.checked }).then(showSaved)
 })

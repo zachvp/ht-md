@@ -12,12 +12,6 @@ export type SectionDef = { rowId: string; fields: FieldDef[] }
 export const SECTIONS: SectionDef[] = [
   { rowId: 'row-functionality', fields: [
     { type: 'keybind', id: 'multiSelectKey', label: 'multi-select key', default: 'auto' },
-    { type: 'select',  id: 'initialMode',   label: 'initial mode',     default: 'single',
-      options: [
-        { value: 'single', label: 'single' },
-        { value: 'multi',  label: 'multi'  },
-      ],
-    },
   ]},
   { rowId: 'row-cursor', fields: [
     { type: 'emoji',  id: 'cursorEmojiBtn',      storageKey: 'cursorEmoji',      label: 'cursor',       default: '👆' },
