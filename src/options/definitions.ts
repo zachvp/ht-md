@@ -16,7 +16,7 @@ export const SECTIONS: SectionDef[] = [
   { rowId: 'row-cursor', fields: [
     { type: 'emoji',  id: 'cursorEmojiBtn',      storageKey: 'cursorEmoji',      label: 'cursor',       default: '👆' },
     { type: 'emoji',  id: 'multiCursorEmojiBtn', storageKey: 'multiCursorEmoji', label: 'multiselect',  default: '📋' },
-    { type: 'number', id: 'cursorSize',           label: 'size (px)',  min: 16,  max: 1024,  step: 4,   default: 32   },
+    { type: 'number', id: 'cursorSize',           label: 'size (px)',  min: 16,  max: 1024,  step: 1,   default: 32   },
     { type: 'plane',  label: 'offset (px)', ids: [
       { id: 'offsetCoords', tag: 'span' },
       { id: 'offsetPlane',  tag: 'div'  },

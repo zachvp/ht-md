@@ -540,15 +540,13 @@ badgePill.textContent = '1'
 document.getElementById('badgePreview')!.appendChild(badgePill)
 
 function updateBadgePreview(): void {
-  badgePill.style.background = els.badgeBgColor.value
-  badgePill.style.color = els.badgeFontColor.value
-  badgePill.style.fontSize = `${els.badgeFontSize.value}px`
-  if (els.badgePulse.checked) {
-    badgePill.style.setProperty('--badge-pulse-scale', String(Number(els.badgePulseScale.value) / 100))
-    badgePill.style.animation = `ht-md-badge-pulse ${els.badgePulseDuration.value}ms ease-in-out infinite`
-  } else {
-    badgePill.style.animation = ''
-  }
+  const s = document.documentElement.style
+  s.setProperty('--badge-bg', els.badgeBgColor.value)
+  s.setProperty('--badge-color', els.badgeFontColor.value)
+  s.setProperty('--badge-font-size', `${els.badgeFontSize.value}px`)
+  s.setProperty('--badge-pulse-scale', String(Number(els.badgePulseScale.value) / 100))
+  s.setProperty('--badge-pulse-duration', `${els.badgePulseDuration.value}ms`)
+  badgePill.classList.toggle('ht-md-badge-pulse', els.badgePulse.checked)
 }
 
 // Highlight preview
@@ -620,15 +618,51 @@ els.cursorSize.addEventListener('input', updateCursorPreview)
 els.previewSize.addEventListener('input', () => { setAvatarSize(Number(els.previewSize.value)); updateBadgePreview() })
 els.previewSize.addEventListener('change', () => { setAvatarSize(Number(els.previewSize.value)); updateBadgePreview() })
 
+// Section collapse state — persisted to localStorage
+const COLLAPSE_KEY = 'ht-md-section-open'
+
+function loadCollapseState(): Record<string, boolean> {
+  try { return JSON.parse(localStorage.getItem(COLLAPSE_KEY) ?? '{}') } catch { return {} }
+}
+
+function saveCollapseState(state: Record<string, boolean>): void {
+  localStorage.setItem(COLLAPSE_KEY, JSON.stringify(state))
+}
+
+const collapseState = loadCollapseState()
+
+// Apply stored state; default is hidden (false)
+document.querySelectorAll<HTMLElement>('.section[id]').forEach(section => {
+  const body = section.querySelector<HTMLElement>('.section-params, .section-body')
+  if (!body) return
+  body.hidden = !(collapseState[section.id] ?? false)
+})
+
 // Collapse toggle: avatar + label click expand/collapse section-params
 for (const id of ['badgePreview', 'highlightPreview', 'cursorPreview', 'messagePreview', 'optionsPreview']) {
   const avatar  = document.getElementById(id)!
-  const section = avatar.closest('.section')!
-  const params  = section.querySelector('.section-params') as HTMLElement
-  const label   = section.querySelector('.group-label') as HTMLElement
-  const toggle  = () => { params.hidden = !params.hidden }
+  const section = avatar.closest<HTMLElement>('.section')!
+  const params  = section.querySelector<HTMLElement>('.section-params')!
+  const label   = section.querySelector<HTMLElement>('.group-label')!
+  const toggle  = () => {
+    params.hidden = !params.hidden
+    collapseState[section.id] = !params.hidden
+    saveCollapseState(collapseState)
+  }
   avatar.addEventListener('click', toggle)
   label.addEventListener('click', toggle)
+}
+
+// Collapse toggle: label-only for non-avatar sections
+for (const sectionId of ['section-functionality', 'section-rawconfig']) {
+  const section = document.getElementById(sectionId)!
+  const body    = section.querySelector<HTMLElement>('.section-body')!
+  const label   = section.querySelector<HTMLElement>('.group-label')!
+  label.addEventListener('click', () => {
+    body.hidden = !body.hidden
+    collapseState[sectionId] = !body.hidden
+    saveCollapseState(collapseState)
+  })
 }
 
 // #endregion

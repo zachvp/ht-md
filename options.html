@@ -261,8 +261,8 @@
     .avatar:hover { opacity: 1; }
 
     /* Collapsible section label */
-    .avatar-section .group-label { cursor: pointer; }
-    .avatar-section .group-label:hover { opacity: 0.75; }
+    .group-label { cursor: pointer; }
+    .group-label:hover { opacity: 0.75; }
 
     /* Hidden native color picker — triggered programmatically via swatch click */
     .color-picker-hidden { position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none; }
@@ -280,70 +280,74 @@
 <body>
   <h1>settings</h1>
 
-  <div class="section group">
+  <div class="section group" id="section-functionality">
     <span class="group-label">Functionality</span>
-    <div class="group-row" id="row-functionality"></div>
+    <div class="section-body" hidden>
+      <div class="group-row" id="row-functionality"></div>
+    </div>
   </div>
 
-  <div class="section group avatar-section">
+  <div class="section group avatar-section" id="section-cursor">
     <span class="group-label">Cursor</span>
     <div class="section-layout">
       <div class="avatar" id="cursorPreview"></div>
-      <div class="section-params">
+      <div class="section-params" hidden>
         <div class="group-row" id="row-cursor"></div>
       </div>
     </div>
   </div>
 
-  <div class="section group avatar-section">
+  <div class="section group avatar-section" id="section-highlight">
     <span class="group-label">Highlight</span>
     <div class="section-layout">
       <div class="avatar" id="highlightPreview"></div>
-      <div class="section-params">
+      <div class="section-params" hidden>
         <div class="group-row" id="row-highlight"></div>
       </div>
     </div>
   </div>
 
-  <div class="section group avatar-section">
+  <div class="section group avatar-section" id="section-message">
     <span class="group-label">Message (aka toast)</span>
     <div class="section-layout">
       <div class="avatar" id="messagePreview" style="width:auto;"></div>
-      <div class="section-params">
+      <div class="section-params" hidden>
         <div class="group-row" id="row-message"></div>
       </div>
     </div>
   </div>
 
-  <div class="section group avatar-section">
+  <div class="section group avatar-section" id="section-badge">
     <span class="group-label">Badge</span>
     <div class="section-layout">
       <div class="avatar" id="badgePreview"></div>
-      <div class="section-params">
+      <div class="section-params" hidden>
         <div class="group-row" id="row-badge"></div>
       </div>
     </div>
   </div>
 
-  <div class="section group avatar-section">
+  <div class="section group avatar-section" id="section-options">
     <span class="group-label">Settings for this Config page</span>
     <div class="section-layout">
       <div class="avatar" id="optionsPreview"></div>
-      <div class="section-params">
+      <div class="section-params" hidden>
         <div class="group-row" id="row-options"></div>
       </div>
     </div>
   </div>
 
-  <div class="section group">
+  <div class="section group" id="section-rawconfig">
     <span class="group-label">Raw Config Data</span>
-    <div class="group-row" style="margin-bottom:0.6rem;">
-      <button id="copyJsonBtn" class="cfg-btn" type="button">Copy</button>
-      <button id="applyJsonBtn" class="cfg-btn" type="button">Apply</button>
-      <button id="exportBtn" class="cfg-btn" type="button">Download</button>
-      <label class="cfg-btn" style="cursor:pointer;">Load file<input type="file" id="importFile" accept=".json" style="display:none"></label>
+    <div class="section-body" hidden>
+      <div class="group-row" style="margin-bottom:0.6rem;">
+        <button id="copyJsonBtn" class="cfg-btn" type="button">Copy</button>
+        <button id="applyJsonBtn" class="cfg-btn" type="button">Apply</button>
+        <button id="exportBtn" class="cfg-btn" type="button">Download</button>
+        <label class="cfg-btn" style="cursor:pointer;">Load file<input type="file" id="importFile" accept=".json" style="display:none"></label>
+      </div>
+      <textarea id="configJson" spellcheck="false" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:0.8em;height:8rem;resize:vertical;border:1px solid currentColor;border-radius:3px;background:var(--ui-overlay-sm,rgba(0,0,0,0.08));color:inherit;padding:0.3rem 0.4rem;"></textarea>
     </div>
-    <textarea id="configJson" spellcheck="false" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:0.8em;height:8rem;resize:vertical;border:1px solid currentColor;border-radius:3px;background:var(--ui-overlay-sm,rgba(0,0,0,0.08));color:inherit;padding:0.3rem 0.4rem;"></textarea>
   </div>
 
   <p id="status"></p>
