@@ -137,7 +137,7 @@ document.title = `${EXT_NAME} settings`
 
 SECTIONS.forEach(s => {
   const row     = document.getElementById(s.rowId)!
-  const section = row.parentElement!
+  const section = row.closest('.section')!
   s.fields.forEach(f => row.append(buildField(f)))
   const sectionReset = makeResetBtn(() =>
     section.querySelectorAll<HTMLButtonElement>('.reset-btn:not(.section-reset)').forEach(b => b.click())
@@ -146,25 +146,10 @@ SECTIONS.forEach(s => {
   section.append(sectionReset)
 })
 
-// Group pulse toggle + params into a full-width column: toggle on top, collapsible params below
-const badgePulseParams = (() => {
-  const group  = el('div', { className: 'badge-pulse-group' })
-  const params = el('div', { className: 'badge-pulse-params' })
-
-  const pulseSection = els.badgePulse.closest('.field-row') as HTMLElement
-  pulseSection.replaceWith(group)
-  group.append(pulseSection)
-
-  const dur = els.badgePulseDuration.parentElement!
-  dur.replaceWith(params)
-  params.append(dur, els.badgePulseScale.parentElement!)
-  group.append(params)
-
-  return params
-})()
-
 function syncBadgePulseParams(): void {
-  badgePulseParams.hidden = !els.badgePulse.checked
+  const show = els.badgePulse.checked
+  ;(els.badgePulseDuration.closest('.field-stack') as HTMLElement).hidden = !show
+  ;(els.badgePulseScale.closest('.field-stack') as HTMLElement).hidden = !show
 }
 
 function hexToRgb(hex: string): [number, number, number] | null {
@@ -369,6 +354,12 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
   document.documentElement.style.setProperty('--ui-overlay-xs', stored.sectionBgColor)
   document.documentElement.style.setProperty('--reset-btn-size',  `${stored.resetBtnSize}px`)
   document.documentElement.style.setProperty('--reset-btn-color', stored.resetBtnColor)
+  setAvatarSize(stored.previewSize)
+  updateBadgePreview()
+  updateHighlightPreview()
+  updateCursorPreview()
+  updateMessagePreview()
+  updateOptionsPreview()
 }).then(() => {
   storage.get(SETTINGS_DEFAULTS).then(stored => {
     els.configJson.value = JSON.stringify(stored, null, 2)
@@ -385,12 +376,13 @@ els.includeSvg.addEventListener('change', () => {
 els.badgePulse.addEventListener('change', () => {
   storage.set({ badgePulse: els.badgePulse.checked }).then(showSaved)
   syncBadgePulseParams()
+  updateBadgePreview()
 })
 
 for (const f of allFields) {
   if (f.type !== 'emoji') continue
   const btn = els[f.id as keyof typeof els] as HTMLButtonElement
-  makeEmojiPicker(btn, em => { storage.set({ [f.storageKey]: em }).then(showSaved) })
+  makeEmojiPicker(btn, em => { storage.set({ [f.storageKey]: em }).then(showSaved); updateCursorPreview() })
 }
 
 for (const f of allFields) {
@@ -415,15 +407,16 @@ document.addEventListener('mouseup', () => {
   storage.set({ cursorOffsetX: curOffsetX, cursorOffsetY: curOffsetY }).then(showSaved)
 })
 
-wireColor(els.badgeBgColor)
-wireColor(els.badgeFontColor)
-wireColor(els.outlineColor)
+wireColor(els.badgeBgColor, updateBadgePreview)
+wireColor(els.badgeFontColor, updateBadgePreview)
+wireColor(els.outlineColor, updateHighlightPreview)
 
-wireColor(els.flashFontColor)
-wireColor(els.flashBgColor)
+wireColor(els.flashFontColor, updateMessagePreview)
+wireColor(els.flashBgColor, updateMessagePreview)
 
 els.optionsFontSize.addEventListener('input', () => {
   document.body.style.fontSize = `${els.optionsFontSize.value}px`
+  updateOptionsPreview()
 })
 els.resetBtnSize.addEventListener('input', () => {
   document.documentElement.style.setProperty('--reset-btn-size', `${els.resetBtnSize.value}px`)
@@ -433,11 +426,13 @@ wireColor(els.optionsFontColor, () => {
   document.body.style.color = els.optionsFontColor.value
   pickerColors.fontColor = els.optionsFontColor.value
   applyDocumentTheme(els.optionsFontColor.value, els.optionsBgColor.value)
+  updateOptionsPreview()
 })
 wireColor(els.optionsBgColor, () => {
   document.body.style.background = els.optionsBgColor.value
   pickerColors.bgColor = els.optionsBgColor.value
   applyDocumentTheme(els.optionsFontColor.value, els.optionsBgColor.value)
+  updateOptionsPreview()
 })
 wireColor(els.sectionBgColor, () => {
   document.documentElement.style.setProperty('--ui-overlay-xs', els.sectionBgColor.value)
@@ -513,5 +508,111 @@ document.querySelectorAll<HTMLInputElement>('input[type=number]').forEach(input 
   }
   wrap.appendChild(btns)
 })
+
+// #endregion
+
+// #region * Previews *
+
+function setAvatarSize(px: number): void {
+  document.documentElement.style.setProperty('--avatar-size', `${px}px`)
+}
+
+// Badge preview
+const badgePill = el('div')
+badgePill.style.cssText = 'font-weight:bold;font-family:inherit;width:100%;height:100%;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;'
+badgePill.textContent = '1'
+document.getElementById('badgePreview')!.appendChild(badgePill)
+
+function updateBadgePreview(): void {
+  badgePill.style.background = els.badgeBgColor.value
+  badgePill.style.color = els.badgeFontColor.value
+  badgePill.style.fontSize = `${els.badgeFontSize.value}px`
+  if (els.badgePulse.checked) {
+    badgePill.style.setProperty('--badge-pulse-scale', String(Number(els.badgePulseScale.value) / 100))
+    badgePill.style.animation = `ht-md-badge-pulse ${els.badgePulseDuration.value}ms ease-in-out infinite`
+  } else {
+    badgePill.style.animation = ''
+  }
+}
+
+// Highlight preview
+const highlightBox = el('div')
+highlightBox.style.cssText = 'width:60%;height:60%;border-radius:4px;box-sizing:border-box;'
+document.getElementById('highlightPreview')!.appendChild(highlightBox)
+
+function updateHighlightPreview(): void {
+  const color = els.outlineColor.value
+  const ow = els.outlineWidth.value
+  const iw = els.insetWidth.value
+  const rgb = hexToRgb(color)
+  const alpha = rgb ? `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.35)` : color
+  highlightBox.style.outline = `${ow}px solid ${color}`
+  highlightBox.style.outlineOffset = '1px'
+  highlightBox.style.boxShadow = `inset 0 0 0 ${iw}px ${alpha}`
+}
+
+// Cursor preview
+const cursorDisplay = el('div')
+cursorDisplay.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:0.15rem;overflow:hidden;'
+const cursorEmoji1 = el('span')
+const cursorEmoji2 = el('span')
+cursorDisplay.append(cursorEmoji1, cursorEmoji2)
+document.getElementById('cursorPreview')!.appendChild(cursorDisplay)
+
+function updateCursorPreview(): void {
+  const size = `${els.cursorSize.value}px`
+  cursorEmoji1.textContent = els.cursorEmojiBtn.textContent
+  cursorEmoji2.textContent = els.multiCursorEmojiBtn.textContent
+  cursorEmoji1.style.fontSize = size
+  cursorEmoji2.style.fontSize = size
+}
+
+// Message preview
+const toastBubble = el('div')
+toastBubble.textContent = 'Copied!'
+toastBubble.style.cssText = 'padding:8px 14px;border-radius:6px;font-family:inherit;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;'
+document.getElementById('messagePreview')!.appendChild(toastBubble)
+
+function updateMessagePreview(): void {
+  toastBubble.style.background = els.flashBgColor.value
+  toastBubble.style.color = els.flashFontColor.value
+  toastBubble.style.fontSize = `${els.toastFontSize.value}px`
+}
+
+// Options preview
+const optionsAa = el('div')
+optionsAa.textContent = 'Aa'
+optionsAa.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:bold;'
+const optionsAvatar = document.getElementById('optionsPreview')!
+optionsAvatar.appendChild(optionsAa)
+
+function updateOptionsPreview(): void {
+  optionsAvatar.style.background = els.optionsBgColor.value
+  optionsAvatar.style.color = els.optionsFontColor.value
+  optionsAa.style.fontSize = `${els.optionsFontSize.value}px`
+}
+
+// Number field input listeners for live preview
+for (const id of ['badgeFontSize', 'badgePulseDuration', 'badgePulseScale']) {
+  document.getElementById(id)!.addEventListener('input', updateBadgePreview)
+}
+for (const id of ['outlineWidth', 'insetWidth']) {
+  document.getElementById(id)!.addEventListener('input', updateHighlightPreview)
+}
+document.getElementById('toastFontSize')!.addEventListener('input', updateMessagePreview)
+els.cursorSize.addEventListener('input', updateCursorPreview)
+els.previewSize.addEventListener('input', () => { setAvatarSize(Number(els.previewSize.value)); updateBadgePreview() })
+els.previewSize.addEventListener('change', () => { setAvatarSize(Number(els.previewSize.value)); updateBadgePreview() })
+
+// Collapse toggle: avatar + label click expand/collapse section-params
+for (const id of ['badgePreview', 'highlightPreview', 'cursorPreview', 'messagePreview', 'optionsPreview']) {
+  const avatar  = document.getElementById(id)!
+  const section = avatar.closest('.section')!
+  const params  = section.querySelector('.section-params') as HTMLElement
+  const label   = section.querySelector('.group-label') as HTMLElement
+  const toggle  = () => { params.hidden = !params.hidden }
+  avatar.addEventListener('click', toggle)
+  label.addEventListener('click', toggle)
+}
 
 // #endregion

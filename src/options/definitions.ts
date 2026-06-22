@@ -51,6 +51,7 @@ export const SECTIONS: SectionDef[] = [
     { type: 'color',    id: 'sectionBgColor',     label: 'section bg',                                        default: '#121212' },
     { type: 'number',   id: 'resetBtnSize',       label: 'reset size (px)',  min: 6,   max: 256,    step: 1,  default: 14       },
     { type: 'color',    id: 'resetBtnColor',      label: 'reset color',                                       default: '#ffffff66' },
+    { type: 'number',   id: 'previewSize',        label: 'preview (px)',     min: 40,  max: 400,   step: 4,   default: 96       },
     { type: 'number',   id: 'offsetMax',          label: 'offset max (±)',   min: 1,   max: 1000,  step: 1,   default: 16       },
     { type: 'number',   id: 'savedFlashDuration', label: 'saved flash (ms)', min: 100, max: 10000, step: 100, default: 1500     },
     { type: 'checkbox', id: 'includeSvg', label: 'Include SVG in output', default: false,

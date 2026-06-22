@@ -21,6 +21,7 @@ export const SETTINGS_DEFAULTS = {
   sectionBgColor    : '#121212',
   resetBtnSize      : 14,
   resetBtnColor     : '#ffffff66',
+  previewSize       : 96,
   offsetMax         : 16,
   savedFlashDuration: 1500,
   includeSvg        : false,

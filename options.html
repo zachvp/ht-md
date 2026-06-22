@@ -36,9 +36,6 @@
     .group-label { display: block; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.55; margin-bottom: 0.45rem; }
     .group-row { display: flex; align-items: flex-end; gap: 0.75rem; flex-wrap: wrap; }
     [hidden] { display: none !important; }
-    .badge-pulse-group { flex-basis: 100%; display: flex; flex-direction: column; gap: 0.45rem; }
-    .badge-pulse-group > .field-row { margin-bottom: 0; }
-    .badge-pulse-params { display: flex; align-items: flex-end; gap: 0.75rem; }
 
     .field { display: flex; align-items: flex-end; gap: 0.3rem; }
     .unit { opacity: 0.65; }
@@ -139,7 +136,7 @@
     .field-stack {
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: flex-start;
       gap: 0.3rem;
     }
     .field-label {
@@ -235,6 +232,42 @@
       display: inline-block;
     }
     .cfg-btn:hover { background: var(--ui-overlay-md, rgba(0,0,0,0.15)); }
+
+    /* Section layout: avatar left, params right */
+    .section-layout {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .section-params { flex: 1; min-width: 0; }
+
+    /* Preview avatar canvas */
+    .avatar {
+      width: var(--avatar-size, 96px);
+      height: var(--avatar-size, 96px);
+      flex-shrink: 0;
+      border: 1px solid currentColor;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-sizing: border-box;
+      overflow: hidden;
+      opacity: 0.85;
+      transition: opacity 0.15s;
+    }
+    .avatar:hover { opacity: 1; }
+
+    /* Collapsible section label */
+    .avatar-section .group-label { cursor: pointer; }
+    .avatar-section .group-label:hover { opacity: 0.75; }
+
+    /* Badge pulse keyframe (mirrors content.css for preview) */
+    @keyframes ht-md-badge-pulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(var(--badge-pulse-scale, 1.2)); }
+    }
   </style>
 </head>
 <body>
@@ -245,29 +278,54 @@
     <div class="group-row" id="row-functionality"></div>
   </div>
 
-  <div class="section group">
+  <div class="section group avatar-section">
     <span class="group-label">Cursor</span>
-    <div class="group-row" id="row-cursor"></div>
+    <div class="section-layout">
+      <div class="avatar" id="cursorPreview"></div>
+      <div class="section-params">
+        <div class="group-row" id="row-cursor"></div>
+      </div>
+    </div>
   </div>
 
-  <div class="section group">
+  <div class="section group avatar-section">
     <span class="group-label">Highlight</span>
-    <div class="group-row" id="row-highlight"></div>
+    <div class="section-layout">
+      <div class="avatar" id="highlightPreview"></div>
+      <div class="section-params">
+        <div class="group-row" id="row-highlight"></div>
+      </div>
+    </div>
   </div>
 
-  <div class="section group">
+  <div class="section group avatar-section">
     <span class="group-label">Message (aka toast)</span>
-    <div class="group-row" id="row-message"></div>
+    <div class="section-layout">
+      <div class="avatar" id="messagePreview" style="width:auto;"></div>
+      <div class="section-params">
+        <div class="group-row" id="row-message"></div>
+      </div>
+    </div>
   </div>
 
-  <div class="section group">
+  <div class="section group avatar-section">
     <span class="group-label">Options</span>
-    <div class="group-row" id="row-options"></div>
+    <div class="section-layout">
+      <div class="avatar" id="optionsPreview"></div>
+      <div class="section-params">
+        <div class="group-row" id="row-options"></div>
+      </div>
+    </div>
   </div>
 
-  <div class="section group">
+  <div class="section group avatar-section">
     <span class="group-label">Badge</span>
-    <div class="group-row" id="row-badge"></div>
+    <div class="section-layout">
+      <div class="avatar" id="badgePreview"></div>
+      <div class="section-params">
+        <div class="group-row" id="row-badge"></div>
+      </div>
+    </div>
   </div>
 
   <div class="section group">
