@@ -44,7 +44,8 @@ function resolveModifier(key: string): keyof MouseEvent {
 }
 
 const keyMap = {
-  multiSelect: resolveModifier('auto'),
+  multiSelect:  resolveModifier('auto'),
+  passthrough:  resolveModifier('Alt'),
 }
 
 function makeTurndown(stripSvg: boolean): TurndownService {
@@ -74,6 +75,7 @@ const turndownStripped = makeTurndown(true)
 storage.get(SETTINGS_DEFAULTS).then(stored => {
   Object.assign(settings, stored)
   keyMap.multiSelect = resolveModifier(settings.multiSelectKey)
+  keyMap.passthrough = resolveModifier(settings.passthroughKey)
 })
 
 chrome.storage.onChanged.addListener(changes => {
@@ -81,6 +83,7 @@ chrome.storage.onChanged.addListener(changes => {
     if (key in changes) (settings as Record<string, unknown>)[key] = changes[key].newValue
   }
   if ('multiSelectKey' in changes) keyMap.multiSelect = resolveModifier(settings.multiSelectKey)
+  if ('passthroughKey' in changes) keyMap.passthrough = resolveModifier(settings.passthroughKey)
   if (state.pickerActive && (changes.outlineColor || changes.outlineWidth || changes.insetWidth)) {
     applyOutlineStyles()
   }
@@ -288,6 +291,7 @@ function onMouseOver(e: MouseEvent): void {
 
 function onClick(e: MouseEvent): void {
   if (!e.isTrusted) return
+  if (e[keyMap.passthrough]) return
   e.preventDefault()
   e.stopPropagation()
 

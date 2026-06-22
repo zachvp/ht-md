@@ -1,5 +1,6 @@
 export const SETTINGS_DEFAULTS = {
   multiSelectKey    : 'auto',
+  passthroughKey    : 'Alt',
   initialMode       : 'single',
   cursorEmoji       : '👆',
   multiCursorEmoji  : '📋',
