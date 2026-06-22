@@ -14,6 +14,7 @@ Usage:
 */
 
 import { execFileSync, execSync, ExecSyncOptions } from 'child_process';
+import { readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -42,6 +43,15 @@ function readKeychainSecret(service: string): string {
   }
 }
 
+// Merge whiteboard into amo-metadata for this run
+const amoMetaPath   = path.join(ROOT, 'amo-metadata.json');
+const whiteboardPath = path.join(ROOT, 'amo-whiteboard.md');
+const amoMeta = JSON.parse(readFileSync(amoMetaPath, 'utf8'));
+amoMeta.version ??= {};
+amoMeta.version.approval_notes = readFileSync(whiteboardPath, 'utf8').trim();
+const tmpMetaPath = path.join(ROOT, 'dist', 'amo-metadata-with-whiteboard.json');
+writeFileSync(tmpMetaPath, JSON.stringify(amoMeta, null, 2));
+
 // Construct and run the commands
 const apiKey    = readKeychainSecret(AMO_ISSUER_SERVICE);
 const apiSecret = readKeychainSecret(AMO_SECRET_SERVICE);
@@ -50,7 +60,7 @@ const opts: ExecSyncOptions = { cwd: ROOT, stdio: 'inherit', env };
 
 console.log('Publishing dist/firefox to AMO (listed)...');
 execSync(
-  `npx web-ext sign --source-dir=${JSON.stringify(SOURCE_DIR)} --channel=listed --artifacts-dir=${JSON.stringify(ARTIFACTS_DIR)} --amo-metadata=${JSON.stringify(path.join(ROOT, 'amo-metadata.json'))}`,
+  `npx web-ext sign --source-dir=${JSON.stringify(SOURCE_DIR)} --channel=listed --artifacts-dir=${JSON.stringify(ARTIFACTS_DIR)} --amo-metadata=${JSON.stringify(tmpMetaPath)}`,
   opts
 );
 
