@@ -16,6 +16,7 @@ const state = {
   selectionRedoStack: [] as Element[],
   // --- DOM refs: always null when picker is inactive ---
   lastHighlighted: null as Element | null,
+  hoverRoot: null as Element | null,
   modifierHeld: false,
   badgeEls: [] as HTMLDivElement[],
   outlineStyleEl: null as HTMLStyleElement | null,
@@ -286,6 +287,7 @@ function deactivatePicker(message?: string): void {
   state.highlightOverlayEl?.remove()
   state.highlightOverlayEl = null
   state.lastHighlighted = null
+  state.hoverRoot = null
 
   for (const el of state.selectedElements) el.classList.remove(CLASS_SELECTED)
   state.selectedElements.length = 0
@@ -327,8 +329,10 @@ function onMouseOver(e: MouseEvent): void {
   if (target === document.body || target === document.documentElement) {
     clearHighlight()
     state.lastHighlighted = null
+    state.hoverRoot = null
     return
   }
+  state.hoverRoot = target
   state.lastHighlighted = target
   if (!isMultiMode() || state.modifierHeld) positionHighlight(target)
 }
@@ -336,7 +340,7 @@ function onMouseOver(e: MouseEvent): void {
 function onClick(e: MouseEvent): void {
   if (!e.isTrusted) return
 
-  const el = e.target as Element
+  const el = (state.lastHighlighted ?? e.target) as Element
   // In multi-select mode, bare clicks pass through so the user can interact with the page
   if (isMultiMode() && !e[keyMap.multiSelect]) return
 
@@ -407,6 +411,26 @@ function onKeyDown(e: KeyboardEvent): void {
     e.preventDefault()
     e.stopImmediatePropagation()
     redoSelection()
+  } else if (e.key === 'ArrowUp' && state.lastHighlighted) {
+    e.preventDefault()
+    e.stopImmediatePropagation()
+    const parent = state.lastHighlighted.parentElement
+    if (parent && parent !== document.documentElement) {
+      state.lastHighlighted = parent
+      positionHighlight(parent)
+    }
+  } else if (e.key === 'ArrowDown' && state.lastHighlighted && state.hoverRoot && state.lastHighlighted !== state.hoverRoot) {
+    e.preventDefault()
+    e.stopImmediatePropagation()
+    // Walk from hoverRoot up to find the direct child of lastHighlighted
+    let el: Element | null = state.hoverRoot
+    while (el && el.parentElement !== state.lastHighlighted) {
+      el = el.parentElement
+    }
+    if (el) {
+      state.lastHighlighted = el
+      positionHighlight(el)
+    }
   } else if (e.key === 'Enter' && state.selectedElements.length > 0) {
     e.preventDefault()
     e.stopImmediatePropagation()

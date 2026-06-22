@@ -15,7 +15,7 @@ Usage:
 
 import crypto from 'crypto';
 import { execFileSync, spawnSync } from 'child_process';
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, renameSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -58,6 +58,11 @@ function makeAmoJwt(apiKey: string, apiSecret: string): string {
   return `${unsigned}.${sig}`;
 }
 
+function xpiFilename(): string {
+  const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  return `${pkg.name}-firefox.xpi`;
+}
+
 async function fetchExistingXpi(apiKey: string, apiSecret: string, version: string): Promise<void> {
   const token = makeAmoJwt(apiKey, apiSecret);
   const headers = { Authorization: `JWT ${token}` };
@@ -80,8 +85,8 @@ async function fetchExistingXpi(apiKey: string, apiSecret: string, version: stri
         // API v5 returns a single `file` object per version, not an array
         const f = v.file;
         if (!f?.url) continue;
-        const filename = f.name ?? `${ADDON_ID}-${version}.xpi`;
-        console.log(`Downloading existing XPI from AMO: ${filename}`);
+        const filename = xpiFilename();
+        console.log(`Downloading existing XPI from AMO as ${filename}...`);
         const xpiRes = await fetch(f.url, { headers });
         const buf    = await xpiRes.arrayBuffer();
         mkdirSync(ARTIFACTS_DIR, { recursive: true });
@@ -110,7 +115,16 @@ async function sign(apiKey: string, apiSecret: string): Promise<void> {
   const output = (result.stdout ?? '') + (result.stderr ?? '');
   process.stdout.write(output);
 
-  if (result.status === 0) return;
+  if (result.status === 0) {
+    // web-ext names the file after the GUID; rename to match the chrome artifact convention
+    const target = xpiFilename();
+    const produced = readdirSync(ARTIFACTS_DIR).find(f => f.endsWith('.xpi') && f !== target);
+    if (produced) {
+      renameSync(path.join(ARTIFACTS_DIR, produced), path.join(ARTIFACTS_DIR, target));
+      console.log(`Renamed ${produced} -> ${target}`);
+    }
+    return;
+  }
 
   if (output.includes('already exists')) {
     const version = JSON.parse(readFileSync(path.join(ROOT, 'manifest.base.json'), 'utf8')).version as string;
