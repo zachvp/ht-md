@@ -278,7 +278,7 @@ function wireColor(input: HTMLInputElement, onInput?: () => void): void {
   const swatch = document.getElementById(`${input.id}Swatch`) as HTMLElement
   const picker = document.createElement('input')
   picker.type = 'color'
-  picker.style.cssText = 'position:absolute;width:0;height:0;opacity:0;pointer-events:none'
+  picker.className = 'color-picker-hidden'
   swatch.parentElement!.appendChild(picker)
 
   swatch.style.cursor = 'pointer'
@@ -551,7 +551,7 @@ function updateBadgePreview(): void {
 
 // Highlight preview
 const highlightBox = el('div')
-highlightBox.style.cssText = 'width:60%;height:60%;border-radius:4px;box-sizing:border-box;'
+highlightBox.className = 'highlight-box'
 document.getElementById('highlightPreview')!.appendChild(highlightBox)
 
 function updateHighlightPreview(): void {
@@ -567,7 +567,7 @@ function updateHighlightPreview(): void {
 
 // Cursor preview
 const cursorDisplay = el('div')
-cursorDisplay.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:0.15rem;overflow:hidden;'
+cursorDisplay.className = 'cursor-display'
 const cursorEmoji1 = el('span')
 const cursorEmoji2 = el('span')
 cursorDisplay.append(cursorEmoji1, cursorEmoji2)
@@ -584,7 +584,7 @@ function updateCursorPreview(): void {
 // Message preview
 const toastBubble = el('div')
 toastBubble.textContent = 'Copied!'
-toastBubble.style.cssText = 'padding:8px 14px;border-radius:6px;font-family:inherit;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;'
+toastBubble.className = 'toast-bubble'
 document.getElementById('messagePreview')!.appendChild(toastBubble)
 
 function updateMessagePreview(): void {
@@ -596,7 +596,7 @@ function updateMessagePreview(): void {
 // Options preview
 const optionsAa = el('div')
 optionsAa.textContent = 'Aa'
-optionsAa.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:bold;'
+optionsAa.className = 'preview-label'
 const optionsAvatar = document.getElementById('optionsPreview')!
 optionsAvatar.appendChild(optionsAa)
 

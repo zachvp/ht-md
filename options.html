@@ -264,6 +264,15 @@
     .avatar-section .group-label { cursor: pointer; }
     .avatar-section .group-label:hover { opacity: 0.75; }
 
+    /* Hidden native color picker — triggered programmatically via swatch click */
+    .color-picker-hidden { position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none; }
+
+    /* Preview element inner layouts */
+    .highlight-box  { width: 60%; height: 60%; border-radius: 4px; box-sizing: border-box; }
+    .cursor-display { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; overflow: hidden; }
+    .toast-bubble   { padding: 8px 14px; border-radius: 6px; font-family: inherit; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+    .preview-label  { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
     /* Badge avatar: em-based sizing so font size drives the badge dimensions */
     #badgePreview .ht-md-badge {
       position: static;
