@@ -3,7 +3,7 @@ import { EXT_NAME } from './lib/constants'
 import { SETTINGS_DEFAULTS } from './lib/settings.generated'
 import { storage } from './lib/storage'
 import { SECTIONS } from './options/definitions'
-import type { NumberField, ColorField, EmojiField, PlaneField, CheckboxField, KeybindField, SelectField, FieldDef } from './options/definitions'
+import type { NumberField, ColorField, EmojiField, PlaneField, CheckboxField, KeybindField, SelectField, ToggleGroupField, FieldDef } from './options/definitions'
 import { els } from './options/elements.generated'
 
 // #region * Building Blocks *
@@ -114,8 +114,18 @@ function buildCheckboxField(f: CheckboxField): HTMLElement {
     wrap.append(icon, tip)
     row.append(wrap)
   }
-  row.append(makeResetBtn(() => { input.checked = f.default; input.dispatchEvent(new Event('change')) }))
-  return row
+  const stack = el('div', { className: 'field-stack' })
+  stack.append(row, makeResetBtn(() => { input.checked = f.default; input.dispatchEvent(new Event('change')) }))
+  return stack
+}
+
+function buildToggleGroupField(f: ToggleGroupField): HTMLElement {
+  const toggleEl  = buildCheckboxField(f.toggle)
+  const paramsRow = el('div', { className: 'group-row' })
+  f.params.forEach(p => paramsRow.append(buildField(p)))
+  const stack = el('div', { className: 'field-stack' })
+  stack.append(toggleEl, paramsRow)
+  return stack
 }
 
 const FIELD_BUILDERS = {
@@ -123,8 +133,9 @@ const FIELD_BUILDERS = {
   color:    buildColorField,
   emoji:    buildEmojiField,
   plane:    buildPlaneField,
-  checkbox: buildCheckboxField,
-  keybind:  buildKeybindField,
+  checkbox:      buildCheckboxField,
+  'toggle-group': buildToggleGroupField,
+  keybind:       buildKeybindField,
   select:   buildSelectField,
 } as const
 
@@ -147,9 +158,8 @@ SECTIONS.forEach(s => {
 })
 
 function syncBadgePulseParams(): void {
-  const show = els.badgePulse.checked
-  ;(els.badgePulseDuration.closest('.field-stack') as HTMLElement).hidden = !show
-  ;(els.badgePulseScale.closest('.field-stack') as HTMLElement).hidden = !show
+  const paramsRow = els.badgePulseDuration.closest('.group-row') as HTMLElement
+  paramsRow.hidden = !els.badgePulse.checked
 }
 
 function hexToRgb(hex: string): [number, number, number] | null {
@@ -318,7 +328,11 @@ function planeVals(e: MouseEvent): { x: number; y: number } {
 
 // #region * Page Wiring *
 
-const allFields = SECTIONS.flatMap(s => s.fields)
+function expandField(f: FieldDef): Exclude<FieldDef, ToggleGroupField>[] {
+  if (f.type === 'toggle-group') return [f.toggle, ...f.params as Exclude<FieldDef, ToggleGroupField>[]]
+  return [f as Exclude<FieldDef, ToggleGroupField>]
+}
+const allFields = SECTIONS.flatMap(s => s.fields.flatMap(expandField))
 
 // Load
 storage.get(SETTINGS_DEFAULTS).then(s => {

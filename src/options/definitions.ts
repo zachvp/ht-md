@@ -5,7 +5,8 @@ export type PlaneField    = { type: 'plane';    label: string; ids: Array<{ id: 
 export type CheckboxField = { type: 'checkbox'; id: string; label: string; tooltip?: string; default: boolean }
 export type KeybindField  = { type: 'keybind';  id: string; label: string; default: string }
 export type SelectField   = { type: 'select';   id: string; label: string; default: string; options: Array<{ value: string; label: string }> }
-export type FieldDef = NumberField | ColorField | EmojiField | PlaneField | CheckboxField | KeybindField | SelectField
+export type ToggleGroupField = { type: 'toggle-group'; toggle: CheckboxField; params: FieldDef[] }
+export type FieldDef = NumberField | ColorField | EmojiField | PlaneField | CheckboxField | KeybindField | SelectField | ToggleGroupField
 export type SectionDef = { rowId: string; fields: FieldDef[] }
 
 export const SECTIONS: SectionDef[] = [
@@ -61,9 +62,13 @@ export const SECTIONS: SectionDef[] = [
     { type: 'color',    id: 'badgeBgColor',        label: 'bg color',    default: '#3399ff' },
     { type: 'color',    id: 'badgeFontColor',       label: 'font color',  default: '#ffffff'  },
     { type: 'number',   id: 'badgeFontSize',        label: 'font (px)',   min: 8,   max: 64,   step: 1,   default: 13   },
-    { type: 'checkbox', id: 'badgePulse',           label: 'pulse',       default: true },
-    { type: 'number',   id: 'badgePulseDuration',   label: 'pulse (ms)',  min: 100, max: 5000, step: 100, default: 1000 },
-    { type: 'number',   id: 'badgePulseScale',      label: 'scale (%)',   min: 100, max: 200,  step: 5,   default: 120  },
+    { type: 'toggle-group',
+      toggle: { type: 'checkbox', id: 'badgePulse', label: 'pulse', default: true },
+      params: [
+        { type: 'number', id: 'badgePulseDuration', label: 'pulse (ms)', min: 100, max: 5000, step: 100, default: 1000 },
+        { type: 'number', id: 'badgePulseScale',    label: 'scale (%)',  min: 100, max: 200,  step: 5,   default: 120  },
+      ],
+    },
   ]},
 ]
 

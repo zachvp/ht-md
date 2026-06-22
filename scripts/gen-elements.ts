@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, rmSync, existsSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { SECTIONS } from '../src/options/definitions'
-import type { FieldDef } from '../src/options/definitions'
+import type { FieldDef, ToggleGroupField } from '../src/options/definitions'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
@@ -30,7 +30,13 @@ function htmlType(tag: keyof HTMLElementTagNameMap): string {
   return TAG_TO_HTML_TYPE[tag] ?? 'HTMLElement'
 }
 
-const allFields = SECTIONS.flatMap(s => s.fields)
+type FlatField = Exclude<FieldDef, ToggleGroupField>
+function expandField(f: FieldDef): FlatField[] {
+  if (f.type === 'toggle-group') return [f.toggle, ...(f.params as FlatField[])]
+  return [f as FlatField]
+}
+
+const allFields = SECTIONS.flatMap(s => s.fields.flatMap(expandField))
 
 // --- options-elements.generated.ts ---
 
