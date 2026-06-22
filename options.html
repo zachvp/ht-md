@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>settings</title>
+  <link rel="stylesheet" href="content.css">
   <style>
     body {
       font-family: Monaco, Menlo, ui-monospace, 'Courier New', monospace;
@@ -263,10 +264,19 @@
     .avatar-section .group-label { cursor: pointer; }
     .avatar-section .group-label:hover { opacity: 0.75; }
 
-    /* Badge pulse keyframe (mirrors content.css for preview) */
-    @keyframes ht-md-badge-pulse {
-      0%, 100% { transform: scale(1); }
-      50%       { transform: scale(var(--badge-pulse-scale, 1.2)); }
+    /* Badge avatar: override fixed-px class props with relative sizing */
+    #badgePreview .ht-md-badge {
+      position: static;
+      width: 60%;
+      height: auto;
+      aspect-ratio: 1;
+      padding: 0;
+      min-width: unset;
+      border-radius: 50%;
+      font-size: calc(var(--avatar-size) * 0.22);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   </style>
 </head>

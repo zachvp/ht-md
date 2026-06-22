@@ -519,14 +519,13 @@ function setAvatarSize(px: number): void {
 
 // Badge preview
 const badgePill = el('div')
-badgePill.style.cssText = 'font-weight:bold;font-family:inherit;width:100%;height:100%;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;'
+badgePill.className = 'ht-md-badge'
 badgePill.textContent = '1'
 document.getElementById('badgePreview')!.appendChild(badgePill)
 
 function updateBadgePreview(): void {
   badgePill.style.background = els.badgeBgColor.value
   badgePill.style.color = els.badgeFontColor.value
-  badgePill.style.fontSize = `${els.badgeFontSize.value}px`
   if (els.badgePulse.checked) {
     badgePill.style.setProperty('--badge-pulse-scale', String(Number(els.badgePulseScale.value) / 100))
     badgePill.style.animation = `ht-md-badge-pulse ${els.badgePulseDuration.value}ms ease-in-out infinite`
@@ -593,7 +592,7 @@ function updateOptionsPreview(): void {
 }
 
 // Number field input listeners for live preview
-for (const id of ['badgeFontSize', 'badgePulseDuration', 'badgePulseScale']) {
+for (const id of ['badgePulseDuration', 'badgePulseScale']) {
   document.getElementById(id)!.addEventListener('input', updateBadgePreview)
 }
 for (const id of ['outlineWidth', 'insetWidth']) {
