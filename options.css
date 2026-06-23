@@ -268,3 +268,17 @@ select:hover { background: var(--ui-overlay-md, rgba(0,0,0,0.15)); }
 
 /* Badge avatar: only override what differs from the real badge */
 #badgePreview .ht-md-badge { position: static; }
+
+#configJson {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.8em;
+  height: 8rem;
+  resize: vertical;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  background: var(--ui-overlay-sm, rgba(0,0,0,0.08));
+  color: inherit;
+  padding: 0.3rem 0.4rem;
+}

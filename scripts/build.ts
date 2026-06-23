@@ -13,6 +13,8 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { SECTIONS } from '../src/options/definitions';
+import { buildSectionMap, processTemplate } from './html-template';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg: { name: string } = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
@@ -54,7 +56,8 @@ function buildTarget(name: string, skipPackage = false): void {
   console.log(`[${name}] copying static assets`);
   fs.copyFileSync(path.join(ROOT, 'content.css'),  path.join(outDir, 'content.css'));
   fs.copyFileSync(path.join(ROOT, 'options.css'),  path.join(outDir, 'options.css'));
-  fs.copyFileSync(path.join(ROOT, 'options.html'), path.join(outDir, 'options.html'));
+  const optionsSrc = fs.readFileSync(path.join(ROOT, 'options.html'), 'utf8');
+  fs.writeFileSync(path.join(outDir, 'options.html'), processTemplate(optionsSrc, buildSectionMap(SECTIONS)));
   fs.cpSync(path.join(ROOT, 'icons'), path.join(outDir, 'icons'), { recursive: true });
 
   console.log(`[${name}] writing manifest`);
