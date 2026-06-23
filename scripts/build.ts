@@ -20,7 +20,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg: { name: string } = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
 const TARGETS: Record<string, { manifestOverride: string; archiveExt: string | null; backgroundKey: string }> = {
-  firefox: { manifestOverride: 'manifest.firefox.json', archiveExt: null,  backgroundKey: 'scripts' },
+  firefox: { manifestOverride: 'manifest.firefox.json', archiveExt: 'zip', backgroundKey: 'scripts' },
   chrome:  { manifestOverride: 'manifest.chrome.json',  archiveExt: 'zip', backgroundKey: 'service_worker' },
 };
 
