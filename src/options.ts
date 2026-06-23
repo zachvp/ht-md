@@ -338,10 +338,23 @@ const allFields = SECTIONS.flatMap(s => s.fields.flatMap(expandField))
 storage.get(SETTINGS_DEFAULTS).then(s => {
   const stored = s as typeof SETTINGS_DEFAULTS
   for (const f of allFields) {
-    if (f.type === 'number' || f.type === 'color') {
-      const input = document.getElementById(f.id) as HTMLInputElement
-      input.value = String(stored[f.id as keyof typeof SETTINGS_DEFAULTS])
-      if (f.type === 'color') syncSwatch(input, document.getElementById(`${f.id}Swatch`) as HTMLElement)
+    switch (f.type) {
+      case 'number':
+      case 'color': {
+        const input = document.getElementById(f.id) as HTMLInputElement
+        input.value = String(stored[f.id as keyof typeof SETTINGS_DEFAULTS])
+        if (f.type === 'color') syncSwatch(input, document.getElementById(`${f.id}Swatch`) as HTMLElement)
+        break
+      }
+      case 'emoji':
+        ;(els[f.id as keyof typeof els] as HTMLButtonElement).textContent = stored[f.storageKey as keyof typeof SETTINGS_DEFAULTS] as string
+        break
+      case 'keybind': {
+        const btn = els[f.id as keyof typeof els] as HTMLButtonElement
+        const { reset } = wireKeybind(btn, f.id, String(stored[f.id as keyof typeof SETTINGS_DEFAULTS]))
+        keybindResetRefs.get(f.id)!.fn = () => reset(f.default)
+        break
+      }
     }
   }
   OFFSET_MAX = stored.offsetMax
@@ -349,17 +362,6 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
 els.includeSvg.checked = stored.includeSvg
   els.badgePulse.checked = stored.badgePulse
   syncBadgePulseParams()
-  for (const f of allFields) {
-    if (f.type === 'emoji') {
-      ;(els[f.id as keyof typeof els] as HTMLButtonElement).textContent = stored[f.storageKey as keyof typeof SETTINGS_DEFAULTS] as string
-    }
-  }
-  for (const f of allFields) {
-    if (f.type !== 'keybind') continue
-    const btn = els[f.id as keyof typeof els] as HTMLButtonElement
-    const { reset } = wireKeybind(btn, f.id, String(stored[f.id as keyof typeof SETTINGS_DEFAULTS]))
-    keybindResetRefs.get(f.id)!.fn = () => reset(f.default)
-  }
   moveDot(stored.cursorOffsetX, stored.cursorOffsetY)
   document.body.style.fontSize = `${stored.optionsFontSize}px`
   document.body.style.color = stored.optionsFontColor
@@ -609,17 +611,20 @@ function updateOptionsPreview(): void {
   optionsAa.style.fontSize = `${els.optionsFontSize.value}px`
 }
 
-// Number field input listeners for live preview
-for (const id of ['badgeFontSize', 'badgePulseDuration', 'badgePulseScale']) {
-  document.getElementById(id)!.addEventListener('input', updateBadgePreview)
+const NUMBER_PREVIEW_HANDLERS: Record<string, () => void> = {
+  badge:       updateBadgePreview,
+  highlight:   updateHighlightPreview,
+  message:     updateMessagePreview,
+  cursor:      updateCursorPreview,
+  previewSize: () => { setAvatarSize(Number(els.previewSize.value)); updateBadgePreview() },
 }
-for (const id of ['outlineWidth', 'insetWidth']) {
-  document.getElementById(id)!.addEventListener('input', updateHighlightPreview)
+for (const f of allFields) {
+  if (f.type !== 'number' || !f.onInput) continue
+  const input = els[f.id as keyof typeof els] as HTMLInputElement
+  const handler = NUMBER_PREVIEW_HANDLERS[f.onInput]
+  input.addEventListener('input', handler)
+  if (f.id === 'previewSize') input.addEventListener('change', handler)
 }
-document.getElementById('toastFontSize')!.addEventListener('input', updateMessagePreview)
-els.cursorSize.addEventListener('input', updateCursorPreview)
-els.previewSize.addEventListener('input', () => { setAvatarSize(Number(els.previewSize.value)); updateBadgePreview() })
-els.previewSize.addEventListener('change', () => { setAvatarSize(Number(els.previewSize.value)); updateBadgePreview() })
 
 // Section collapse state — persisted to localStorage
 const COLLAPSE_KEY = 'ht-md-section-open'

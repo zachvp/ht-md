@@ -1,4 +1,5 @@
-export type NumberField   = { type: 'number';   id: string; label: string; min: number; max: number; step: number; default: number }
+export type NumberFieldPreview = 'badge' | 'highlight' | 'message' | 'cursor' | 'previewSize'
+export type NumberField   = { type: 'number';   id: string; label: string; min: number; max: number; step: number; default: number; onInput?: NumberFieldPreview }
 export type ColorField    = { type: 'color';    id: string; label: string; default: string }
 export type EmojiField    = { type: 'emoji';    id: string; storageKey: string; label: string; default: string }
 export type PlaneField    = { type: 'plane';    label: string; ids: Array<{ id: string; tag: keyof HTMLElementTagNameMap }>; storage: Array<{ key: string; default: number }> }
@@ -16,7 +17,7 @@ export const SECTIONS: SectionDef[] = [
   { rowId: 'row-cursor', label: 'Cursor', preview: { id: 'cursorPreview' }, fields: [
     { type: 'emoji',  id: 'cursorEmojiBtn',      storageKey: 'cursorEmoji',      label: 'cursor',       default: '👆' },
     { type: 'emoji',  id: 'multiCursorEmojiBtn', storageKey: 'multiCursorEmoji', label: 'multiselect',  default: '📋' },
-    { type: 'number', id: 'cursorSize',           label: 'size (px)',  min: 2,  max: 1024,  step: 1,   default: 32   },
+    { type: 'number', id: 'cursorSize',           label: 'size (px)',  min: 2,  max: 1024,  step: 1,   default: 32,   onInput: 'cursor'    },
     { type: 'plane',  label: 'offset (px)', ids: [
       { id: 'offsetCoords', tag: 'span' },
       { id: 'offsetPlane',  tag: 'div'  },
@@ -28,11 +29,11 @@ export const SECTIONS: SectionDef[] = [
   ]},
   { rowId: 'row-highlight', label: 'Highlight', preview: { id: 'highlightPreview' }, fields: [
     { type: 'color',  id: 'outlineColor', label: 'outline color', default: '#c2934c' },
-    { type: 'number', id: 'outlineWidth', label: 'outer (px)', min: 1, max: 1024, step: 1, default: 4 },
-    { type: 'number', id: 'insetWidth',   label: 'inner (px)', min: 0, max: 1024, step: 1, default: 4 },
+    { type: 'number', id: 'outlineWidth', label: 'outer (px)', min: 1, max: 1024, step: 1, default: 4, onInput: 'highlight' },
+    { type: 'number', id: 'insetWidth',   label: 'inner (px)', min: 0, max: 1024, step: 1, default: 4, onInput: 'highlight' },
   ]},
   { rowId: 'row-message', label: 'Message (aka toast)', preview: { id: 'messagePreview', style: 'width:auto;' }, fields: [
-    { type: 'number', id: 'toastFontSize',     label: 'font (px)',  min: 1,   max: 1024,  step: 1,   default: 20   },
+    { type: 'number', id: 'toastFontSize',     label: 'font (px)',  min: 1,   max: 1024,  step: 1,   default: 20,   onInput: 'message'   },
     { type: 'number', id: 'flashPause',        label: 'pause (ms)', min: 0,   max: 5000,  step: 50,  default: 0    },
     { type: 'number', id: 'flashDuration',     label: 'fall (ms)',  min: 100, max: 10000, step: 100, default: 2000 },
     { type: 'number', id: 'flashFallDistance', label: 'dist (px)',  min: 0,   max: 2000,  step: 10,  default: 450  },
@@ -42,12 +43,12 @@ export const SECTIONS: SectionDef[] = [
   { rowId: 'row-badge', label: 'Badge', preview: { id: 'badgePreview' }, fields: [
     { type: 'color',    id: 'badgeBgColor',        label: 'bg color',    default: '#3399ff' },
     { type: 'color',    id: 'badgeFontColor',       label: 'font color',  default: '#ffffff'  },
-    { type: 'number',   id: 'badgeFontSize',        label: 'font (px)',   min: 8,   max: 64,   step: 1,   default: 13   },
+    { type: 'number',   id: 'badgeFontSize',        label: 'font (px)',   min: 8,   max: 64,   step: 1,   default: 13,   onInput: 'badge'     },
     { type: 'toggle-group',
       toggle: { type: 'checkbox', id: 'badgePulse', label: 'pulse', default: true },
       params: [
-        { type: 'number', id: 'badgePulseDuration', label: 'pulse (ms)', min: 100, max: 5000, step: 100, default: 1000 },
-        { type: 'number', id: 'badgePulseScale',    label: 'scale (%)',  min: 100, max: 200,  step: 5,   default: 120  },
+        { type: 'number', id: 'badgePulseDuration', label: 'pulse (ms)', min: 100, max: 5000, step: 100, default: 1000, onInput: 'badge' },
+        { type: 'number', id: 'badgePulseScale',    label: 'scale (%)',  min: 100, max: 200,  step: 5,   default: 120,  onInput: 'badge' },
       ],
     },
   ]},
@@ -58,7 +59,7 @@ export const SECTIONS: SectionDef[] = [
     { type: 'color',    id: 'sectionBgColor',     label: 'section bg',                                        default: '#121212' },
     { type: 'number',   id: 'resetBtnSize',       label: 'reset size (px)',  min: 6,   max: 256,    step: 1,  default: 14       },
     { type: 'color',    id: 'resetBtnColor',      label: 'reset color',                                       default: '#ffffff66' },
-    { type: 'number',   id: 'previewSize',        label: 'preview (px)',     min: 40,  max: 400,   step: 4,   default: 96       },
+    { type: 'number',   id: 'previewSize',        label: 'preview (px)',     min: 40,  max: 400,   step: 4,   default: 96,       onInput: 'previewSize' },
     { type: 'number',   id: 'offsetMax',          label: 'offset max (±)',   min: 1,   max: 1000,  step: 1,   default: 16       },
     { type: 'number',   id: 'savedFlashDuration', label: 'saved flash (ms)', min: 100, max: 10000, step: 100, default: 1500     },
     { type: 'checkbox', id: 'includeSvg', label: 'Include SVG in output', default: false,
