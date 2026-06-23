@@ -10,6 +10,8 @@ console.log(`${LOG} content script loaded`)
 // All runtime picker state in one place
 const state = {
   pickerActive: false,
+  multiSelectActive: false,
+  modifierHeld: false,
   // --- pure data: persists across activate/deactivate ---
   lastMousePos: { x: 0, y: 0 },
   selectedElements: [] as Element[],
@@ -38,6 +40,13 @@ const KEY_TO_PROP: Partial<Record<string, keyof MouseEvent>> = {
   Control: 'ctrlKey',
   Alt:     'altKey',
   Shift:   'shiftKey',
+}
+
+const PROP_TO_KEY: Partial<Record<string, string>> = {
+  metaKey:    'Meta',
+  ctrlKey:    'Control',
+  altKey:     'Alt',
+  shiftKey:   'Shift',
 }
 
 function resolveModifier(key: string): keyof MouseEvent {
@@ -95,7 +104,9 @@ storage.get(SETTINGS_DEFAULTS).then(stored => {
 
 chrome.storage.onChanged.addListener(changes => {
   for (const key of Object.keys(settings) as (keyof Settings)[]) {
-    if (key in changes) (settings as Record<string, unknown>)[key] = changes[key].newValue
+    if (key in changes) {
+      (settings as Record<string, unknown>)[key] = changes[key].newValue
+    }
   }
   if ('multiSelectKey' in changes) keyMap.multiSelect = resolveModifier(settings.multiSelectKey)
   if (state.pickerActive && (changes.outlineColor || changes.outlineWidth || changes.insetWidth)) {
@@ -215,6 +226,10 @@ function clearCursor(): void {
   }
 }
 
+function syncCursor(): void {
+  setCursor(state.modifierHeld ? settings.multiCursorEmoji : settings.cursorEmoji)
+}
+
 function addBadge(el: Element, index: number): void {
   const r = el.getBoundingClientRect()
   const badge = document.createElement('div')
@@ -230,6 +245,22 @@ function addBadge(el: Element, index: number): void {
 function clearBadges(): void {
   for (const b of state.badgeEls) b.remove()
   state.badgeEls.length = 0
+}
+
+function clearSelection(): void {
+  for (const el of state.selectedElements) el.classList.remove(CLASS_SELECTED)
+  state.selectedElements.length = 0
+  state.selectedSet.clear()
+  state.selectionRedoStack.length = 0
+  clearBadges()
+  state.multiSelectActive = false
+}
+
+function clearHover(): void {
+  state.highlightOverlayEl?.remove()
+  state.highlightOverlayEl = null
+  state.lastHighlighted = null
+  state.hoverRoot = null
 }
 
 function notifyPickerState(active: boolean): void {
@@ -250,6 +281,7 @@ function activatePicker(): void {
     document.addEventListener('mouseover', onMouseOver)
     document.addEventListener('click', onClick, true)
     document.addEventListener('keydown', onKeyDown, true)
+    document.addEventListener('keyup', onKeyUp, true)
     notifyPickerState(true)
   } catch (err) {
     console.error(`${LOG} activatePicker failed:`, err)
@@ -260,22 +292,14 @@ function activatePicker(): void {
 function deactivatePicker(message?: string): void {
   if (!state.pickerActive) return
   state.pickerActive = false
+  state.modifierHeld = false
   console.log(`${LOG} picker deactivated`)
   notifyPickerState(false)
 
   clearOutlineStyles()
   clearCursor()
-
-  state.highlightOverlayEl?.remove()
-  state.highlightOverlayEl = null
-  state.lastHighlighted = null
-  state.hoverRoot = null
-
-  for (const el of state.selectedElements) el.classList.remove(CLASS_SELECTED)
-  state.selectedElements.length = 0
-  state.selectedSet.clear()
-  state.selectionRedoStack.length = 0
-  clearBadges()
+  clearHover()
+  clearSelection()
 
   if (state.mousePosTracker) {
     document.removeEventListener('mousemove', state.mousePosTracker, true)
@@ -284,6 +308,7 @@ function deactivatePicker(message?: string): void {
   document.removeEventListener('mouseover', onMouseOver)
   document.removeEventListener('click', onClick, true)
   document.removeEventListener('keydown', onKeyDown, true)
+  document.removeEventListener('keyup', onKeyUp, true)
 
   if (message) showMessage(message)
 }
@@ -299,18 +324,22 @@ function onMouseOver(e: MouseEvent): void {
   }
   state.hoverRoot = target
   state.lastHighlighted = target
-  positionHighlight(target)
+  if (!state.multiSelectActive || state.modifierHeld) {
+    positionHighlight(target)
+  } else {
+    clearHighlight()
+  }
 }
 
 function onClick(e: MouseEvent): void {
   if (!e.isTrusted) return
 
-  const el = (state.lastHighlighted ?? e.target) as Element
-  e.preventDefault()
-  e.stopPropagation()
-
   if (!e[keyMap.multiSelect]) {
-    // Bare click: capture single element immediately
+    if (state.multiSelectActive) return  // fall through to browser
+    // Single-select mode, bare click: capture immediately
+    const el = (state.lastHighlighted ?? e.target) as Element
+    e.preventDefault()
+    e.stopPropagation()
     const md = convert(el.outerHTML)
     console.log(`${LOG} single click capture — md length:`, md.length)
     navigator.clipboard.writeText(md)
@@ -319,13 +348,17 @@ function onClick(e: MouseEvent): void {
     return
   }
 
+  // Modifier held: add to selection
+  const el = (state.lastHighlighted ?? e.target) as Element
+  e.preventDefault()
+  e.stopPropagation()
   if (!state.selectedSet.has(el)) {
     state.selectedElements.push(el)
     state.selectedSet.add(el)
     el.classList.add(CLASS_SELECTED)
     addBadge(el, state.selectedElements.length)
     state.selectionRedoStack.length = 0
-    if (state.selectedElements.length === 1) setCursor(settings.multiCursorEmoji)
+    if (!state.multiSelectActive) state.multiSelectActive = true
   }
   showMessage(`${state.selectedElements.length} selected — Enter to copy`)
 }
@@ -337,7 +370,8 @@ function undoSelection(): void {
   state.badgeEls.pop()?.remove()
   state.selectionRedoStack.push(removed)
   if (state.selectedElements.length === 0) {
-    setCursor(settings.cursorEmoji)
+    state.multiSelectActive = false
+    syncCursor()
     showMessage('Selection cleared')
   } else {
     showMessage(`${state.selectedElements.length} selected — Enter to copy`)
@@ -350,12 +384,16 @@ function redoSelection(): void {
   state.selectedSet.add(el)
   el.classList.add(CLASS_SELECTED)
   addBadge(el, state.selectedElements.length)
-  if (state.selectedElements.length === 1) setCursor(settings.multiCursorEmoji)
+  if (!state.multiSelectActive) state.multiSelectActive = true
   showMessage(`${state.selectedElements.length} selected — Enter to copy`)
 }
 
 function onKeyDown(e: KeyboardEvent): void {
-  if (e.key === 'Escape') {
+  if (e.key === PROP_TO_KEY[keyMap.multiSelect]) {
+    state.modifierHeld = true
+    syncCursor()
+    if (state.lastHighlighted) positionHighlight(state.lastHighlighted)
+  } else if (e.key === 'Escape') {
     e.preventDefault()
     e.stopImmediatePropagation()
     deactivatePicker('Canceled')
@@ -367,7 +405,7 @@ function onKeyDown(e: KeyboardEvent): void {
     e.preventDefault()
     e.stopImmediatePropagation()
     redoSelection()
-  } else if (e.key === 'ArrowUp' && state.lastHighlighted) {
+  } else if (e.key === 'ArrowUp' && state.lastHighlighted && (!state.multiSelectActive || state.modifierHeld)) {
     e.preventDefault()
     e.stopImmediatePropagation()
     const parent = state.lastHighlighted.parentElement
@@ -375,7 +413,7 @@ function onKeyDown(e: KeyboardEvent): void {
       state.lastHighlighted = parent
       positionHighlight(parent)
     }
-  } else if (e.key === 'ArrowDown' && state.lastHighlighted && state.hoverRoot && state.lastHighlighted !== state.hoverRoot) {
+  } else if (e.key === 'ArrowDown' && state.lastHighlighted && state.hoverRoot && state.lastHighlighted !== state.hoverRoot && (!state.multiSelectActive || state.modifierHeld)) {
     e.preventDefault()
     e.stopImmediatePropagation()
     // Walk from hoverRoot up to find the direct child of lastHighlighted
@@ -396,6 +434,14 @@ function onKeyDown(e: KeyboardEvent): void {
     navigator.clipboard.writeText(md)
       .then(() => { console.log(`${LOG} clipboard write ok`); deactivatePicker('📝 Copied') })
       .catch((err: Error) => { console.error(`${LOG} clipboard write failed:`, err.message); deactivatePicker('Error: ' + err.message) })
+  }
+}
+
+function onKeyUp(e: KeyboardEvent): void {
+  if (e.key === PROP_TO_KEY[keyMap.multiSelect]) {
+    state.modifierHeld = false
+    syncCursor()
+    if (state.multiSelectActive) clearHighlight()
   }
 }
 
