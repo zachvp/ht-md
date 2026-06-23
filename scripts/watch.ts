@@ -40,7 +40,7 @@ if (useFirefox) {
 
 execSync(`tsx scripts/build.ts ${TARGET} --no-pack`, { cwd: ROOT, stdio: 'inherit' });
 
-chokidar.watch(['content.css', 'options.html', 'icons/**'], { cwd: ROOT }).on('change', (filePath) => {
+chokidar.watch(['content.css', 'options.css', 'options.html', 'icons/**'], { cwd: ROOT }).on('change', (filePath) => {
   const dest = path.join(OUT_DIR, filePath);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.copyFileSync(path.join(ROOT, filePath), dest);

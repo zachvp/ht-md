@@ -14,6 +14,12 @@ export const SETTINGS_DEFAULTS = {
   flashFallDistance : 450,
   flashFontColor    : '#ffffff',
   flashBgColor      : '#000000cc',
+  badgeBgColor      : '#3399ff',
+  badgeFontColor    : '#ffffff',
+  badgeFontSize     : 13,
+  badgePulse        : true,
+  badgePulseDuration: 1000,
+  badgePulseScale   : 120,
   optionsFontSize   : 22,
   optionsFontColor  : '#ffffff',
   optionsBgColor    : '#000000',
@@ -24,12 +30,6 @@ export const SETTINGS_DEFAULTS = {
   offsetMax         : 16,
   savedFlashDuration: 1500,
   includeSvg        : false,
-  badgeBgColor      : '#3399ff',
-  badgeFontColor    : '#ffffff',
-  badgeFontSize     : 13,
-  badgePulse        : true,
-  badgePulseDuration: 1000,
-  badgePulseScale   : 120,
 }
 
 export type Settings = typeof SETTINGS_DEFAULTS

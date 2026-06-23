@@ -52,8 +52,9 @@ function buildTarget(name: string, skipPackage = false): void {
   );
 
   console.log(`[${name}] copying static assets`);
-  fs.copyFileSync(path.join(ROOT, 'content.css'), path.join(outDir, 'content.css'));
-fs.copyFileSync(path.join(ROOT, 'options.html'), path.join(outDir, 'options.html'));
+  fs.copyFileSync(path.join(ROOT, 'content.css'),  path.join(outDir, 'content.css'));
+  fs.copyFileSync(path.join(ROOT, 'options.css'),  path.join(outDir, 'options.css'));
+  fs.copyFileSync(path.join(ROOT, 'options.html'), path.join(outDir, 'options.html'));
   fs.cpSync(path.join(ROOT, 'icons'), path.join(outDir, 'icons'), { recursive: true });
 
   console.log(`[${name}] writing manifest`);
