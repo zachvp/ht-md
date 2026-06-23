@@ -1,3 +1,5 @@
+// infrastructure: portable — type definitions below are app-agnostic field vocabulary
+// app-specific:   replace SECTIONS (at the bottom) with your own fields per project
 export type NumberFieldPreview = 'badge' | 'highlight' | 'message' | 'cursor' | 'previewSize'
 export type NumberField   = { type: 'number';   id: string; label: string; min: number; max: number; step: number; default: number; onInput?: NumberFieldPreview }
 export type ColorField    = { type: 'color';    id: string; label: string; default: string }
