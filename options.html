@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>settings</title>
+  <link rel="icon" href="icons/icon128.png">
   <link rel="stylesheet" href="content.css">
   <link rel="stylesheet" href="options.css">
 </head>
@@ -78,6 +79,31 @@
       <textarea id="configJson" spellcheck="false"></textarea>
     </div>
   </div>
+
+  <template id="tmpl-tooltip">
+    <span class="info-wrap">
+      <span class="info-icon">ⓘ</span>
+      <span class="info-tip"></span>
+    </span>
+  </template>
+
+  <template id="tmpl-num-spinner">
+    <div class="num-wrap">
+      <div class="num-btns">
+        <button class="num-btn" type="button">▴</button>
+        <button class="num-btn" type="button">▾</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tmpl-plane">
+    <span class="plane-coords">0, 0</span>
+    <div class="plane">
+      <div class="plane-hline"></div>
+      <div class="plane-vline"></div>
+      <div class="plane-dot"></div>
+    </div>
+  </template>
 
   <p id="status"></p>
   <script src="options.js"></script>

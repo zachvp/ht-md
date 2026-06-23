@@ -66,10 +66,13 @@ function buildEmojiField(f: EmojiField): HTMLElement {
 }
 
 function buildPlaneField(f: PlaneField): HTMLElement {
-  const coords = el('span', { className: 'plane-coords', id: 'offsetCoords', textContent: '0, 0' })
-  const plane  = el('div',  { className: 'plane', id: 'offsetPlane' })
-  const dot    = el('div',  { className: 'plane-dot', id: 'offsetDot' })
-  plane.append(el('div', { className: 'plane-hline' }), el('div', { className: 'plane-vline' }), dot)
+  const frag   = (document.getElementById('tmpl-plane') as HTMLTemplateElement).content.cloneNode(true) as DocumentFragment
+  const coords = frag.querySelector('.plane-coords') as HTMLElement
+  const plane  = frag.querySelector('.plane') as HTMLElement
+  const dot    = frag.querySelector('.plane-dot') as HTMLElement
+  coords.id = f.ids[0].id
+  plane.id  = f.ids[1].id
+  dot.id    = f.ids[2].id
   const [defX, defY] = [f.storage[0].default, f.storage[1].default]
   const stack = fieldStack(f.label, coords, plane)
   stack.append(makeResetBtn(() => {
@@ -108,10 +111,9 @@ function buildCheckboxField(f: CheckboxField): HTMLElement {
   input.type = 'checkbox'
   const row = fieldRow(f.label, f.id, input)
   if (f.tooltip) {
-    const wrap = el('span', { className: 'info-wrap' })
-    const icon = el('span', { className: 'info-icon', textContent: 'ⓘ' })
-    const tip  = el('span', { className: 'info-tip',  textContent: f.tooltip })
-    wrap.append(icon, tip)
+    const frag = (document.getElementById('tmpl-tooltip') as HTMLTemplateElement).content.cloneNode(true) as DocumentFragment
+    const wrap = frag.querySelector('.info-wrap') as HTMLElement
+    ;(frag.querySelector('.info-tip') as HTMLElement).textContent = f.tooltip
     row.append(wrap)
   }
   const stack = el('div', { className: 'field-stack' })
@@ -511,26 +513,24 @@ chrome.storage.onChanged.addListener(() => {
 })
 
 // Inject custom pixel spinners — must run after all change listeners are attached
+const spinnerTmpl = document.getElementById('tmpl-num-spinner') as HTMLTemplateElement
 document.querySelectorAll<HTMLInputElement>('input[type=number]').forEach(input => {
-  const wrap = document.createElement('div')
-  wrap.className = 'num-wrap'
+  const frag = spinnerTmpl.content.cloneNode(true) as DocumentFragment
+  const wrap = frag.querySelector('.num-wrap') as HTMLDivElement
+  const btns = frag.querySelector('.num-btns') as HTMLDivElement
+  const [upBtn, downBtn] = frag.querySelectorAll<HTMLButtonElement>('.num-btn')
   input.parentNode!.insertBefore(wrap, input)
-  wrap.appendChild(input)
-  const btns = document.createElement('div')
-  btns.className = 'num-btns'
-  for (const [text, dir] of [['▴', 1], ['▾', -1]] as [string, number][]) {
-    const btn = document.createElement('button')
-    btn.className = 'num-btn'
-    btn.textContent = text
-    btn.type = 'button'
-    btn.addEventListener('click', () => {
-      dir > 0 ? input.stepUp() : input.stepDown()
-      input.dispatchEvent(new Event('input', { bubbles: true }))
-      input.dispatchEvent(new Event('change', { bubbles: true }))
-    })
-    btns.appendChild(btn)
-  }
-  wrap.appendChild(btns)
+  wrap.insertBefore(input, btns)
+  upBtn.addEventListener('click', () => {
+    input.stepUp()
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+  })
+  downBtn.addEventListener('click', () => {
+    input.stepDown()
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+  })
 })
 
 // #endregion
