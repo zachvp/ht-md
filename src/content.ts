@@ -305,12 +305,19 @@ function onMouseOver(e: MouseEvent): void {
 function onClick(e: MouseEvent): void {
   if (!e.isTrusted) return
 
-  // Bare clicks pass through so the user can interact with the page
-  if (!e[keyMap.multiSelect]) return
-
   const el = (state.lastHighlighted ?? e.target) as Element
   e.preventDefault()
   e.stopPropagation()
+
+  if (!e[keyMap.multiSelect]) {
+    // Bare click: capture single element immediately
+    const md = convert(el.outerHTML)
+    console.log(`${LOG} single click capture — md length:`, md.length)
+    navigator.clipboard.writeText(md)
+      .then(() => { console.log(`${LOG} clipboard write ok`); deactivatePicker('📝 Copied') })
+      .catch((err: Error) => { console.error(`${LOG} clipboard write failed:`, err.message); deactivatePicker('Error: ' + err.message) })
+    return
+  }
 
   if (!state.selectedSet.has(el)) {
     state.selectedElements.push(el)
