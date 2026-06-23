@@ -1,3 +1,4 @@
+import TurndownService from 'turndown'
 import { SETTINGS_DEFAULTS, Settings } from './lib/settings.generated'
 import { storage } from './lib/storage'
 import { EXT_NAME, DARKREADER_CLASS, HIGHLIGHT_ALPHA, OUTLINE_OFFSET, BADGE_INSET, CLASS_SELECTED, CLASS_BADGE, CLASS_FLASH, CLASS_CURSOR, CLASS_OVERLAY } from './lib/constants'
@@ -53,7 +54,7 @@ function makeTurndown(stripSvg: boolean): TurndownService {
   td.remove(['style', 'script', 'noscript'])
   if (stripSvg) {
     td.addRule('stripSvgElement', {
-      filter: ['svg'],
+      filter: (node: HTMLElement) => node.tagName.toLowerCase() === 'svg',
       replacement: () => '[SVG]',
     })
     td.addRule('stripSvgDataUri', {

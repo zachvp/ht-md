@@ -25,7 +25,7 @@ chrome.action.onClicked.addListener(async (tab) => {
     // Content script not present (e.g. service worker restarted while tab was open).
     // Inject it programmatically and retry once.
     try {
-      await chrome.scripting.executeScript({ target: { tabId }, files: ['turndown.js', 'content.js'] })
+      await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] })
       await chrome.scripting.insertCSS({ target: { tabId }, files: ['content.css'] })
       await chrome.tabs.sendMessage(tabId, { action: 'toggle' })
     } catch (err2) {

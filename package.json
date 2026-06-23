@@ -13,7 +13,7 @@
     "build": "npm run gen:elements && tsx scripts/build.ts all",
     "sign:firefox": "npm run build:firefox && tsx scripts/firefox.ts sign",
     "publish:firefox": "npm run build:firefox && tsx scripts/firefox.ts publish",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "npm run gen:elements && tsc --noEmit",
     "gen-icons": "tsx scripts/gen-icons.ts",
     "build:chrome:dev": "tsx scripts/build.ts chrome --no-pack",
     "watch": "tsx scripts/watch.ts"
@@ -26,6 +26,7 @@
     "@types/chrome": "^0.1.42",
     "@types/node": "^26.0.0",
     "@types/sharp": "^0.31.1",
+    "@types/turndown": "^5.0.6",
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.4",
     "chokidar": "^5.0.0",
@@ -38,7 +39,8 @@
     "web-ext": "^10.4.0"
   },
   "dependencies": {
-    "emoji-picker-element": "^1.29.1"
+    "emoji-picker-element": "^1.29.1",
+    "turndown": "^7.2.4"
   },
   "allowScripts": {
     "sharp@0.35.2": true
