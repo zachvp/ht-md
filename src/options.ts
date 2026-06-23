@@ -349,8 +349,11 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
 els.includeSvg.checked = stored.includeSvg
   els.badgePulse.checked = stored.badgePulse
   syncBadgePulseParams()
-  els.cursorEmojiBtn.textContent = stored.cursorEmoji
-  els.multiCursorEmojiBtn.textContent = stored.multiCursorEmoji
+  for (const f of allFields) {
+    if (f.type === 'emoji') {
+      ;(els[f.id as keyof typeof els] as HTMLButtonElement).textContent = stored[f.storageKey as keyof typeof SETTINGS_DEFAULTS] as string
+    }
+  }
   for (const f of allFields) {
     if (f.type !== 'keybind') continue
     const btn = els[f.id as keyof typeof els] as HTMLButtonElement
