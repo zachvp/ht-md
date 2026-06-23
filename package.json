@@ -16,19 +16,22 @@
     "typecheck": "npm run gen:elements && tsc --noEmit",
     "gen-icons": "tsx scripts/gen-icons.ts",
     "build:chrome:dev": "tsx scripts/build.ts chrome --no-pack",
-    "watch": "tsx scripts/watch.ts"
+    "watch": "tsx scripts/watch.ts",
+    "verify:release": "tsx scripts/verify-release.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
     "@types/chrome": "^0.1.42",
     "@types/node": "^26.0.0",
     "@types/sharp": "^0.31.1",
     "@types/turndown": "^5.0.6",
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.4",
+    "adm-zip": "^0.5.17",
     "chokidar": "^5.0.0",
     "esbuild": "^0.28.0",
     "eslint": "^10.4.0",

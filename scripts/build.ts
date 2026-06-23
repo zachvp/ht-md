@@ -10,6 +10,7 @@ Usage:
 */
 
 import { execSync } from 'child_process';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -39,7 +40,7 @@ function checkBackgroundKey(manifest: Record<string, any>, config: { backgroundK
   return null;
 }
 
-function buildTarget(name: string, skipPackage = false): void {
+function buildTarget(name: string, skipPackage = false): string | null {
   const config = TARGETS[name];
   const outDir = path.join(ROOT, 'dist', name);
 
@@ -98,6 +99,8 @@ function buildTarget(name: string, skipPackage = false): void {
       stdio: 'inherit',
     });
   }
+
+  return archivePath;
 }
 
 function main(): void {
@@ -112,7 +115,17 @@ function main(): void {
     process.exit(1);
   }
 
-  names.forEach(name => buildTarget(name, skipPackage));
+  const archives = names.map(name => buildTarget(name, skipPackage)).filter((p): p is string => p !== null);
+
+  if (archives.length > 0) {
+    const lines = archives.map(p => {
+      const hash = crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+      return `${hash}  ${path.basename(p)}`;
+    });
+    const checksumPath = path.join(ROOT, 'dist', 'checksums.txt');
+    fs.writeFileSync(checksumPath, lines.join('\n') + '\n');
+    console.log(`\n[all] checksums written -> dist/checksums.txt`);
+  }
 }
 
 main();
