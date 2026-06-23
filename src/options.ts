@@ -33,8 +33,6 @@ function makeResetBtn(onClick: () => void): HTMLButtonElement {
   return btn
 }
 
-// Bridges build phase → wire phase for keybind reset (wireKeybind runs after storage.get resolves)
-const keybindResetRefs = new Map<string, { fn: () => void }>()
 
 function buildNumberField(f: NumberField): HTMLElement {
   const input = el('input', { id: f.id, min: String(f.min), max: String(f.max), step: String(f.step) })
@@ -93,13 +91,15 @@ function buildSelectField(f: SelectField): HTMLElement {
   return stack
 }
 
+const keybindSetResets = new Map<string, (fn: () => void) => void>()
+
 function buildKeybindField(f: KeybindField): HTMLElement {
   const btn = el('button', { id: f.id, className: 'cfg-btn' })
   btn.type = 'button'
-  const ref = { fn: () => {} }
-  keybindResetRefs.set(f.id, ref)
+  let resetFn = () => {}
   const stack = fieldStack(f.label, btn)
-  stack.append(makeResetBtn(() => ref.fn()))
+  stack.append(makeResetBtn(() => resetFn()))
+  keybindSetResets.set(f.id, (fn: () => void) => { resetFn = fn })
   return stack
 }
 
@@ -355,7 +355,7 @@ els.includeSvg.checked = stored.includeSvg
     if (f.type !== 'keybind') continue
     const btn = els[f.id as keyof typeof els] as HTMLButtonElement
     const { reset } = wireKeybind(btn, f.id, String(stored[f.id as keyof typeof SETTINGS_DEFAULTS]))
-    keybindResetRefs.get(f.id)!.fn = () => reset(f.default)
+    keybindSetResets.get(f.id)!(() => reset(f.default))
   }
   moveDot(stored.cursorOffsetX, stored.cursorOffsetY)
   document.body.style.fontSize = `${stored.optionsFontSize}px`
@@ -380,14 +380,17 @@ els.includeSvg.checked = stored.includeSvg
 })
 
 // Listeners
-els.includeSvg.addEventListener('change', () => {
-  storage.set({ includeSvg: els.includeSvg.checked }).then(showSaved)
-})
-els.badgePulse.addEventListener('change', () => {
-  storage.set({ badgePulse: els.badgePulse.checked }).then(showSaved)
-  syncBadgePulseParams()
-  updateBadgePreview()
-})
+for (const f of allFields) {
+  if (f.type !== 'checkbox') continue
+  const input = els[f.id as keyof typeof els] as HTMLInputElement
+  input.addEventListener('change', () => {
+    storage.set({ [f.id]: input.checked }).then(showSaved)
+    if (f.id === 'badgePulse') {
+      syncBadgePulseParams()
+      updateBadgePreview()
+    }
+  })
+}
 
 for (const f of allFields) {
   if (f.type !== 'emoji') continue
@@ -638,31 +641,29 @@ document.querySelectorAll<HTMLElement>('.section[id]').forEach(section => {
   body.hidden = !(collapseState[section.id] ?? false)
 })
 
-// Collapse toggle: avatar + label click expand/collapse section-params
-for (const id of ['badgePreview', 'highlightPreview', 'cursorPreview', 'messagePreview', 'optionsPreview']) {
-  const avatar  = document.getElementById(id)!
-  const section = avatar.closest<HTMLElement>('.section')!
-  const params  = section.querySelector<HTMLElement>('.section-params')!
-  const label   = section.querySelector<HTMLElement>('.group-label')!
-  const toggle  = () => {
-    params.hidden = !params.hidden
-    collapseState[section.id] = !params.hidden
+// Collapse toggle: wire click handlers for all sections
+const COLLAPSE_SECTIONS: Array<{ sectionId?: string; bodySelector: string; avatarId?: string }> = [
+  { bodySelector: '.section-params', avatarId: 'badgePreview' },
+  { bodySelector: '.section-params', avatarId: 'highlightPreview' },
+  { bodySelector: '.section-params', avatarId: 'cursorPreview' },
+  { bodySelector: '.section-params', avatarId: 'messagePreview' },
+  { bodySelector: '.section-params', avatarId: 'optionsPreview' },
+  { sectionId: 'section-functionality', bodySelector: '.section-body' },
+  { sectionId: 'section-rawconfig',     bodySelector: '.section-body' },
+]
+for (const { sectionId, bodySelector, avatarId } of COLLAPSE_SECTIONS) {
+  const section = avatarId
+    ? document.getElementById(avatarId)!.closest<HTMLElement>('.section')!
+    : document.getElementById(sectionId!)!
+  const body  = section.querySelector<HTMLElement>(bodySelector)!
+  const label = section.querySelector<HTMLElement>('.group-label')!
+  const toggle = () => {
+    body.hidden = !body.hidden
+    collapseState[section.id] = !body.hidden
     saveCollapseState(collapseState)
   }
-  avatar.addEventListener('click', toggle)
   label.addEventListener('click', toggle)
-}
-
-// Collapse toggle: label-only for non-avatar sections
-for (const sectionId of ['section-functionality', 'section-rawconfig']) {
-  const section = document.getElementById(sectionId)!
-  const body    = section.querySelector<HTMLElement>('.section-body')!
-  const label   = section.querySelector<HTMLElement>('.group-label')!
-  label.addEventListener('click', () => {
-    body.hidden = !body.hidden
-    collapseState[sectionId] = !body.hidden
-    saveCollapseState(collapseState)
-  })
+  if (avatarId) document.getElementById(avatarId)!.addEventListener('click', toggle)
 }
 
 // #endregion
