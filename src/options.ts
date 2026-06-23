@@ -352,7 +352,7 @@ storage.get(SETTINGS_DEFAULTS).then(s => {
       case 'keybind': {
         const btn = els[f.id as keyof typeof els] as HTMLButtonElement
         const { reset } = wireKeybind(btn, f.id, String(stored[f.id as keyof typeof SETTINGS_DEFAULTS]))
-        keybindResetRefs.get(f.id)!.fn = () => reset(f.default)
+        keybindSetResets.get(f.id)!(() => reset(f.default))
         break
       }
     }
