@@ -4,7 +4,7 @@
   "description": "",
   "main": "background.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --import tsx --test tests/index.test.ts",
     "lint": "eslint 'src/*.ts'",
     "build:firefox": "tsx scripts/build.ts firefox",
     "build:chrome": "tsx scripts/build.ts chrome",
@@ -32,6 +32,7 @@
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.4",
     "adm-zip": "^0.5.17",
+    "ajv": "^8.20.0",
     "chokidar": "^5.0.0",
     "esbuild": "^0.28.0",
     "eslint": "^10.4.0",
