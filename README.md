@@ -2,6 +2,28 @@
 
 Pick any element on a webpage and copy it as Markdown.
 
+## Install
+
+### Firefox
+
+Install directly from the [Firefox Add-ons page](https://addons.mozilla.org/en-US/firefox/addon/htmd/).
+
+### Chrome / Brave
+
+The Chrome Web Store listing is pending review. In the meantime, install from a
+[GitHub release](https://github.com/zachvp/ht-md/releases):
+
+1. Download `ht-md-chrome.zip` and unzip it to a permanent location
+   (e.g. `~/Applications/ht-md-chrome/`). Don't delete this folder — Chrome
+   loads the extension from it at runtime.
+2. Open `chrome://extensions`.
+3. Toggle **Developer mode** on (top-right corner).
+4. Click **Load unpacked** and select the unzipped folder.
+5. Pin the extension from the toolbar extensions menu if desired.
+
+Chrome will show a "Developer mode extensions" reminder on startup until the
+store listing is live — this is expected for sideloaded extensions.
+
 ## Build Environment
 
 - macOS or Linux

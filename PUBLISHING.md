@@ -39,42 +39,47 @@ security add-generic-password -a "$USER" -s "ht-md-amo-secret" -w "<secret>" -U
 
 ## Chrome / Brave (Chrome Web Store)
 
-**Status: blocked — first-time manual upload required**
+**Status: pending store review**
 
-### What's needed (one-time)
+The initial listing has been submitted to the Chrome Web Store and is awaiting
+Google's review. Once approved, the store page will be linked here and
+`npm run publish:chrome` will handle subsequent releases.
 
-1. **Developer account** — pay the one-time $5 registration fee at
-   [chrome.google.com/webstore/devconsole](https://chrome.google.com/webstore/devconsole)
-   if not already done.
+### Pre-release / sideload install (while review is pending)
 
-2. **First upload** — manually upload `dist/web-md-chrome.zip` as a new listing
-   in the developer dashboard. Fill out store listing details (description,
-   screenshots, etc.). This gives you an **extension ID**.
+There is no CLI path to install a Chrome extension into a running browser —
+`--load-extension` requires relaunching Chrome entirely, making it impractical
+for end users. The supported sideload flow is **Load unpacked** via developer mode:
 
-3. **Google OAuth credentials** — a Google Cloud project with the Chrome Web Store
-   API enabled is already set up on the Raspberry Pi. You need:
-   - `clientId`
-   - `clientSecret`
-   - `refreshToken` (one-time token exchange — run the auth flow on this Mac or copy from Pi)
+1. Download `ht-md-chrome.zip` from the [GitHub release](https://github.com/zachvp/ht-md/releases).
+2. Unzip it to a permanent location (e.g. `~/Applications/ht-md-chrome/`).
+   Do not delete this folder — Chrome loads the extension from it at runtime.
+3. Open `chrome://extensions` in Chrome or Brave.
+4. Toggle **Developer mode** on (top-right corner).
+5. Click **Load unpacked** and select the unzipped folder.
+6. The extension icon will appear in the toolbar. Pin it from the extensions menu if desired.
 
-4. **Store credentials in Keychain** (suggested naming):
-   ```sh
-   security add-generic-password -a "$USER" -s "web-md-cws-extension-id" -w "<id>" -U
-   security add-generic-password -a "$USER" -s "web-md-cws-client-id" -w "<clientId>" -U
-   security add-generic-password -a "$USER" -s "web-md-cws-client-secret" -w "<clientSecret>" -U
-   security add-generic-password -a "$USER" -s "web-md-cws-refresh-token" -w "<refreshToken>" -U
-   ```
+> Chrome will show a persistent "Developer mode extensions" reminder on startup.
+> This is normal for sideloaded extensions and goes away once the store listing is live.
 
-5. **Add publish script** — once credentials exist, add `scripts/publish-chrome.js`
-   (mirrors `publish-firefox.js`) using `chrome-webstore-upload-cli`:
-   ```sh
-   npm install --save-dev chrome-webstore-upload-cli
-   ```
+### After store approval
 
-### After setup
+The publish script still needs to be wired up post-approval. Once the extension
+ID is known, complete the one-time credential setup:
 
 ```sh
-npm run publish:chrome   # to be wired up after first manual upload
+security add-generic-password -a "$USER" -s "web-md-cws-extension-id" -w "<id>" -U
+security add-generic-password -a "$USER" -s "web-md-cws-client-id" -w "<clientId>" -U
+security add-generic-password -a "$USER" -s "web-md-cws-client-secret" -w "<clientSecret>" -U
+security add-generic-password -a "$USER" -s "web-md-cws-refresh-token" -w "<refreshToken>" -U
+```
+
+Then add `scripts/publish-chrome.js` (mirrors `publish-firefox.js`) using
+`chrome-webstore-upload-cli`:
+
+```sh
+npm install --save-dev chrome-webstore-upload-cli
+npm run publish:chrome
 ```
 
 ---
