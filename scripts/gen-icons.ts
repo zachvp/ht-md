@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const OUT_DIR = resolve(__dirname, '../icons')
 
-const SIZES = [16, 48, 128]
+const SIZES = [16, 32, 48, 64, 128, 256, 512, 1024, 2048]
 const TEAL   = '#4DD0E1'
 const ORANGE = '#FF9900'
 
