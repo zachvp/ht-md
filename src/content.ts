@@ -7,6 +7,13 @@ const LOG = `[${EXT_NAME}]`
 
 console.log(`${LOG} content script loaded`)
 
+// CSS zoom on <html> or <body> shifts the coordinate space for position:fixed children.
+// clientX/Y are always in viewport pixels, so we must divide by zoom when translating.
+function pageZoom(): number {
+  const z = parseFloat(getComputedStyle(document.documentElement).zoom)
+  return isFinite(z) && z > 0 ? z : 1
+}
+
 // All runtime picker state in one place
 const state = {
   pickerActive: false,
@@ -29,6 +36,7 @@ const state = {
   cursorEnterHandler: null as (() => void) | null,
   cursorLeaveHandler: null as (() => void) | null,
   mousePosTracker: null as ((e: MouseEvent) => void) | null,
+  domObserver: null as MutationObserver | null,
 }
 
 // User-configurable settings, kept in sync with chrome.storage.sync
@@ -160,11 +168,12 @@ function positionHighlight(el: Element): void {
     state.highlightOverlayEl = div
   }
   const r = el.getBoundingClientRect()
+  const z = pageZoom()
   const ov = state.highlightOverlayEl
-  ov.style.top = `${r.top}px`
-  ov.style.left = `${r.left}px`
-  ov.style.width = `${r.width}px`
-  ov.style.height = `${r.height}px`
+  ov.style.top = `${r.top / z}px`
+  ov.style.left = `${r.left / z}px`
+  ov.style.width = `${r.width / z}px`
+  ov.style.height = `${r.height / z}px`
   ov.style.outline = `${settings.outlineWidth}px solid ${settings.outlineColor}`
   ov.style.outlineOffset = OUTLINE_OFFSET
   ov.style.boxShadow = `inset 0 0 0 ${settings.insetWidth}px ${withAlpha(settings.outlineColor, HIGHLIGHT_ALPHA)}`
@@ -190,12 +199,14 @@ function setCursor(emoji: string): void {
     const el = document.createElement('div')
     el.className = CLASS_CURSOR
     const initOy = cursorFontSize() + settings.cursorOffsetY
-    el.style.transform = `translate(${state.lastMousePos.x + settings.cursorOffsetX}px,${state.lastMousePos.y - initOy}px)`
+    const initZ = pageZoom()
+    el.style.transform = `translate(${(state.lastMousePos.x + settings.cursorOffsetX) / initZ}px,${(state.lastMousePos.y - initOy) / initZ}px)`
     document.documentElement.appendChild(el)
     state.cursorEl = el
     state.cursorMoveHandler = (e: MouseEvent) => {
       const oy = cursorFontSize() + settings.cursorOffsetY
-      state.cursorEl!.style.transform = `translate(${e.clientX + settings.cursorOffsetX}px,${e.clientY - oy}px)`
+      const z = pageZoom()
+      state.cursorEl!.style.transform = `translate(${(e.clientX + settings.cursorOffsetX) / z}px,${(e.clientY - oy) / z}px)`
     }
     state.cursorLeaveHandler = () => { state.cursorEl!.style.visibility = 'hidden' }
     state.cursorEnterHandler = () => { state.cursorEl!.style.visibility = 'visible' }
@@ -237,8 +248,9 @@ function addBadge(el: Element, index: number): void {
   badge.textContent = String(index)
   if (settings.badgePulse) badge.classList.add(`${CLASS_BADGE}-pulse`)
   document.documentElement.appendChild(badge)
-  badge.style.top = `${r.top + BADGE_INSET}px`
-  badge.style.left = `${r.right - badge.offsetWidth - BADGE_INSET}px`
+  const z = pageZoom()
+  badge.style.top = `${(r.top + BADGE_INSET) / z}px`
+  badge.style.left = `${(r.right - badge.offsetWidth - BADGE_INSET) / z}px`
   state.badgeEls.push(badge)
 }
 
@@ -282,6 +294,16 @@ function activatePicker(): void {
     document.addEventListener('click', onClick, true)
     document.addEventListener('keydown', onKeyDown, true)
     document.addEventListener('keyup', onKeyUp, true)
+
+    state.domObserver = new MutationObserver(() => {
+      if (state.lastHighlighted && !document.contains(state.lastHighlighted)) {
+        clearHighlight()
+        state.lastHighlighted = null
+        state.hoverRoot = null
+      }
+    })
+    state.domObserver.observe(document.body, { childList: true, subtree: true })
+
     notifyPickerState(true)
   } catch (err) {
     console.error(`${LOG} activatePicker failed:`, err)
@@ -309,6 +331,9 @@ function deactivatePicker(message?: string): void {
   document.removeEventListener('click', onClick, true)
   document.removeEventListener('keydown', onKeyDown, true)
   document.removeEventListener('keyup', onKeyUp, true)
+
+  state.domObserver?.disconnect()
+  state.domObserver = null
 
   if (message) showMessage(message)
 }
@@ -449,19 +474,21 @@ function showMessage(text: string): void {
   const el = document.createElement('div')
   el.className = CLASS_FLASH
   el.textContent = text
-  el.style.left = `${state.lastMousePos.x}px`
-  el.style.top = `${state.lastMousePos.y}px`
+  const initZ = pageZoom()
+  el.style.left = `${state.lastMousePos.x / initZ}px`
+  el.style.top = `${state.lastMousePos.y / initZ}px`
   el.style.transform = 'translate(-50%, -50%)'
   el.style.animationName = 'none'
   document.documentElement.appendChild(el)
 
   setTimeout(() => {
     const r = el.getBoundingClientRect()
+    const z = pageZoom()
     const hw = r.width / 2, hh = r.height / 2
     const cx = Math.max(hw, Math.min(window.innerWidth  - hw, r.left + hw))
     const cy = Math.max(hh, Math.min(window.innerHeight - hh, r.top  + hh))
-    el.style.left = `${cx}px`
-    el.style.top  = `${cy}px`
+    el.style.left = `${cx / z}px`
+    el.style.top  = `${cy / z}px`
     el.style.transform = ''
     el.style.animationName = ''
     el.style.animationDelay = '0ms'

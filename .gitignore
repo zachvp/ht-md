@@ -11,3 +11,5 @@ dist/
 
 # Claude
 .claude/
+
+.claude/read_cache.json
