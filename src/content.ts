@@ -37,6 +37,7 @@ const state = {
   cursorLeaveHandler: null as (() => void) | null,
   mousePosTracker: null as ((e: MouseEvent) => void) | null,
   domObserver: null as MutationObserver | null,
+  scrollResizeHandler: null as (() => void) | null,
 }
 
 // User-configurable settings, kept in sync with chrome.storage.sync
@@ -259,6 +260,20 @@ function clearBadges(): void {
   state.badgeEls.length = 0
 }
 
+function repositionOverlays(): void {
+  const z = pageZoom()
+  state.selectedElements.forEach((el, i) => {
+    const badge = state.badgeEls[i]
+    if (!badge) return
+    const r = el.getBoundingClientRect()
+    badge.style.top = `${(r.top + BADGE_INSET) / z}px`
+    badge.style.left = `${(r.right - badge.offsetWidth - BADGE_INSET) / z}px`
+  })
+  if (state.lastHighlighted && state.highlightOverlayEl?.style.display !== 'none') {
+    positionHighlight(state.lastHighlighted)
+  }
+}
+
 function clearSelection(): void {
   for (const el of state.selectedElements) el.classList.remove(CLASS_SELECTED)
   state.selectedElements.length = 0
@@ -301,8 +316,23 @@ function activatePicker(): void {
         state.lastHighlighted = null
         state.hoverRoot = null
       }
+      if (state.selectedElements.some(el => !document.contains(el))) {
+        const surviving = state.selectedElements.filter(el => document.contains(el))
+        clearSelection()
+        for (const el of surviving) {
+          state.selectedElements.push(el)
+          state.selectedSet.add(el)
+          el.classList.add(CLASS_SELECTED)
+          addBadge(el, state.selectedElements.length)
+        }
+        if (surviving.length > 0) state.multiSelectActive = true
+      }
     })
     state.domObserver.observe(document.body, { childList: true, subtree: true })
+
+    state.scrollResizeHandler = () => repositionOverlays()
+    window.addEventListener('scroll', state.scrollResizeHandler, { capture: true, passive: true })
+    window.addEventListener('resize', state.scrollResizeHandler)
 
     notifyPickerState(true)
   } catch (err) {
@@ -334,6 +364,12 @@ function deactivatePicker(message?: string): void {
 
   state.domObserver?.disconnect()
   state.domObserver = null
+
+  if (state.scrollResizeHandler) {
+    window.removeEventListener('scroll', state.scrollResizeHandler, { capture: true })
+    window.removeEventListener('resize', state.scrollResizeHandler)
+    state.scrollResizeHandler = null
+  }
 
   if (message) showMessage(message)
 }
