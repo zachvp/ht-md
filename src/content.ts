@@ -19,11 +19,12 @@ const state = {
   pickerActive: false,
   multiSelectActive: false,
   modifierHeld: false,
-  // --- pure data: persists across activate/deactivate ---
+  // --- pure data: owned by the extension, never cleared by page DOM changes ---
   lastMousePos: { x: 0, y: 0 },
   selectedElements: [] as Element[],
   selectedSet: new Set<Element>(),
-  selectedSnapshots: [] as string[],
+  selectedSnapshots: [] as string[],    // parallel to selectedElements (live refs)
+  detachedSnapshots: [] as string[],    // snapshots whose elements were removed by the page
   selectionRedoStack: [] as Element[],
   selectionRedoSnapshots: [] as string[],
   // --- DOM refs: always null when picker is inactive ---
@@ -295,6 +296,10 @@ function repositionOverlays(): void {
   }
 }
 
+function selectionCount(): number {
+  return state.detachedSnapshots.length + state.selectedSnapshots.length
+}
+
 function clearSelection(): void {
   for (const obs of state.selectedObservers) obs.disconnect()
   state.selectedObservers.length = 0
@@ -302,6 +307,7 @@ function clearSelection(): void {
   state.selectedElements.length = 0
   state.selectedSet.clear()
   state.selectedSnapshots.length = 0
+  state.detachedSnapshots.length = 0
   state.selectionRedoStack.length = 0
   state.selectionRedoSnapshots.length = 0
   clearBadges()
@@ -342,15 +348,35 @@ function activatePicker(): void {
         state.hoverRoot = null
       }
       if (state.selectedElements.some(el => !document.contains(el))) {
-        const surviving = state.selectedElements.filter(el => document.contains(el))
-        clearSelection()
-        for (const el of surviving) {
+        // Presentation cleanup only — snapshots are extension data, not tied to page lifecycle
+        const keptEls: Element[] = []
+        const keptSnaps: string[] = []
+        const keptObs: MutationObserver[] = []
+        state.selectedElements.forEach((el, i) => {
+          if (document.contains(el)) {
+            keptEls.push(el)
+            keptSnaps.push(state.selectedSnapshots[i])
+            keptObs.push(state.selectedObservers[i])
+          } else {
+            state.selectedObservers[i]?.disconnect()
+            state.detachedSnapshots.push(state.selectedSnapshots[i])
+          }
+        })
+        clearBadges()
+        state.selectedElements.length = 0
+        state.selectedSet.clear()
+        state.selectedSnapshots.length = 0
+        state.selectedObservers.length = 0
+        for (let i = 0; i < keptEls.length; i++) {
+          const el = keptEls[i]
           state.selectedElements.push(el)
           state.selectedSet.add(el)
+          state.selectedSnapshots.push(keptSnaps[i])
+          state.selectedObservers.push(keptObs[i])
           el.classList.add(CLASS_SELECTED)
-          addBadge(el, state.selectedElements.length)
+          addBadge(el, selectionCount())
         }
-        if (surviving.length > 0) state.multiSelectActive = true
+        state.multiSelectActive = selectionCount() > 0
       }
     })
     state.domObserver.observe(document.body, { childList: true, subtree: true })
@@ -444,28 +470,33 @@ function onClick(e: MouseEvent): void {
   state.selectedSnapshots.push(el.outerHTML)
   el.classList.add(CLASS_SELECTED)
   state.selectedObservers.push(watchSelectionClass(el))
-  addBadge(el, state.selectedElements.length)
+  addBadge(el, selectionCount())
   state.selectionRedoStack.length = 0
   state.selectionRedoSnapshots.length = 0
   if (!state.multiSelectActive) state.multiSelectActive = true
-  showMessage(`${state.selectedElements.length} selected — Enter to copy`)
+  showMessage(`${selectionCount()} selected — Enter to copy`)
 }
 
 function undoSelection(): void {
-  const removed = state.selectedElements.pop()!
-  const snapshot = state.selectedSnapshots.pop()!
-  state.selectedObservers.pop()?.disconnect()
-  state.selectedSet.delete(removed)
-  removed.classList.remove(CLASS_SELECTED)
-  state.badgeEls.pop()?.remove()
-  state.selectionRedoStack.push(removed)
-  state.selectionRedoSnapshots.push(snapshot)
-  if (state.selectedElements.length === 0) {
+  if (state.selectedElements.length > 0) {
+    const removed = state.selectedElements.pop()!
+    const snapshot = state.selectedSnapshots.pop()!
+    state.selectedObservers.pop()?.disconnect()
+    state.selectedSet.delete(removed)
+    removed.classList.remove(CLASS_SELECTED)
+    state.badgeEls.pop()?.remove()
+    state.selectionRedoStack.push(removed)
+    state.selectionRedoSnapshots.push(snapshot)
+  } else {
+    // Live refs exhausted; undo the most recent detached snapshot
+    state.detachedSnapshots.pop()
+  }
+  if (selectionCount() === 0) {
     state.multiSelectActive = false
     syncCursor()
     showMessage('Selection cleared')
   } else {
-    showMessage(`${state.selectedElements.length} selected — Enter to copy`)
+    showMessage(`${selectionCount()} selected — Enter to copy`)
   }
 }
 
@@ -477,9 +508,9 @@ function redoSelection(): void {
   state.selectedSnapshots.push(snapshot)
   el.classList.add(CLASS_SELECTED)
   state.selectedObservers.push(watchSelectionClass(el))
-  addBadge(el, state.selectedElements.length)
+  addBadge(el, selectionCount())
   if (!state.multiSelectActive) state.multiSelectActive = true
-  showMessage(`${state.selectedElements.length} selected — Enter to copy`)
+  showMessage(`${selectionCount()} selected — Enter to copy`)
 }
 
 function onKeyDown(e: KeyboardEvent): void {
@@ -491,7 +522,7 @@ function onKeyDown(e: KeyboardEvent): void {
     e.preventDefault()
     e.stopImmediatePropagation()
     deactivatePicker('Canceled')
-  } else if ((e.key === 'Backspace' || e.key === 'Delete' || e.key === 'ArrowLeft') && state.selectedElements.length > 0) {
+  } else if ((e.key === 'Backspace' || e.key === 'Delete' || e.key === 'ArrowLeft') && selectionCount() > 0) {
     e.preventDefault()
     e.stopImmediatePropagation()
     undoSelection()
@@ -519,10 +550,11 @@ function onKeyDown(e: KeyboardEvent): void {
       state.lastHighlighted = el
       positionHighlight(el)
     }
-  } else if (e.key === 'Enter' && (state.selectedElements.length > 0 || state.lastHighlighted)) {
+  } else if (e.key === 'Enter' && (selectionCount() > 0 || state.lastHighlighted)) {
     e.preventDefault()
     e.stopImmediatePropagation()
-    const snapshots = state.selectedSnapshots.length > 0 ? state.selectedSnapshots : [state.lastHighlighted!.outerHTML]
+    const allSnapshots = [...state.detachedSnapshots, ...state.selectedSnapshots]
+    const snapshots = allSnapshots.length > 0 ? allSnapshots : [state.lastHighlighted!.outerHTML]
     const md = snapshots.map(html => convert(html)).join('\n')
     console.log(`${LOG} committing`, snapshots.length, 'elements — md length:', md.length)
     navigator.clipboard.writeText(md)
