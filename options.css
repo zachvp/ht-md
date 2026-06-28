@@ -253,7 +253,9 @@ select:hover { background: var(--ui-overlay-md, rgba(0,0,0,0.15)); }
 }
 .avatar:hover { opacity: 1; }
 
-/* Collapsible section label */
+/* Collapsible section label — suppress default <details> marker */
+summary.group-label { list-style: none; }
+summary.group-label::-webkit-details-marker { display: none; }
 .group-label { cursor: pointer; }
 .group-label:hover { opacity: 0.75; }
 

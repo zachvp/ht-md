@@ -1,5 +1,5 @@
 # Path Construction
-Use `~/` to construct paths as much as possible.
+Always use `~/` to construct paths for tool calls.
 For files/directories in your CWD, always use relative paths (`.`, `./`, `../`).
 
 # General Guiding Principles

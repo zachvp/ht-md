@@ -642,36 +642,17 @@ function saveCollapseState(state: Record<string, boolean>): void {
 
 const collapseState = loadCollapseState()
 
-// Apply stored state; default is hidden (false)
-document.querySelectorAll<HTMLElement>('.section[id]').forEach(section => {
-  const body = section.querySelector<HTMLElement>('.section-params, .section-body')
-  if (!body) return
-  body.hidden = !(collapseState[section.id] ?? false)
+// Apply stored state to <details> sections; default is closed
+document.querySelectorAll<HTMLDetailsElement>('details.section[id]').forEach(details => {
+  details.open = collapseState[details.id] ?? false
 })
 
-// Collapse toggle: wire click handlers for all sections
-const COLLAPSE_SECTIONS: Array<{ sectionId?: string; bodySelector: string; avatarId?: string }> = [
-  { bodySelector: '.section-params', avatarId: 'badgePreview' },
-  { bodySelector: '.section-params', avatarId: 'highlightPreview' },
-  { bodySelector: '.section-params', avatarId: 'cursorPreview' },
-  { bodySelector: '.section-params', avatarId: 'messagePreview' },
-  { bodySelector: '.section-params', avatarId: 'optionsPreview' },
-  { sectionId: 'section-functionality', bodySelector: '.section-body' },
-  { sectionId: 'section-rawconfig',     bodySelector: '.section-body' },
-]
-for (const { sectionId, bodySelector, avatarId } of COLLAPSE_SECTIONS) {
-  const section = avatarId
-    ? document.getElementById(avatarId)!.closest<HTMLElement>('.section')!
-    : document.getElementById(sectionId!)!
-  const body  = section.querySelector<HTMLElement>(bodySelector)!
-  const label = section.querySelector<HTMLElement>('.group-label')!
-  const toggle = () => {
-    body.hidden = !body.hidden
-    collapseState[section.id] = !body.hidden
+// Persist open/closed state via native <details> toggle event
+document.querySelectorAll<HTMLDetailsElement>('details.section[id]').forEach(details => {
+  details.addEventListener('toggle', () => {
+    collapseState[details.id] = details.open
     saveCollapseState(collapseState)
-  }
-  label.addEventListener('click', toggle)
-  if (avatarId) document.getElementById(avatarId)!.addEventListener('click', toggle)
-}
+  })
+})
 
 // #endregion

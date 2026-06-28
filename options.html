@@ -10,66 +10,66 @@
 <body>
   <h1>settings</h1>
 
-  <div class="section group" id="{{ functionality.sectionId }}">
-    <span class="group-label">{{ functionality.label }}</span>
-    <div class="section-body" hidden>
+  <details class="section group" id="{{ functionality.sectionId }}">
+    <summary class="group-label">{{ functionality.label }}</summary>
+    <div class="section-body">
       <div class="group-row" id="{{ functionality.rowId }}"></div>
     </div>
-  </div>
+  </details>
 
-  <div class="section group avatar-section" id="{{ cursor.sectionId }}">
-    <span class="group-label">{{ cursor.label }}</span>
+  <details class="section group avatar-section" id="{{ cursor.sectionId }}">
+    <summary class="group-label">{{ cursor.label }}</summary>
     <div class="section-layout">
       <div class="avatar" id="{{ cursor.preview.id }}"{{ cursor.preview.styleAttr }}></div>
-      <div class="section-params" hidden>
+      <div class="section-params">
         <div class="group-row" id="{{ cursor.rowId }}"></div>
       </div>
     </div>
-  </div>
+  </details>
 
-  <div class="section group avatar-section" id="{{ highlight.sectionId }}">
-    <span class="group-label">{{ highlight.label }}</span>
+  <details class="section group avatar-section" id="{{ highlight.sectionId }}">
+    <summary class="group-label">{{ highlight.label }}</summary>
     <div class="section-layout">
       <div class="avatar" id="{{ highlight.preview.id }}"{{ highlight.preview.styleAttr }}></div>
-      <div class="section-params" hidden>
+      <div class="section-params">
         <div class="group-row" id="{{ highlight.rowId }}"></div>
       </div>
     </div>
-  </div>
+  </details>
 
-  <div class="section group avatar-section" id="{{ message.sectionId }}">
-    <span class="group-label">{{ message.label }}</span>
+  <details class="section group avatar-section" id="{{ message.sectionId }}">
+    <summary class="group-label">{{ message.label }}</summary>
     <div class="section-layout">
       <div class="avatar" id="{{ message.preview.id }}"{{ message.preview.styleAttr }}></div>
-      <div class="section-params" hidden>
+      <div class="section-params">
         <div class="group-row" id="{{ message.rowId }}"></div>
       </div>
     </div>
-  </div>
+  </details>
 
-  <div class="section group avatar-section" id="{{ badge.sectionId }}">
-    <span class="group-label">{{ badge.label }}</span>
+  <details class="section group avatar-section" id="{{ badge.sectionId }}">
+    <summary class="group-label">{{ badge.label }}</summary>
     <div class="section-layout">
       <div class="avatar" id="{{ badge.preview.id }}"{{ badge.preview.styleAttr }}></div>
-      <div class="section-params" hidden>
+      <div class="section-params">
         <div class="group-row" id="{{ badge.rowId }}"></div>
       </div>
     </div>
-  </div>
+  </details>
 
-  <div class="section group avatar-section" id="{{ options.sectionId }}">
-    <span class="group-label">{{ options.label }}</span>
+  <details class="section group avatar-section" id="{{ options.sectionId }}">
+    <summary class="group-label">{{ options.label }}</summary>
     <div class="section-layout">
       <div class="avatar" id="{{ options.preview.id }}"{{ options.preview.styleAttr }}></div>
-      <div class="section-params" hidden>
+      <div class="section-params">
         <div class="group-row" id="{{ options.rowId }}"></div>
       </div>
     </div>
-  </div>
+  </details>
 
-  <div class="section group" id="section-rawconfig">
-    <span class="group-label">Raw Config Data</span>
-    <div class="section-body" hidden>
+  <details class="section group" id="section-rawconfig">
+    <summary class="group-label">Raw Config Data</summary>
+    <div class="section-body">
       <div class="group-row" style="margin-bottom:0.6rem;">
         <button id="copyJsonBtn" class="cfg-btn" type="button">Copy</button>
         <button id="applyJsonBtn" class="cfg-btn" type="button">Apply</button>
@@ -78,7 +78,7 @@
       </div>
       <textarea id="configJson" spellcheck="false"></textarea>
     </div>
-  </div>
+  </details>
 
   <template id="tmpl-tooltip">
     <span class="info-wrap">
@@ -105,7 +105,7 @@
     </div>
   </template>
 
-  <p id="status"></p>
+  <output id="status"></output>
   <script src="options.js"></script>
 </body>
 </html>
