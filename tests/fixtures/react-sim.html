@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>React-sim fixture</title></head>
+<body>
+  <!-- Panel whose content is mutated in-place, simulating React reconciliation -->
+  <div id="panel"><h2>Item 1</h2><p>Content A</p></div>
+
+  <!-- Templates hold the "after" states so the HTML is pre-parsed, not string-injected -->
+  <template id="state-2"><h2>Item 2</h2><p>Content B</p></template>
+  <template id="state-3"><h2>Item 3</h2><p>Content C</p></template>
+
+  <script>
+    let step = 0
+    const states = ['state-2', 'state-3']
+    // Called by tests to simulate a React navigation that mutates the panel in-place
+    window.simulateNavigation = () => {
+      const tpl = document.getElementById(states[step++ % states.length])
+      document.getElementById('panel').replaceChildren(tpl.content.cloneNode(true))
+    }
+  </script>
+</body>
+</html>

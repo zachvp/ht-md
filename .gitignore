@@ -14,3 +14,7 @@ dist/
 .claude/
 
 .claude/read_cache.json
+
+# Playwright
+test-results/
+playwright-report/
