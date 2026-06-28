@@ -40,6 +40,7 @@ const state = {
   mousePosTracker: null as ((e: MouseEvent) => void) | null,
   domObserver: null as MutationObserver | null,
   scrollResizeHandler: null as (() => void) | null,
+  selectedObservers: [] as MutationObserver[],
 }
 
 // User-configurable settings, kept in sync with chrome.storage.sync
@@ -257,6 +258,24 @@ function addBadge(el: Element, index: number): void {
   state.badgeEls.push(badge)
 }
 
+function repositionBadges(): void {
+  state.selectedElements.forEach((el, i) => {
+    const badge = state.badgeEls[i]
+    if (!badge) return
+    const r = el.getBoundingClientRect()
+    badge.style.top = `${r.top + BADGE_INSET}px`
+    badge.style.left = `${r.right - badge.offsetWidth - BADGE_INSET}px`
+  })
+}
+
+function watchSelectionClass(el: Element): MutationObserver {
+  const obs = new MutationObserver(() => {
+    if (!el.classList.contains(CLASS_SELECTED)) el.classList.add(CLASS_SELECTED)
+  })
+  obs.observe(el, { attributes: true, attributeFilter: ['class'] })
+  return obs
+}
+
 function clearBadges(): void {
   for (const b of state.badgeEls) b.remove()
   state.badgeEls.length = 0
@@ -277,6 +296,8 @@ function repositionOverlays(): void {
 }
 
 function clearSelection(): void {
+  for (const obs of state.selectedObservers) obs.disconnect()
+  state.selectedObservers.length = 0
   for (const el of state.selectedElements) el.classList.remove(CLASS_SELECTED)
   state.selectedElements.length = 0
   state.selectedSet.clear()
@@ -334,7 +355,7 @@ function activatePicker(): void {
     })
     state.domObserver.observe(document.body, { childList: true, subtree: true })
 
-    state.scrollResizeHandler = () => repositionOverlays()
+    state.scrollResizeHandler = () => repositionBadges()
     window.addEventListener('scroll', state.scrollResizeHandler, { capture: true, passive: true })
     window.addEventListener('resize', state.scrollResizeHandler)
 
@@ -368,6 +389,7 @@ function deactivatePicker(message?: string): void {
 
   state.domObserver?.disconnect()
   state.domObserver = null
+
 
   if (state.scrollResizeHandler) {
     window.removeEventListener('scroll', state.scrollResizeHandler, { capture: true })
@@ -421,6 +443,7 @@ function onClick(e: MouseEvent): void {
   state.selectedSet.add(el)
   state.selectedSnapshots.push(el.outerHTML)
   el.classList.add(CLASS_SELECTED)
+  state.selectedObservers.push(watchSelectionClass(el))
   addBadge(el, state.selectedElements.length)
   state.selectionRedoStack.length = 0
   state.selectionRedoSnapshots.length = 0
@@ -431,6 +454,7 @@ function onClick(e: MouseEvent): void {
 function undoSelection(): void {
   const removed = state.selectedElements.pop()!
   const snapshot = state.selectedSnapshots.pop()!
+  state.selectedObservers.pop()?.disconnect()
   state.selectedSet.delete(removed)
   removed.classList.remove(CLASS_SELECTED)
   state.badgeEls.pop()?.remove()
@@ -452,6 +476,7 @@ function redoSelection(): void {
   state.selectedSet.add(el)
   state.selectedSnapshots.push(snapshot)
   el.classList.add(CLASS_SELECTED)
+  state.selectedObservers.push(watchSelectionClass(el))
   addBadge(el, state.selectedElements.length)
   if (!state.multiSelectActive) state.multiSelectActive = true
   showMessage(`${state.selectedElements.length} selected — Enter to copy`)
