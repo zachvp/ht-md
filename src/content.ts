@@ -23,7 +23,9 @@ const state = {
   lastMousePos: { x: 0, y: 0 },
   selectedElements: [] as Element[],
   selectedSet: new Set<Element>(),
+  selectedSnapshots: [] as string[],
   selectionRedoStack: [] as Element[],
+  selectionRedoSnapshots: [] as string[],
   // --- DOM refs: always null when picker is inactive ---
   lastHighlighted: null as Element | null,
   hoverRoot: null as Element | null,
@@ -278,7 +280,9 @@ function clearSelection(): void {
   for (const el of state.selectedElements) el.classList.remove(CLASS_SELECTED)
   state.selectedElements.length = 0
   state.selectedSet.clear()
+  state.selectedSnapshots.length = 0
   state.selectionRedoStack.length = 0
+  state.selectionRedoSnapshots.length = 0
   clearBadges()
   state.multiSelectActive = false
 }
@@ -413,23 +417,25 @@ function onClick(e: MouseEvent): void {
   const el = (state.lastHighlighted ?? e.target) as Element
   e.preventDefault()
   e.stopPropagation()
-  if (!state.selectedSet.has(el)) {
-    state.selectedElements.push(el)
-    state.selectedSet.add(el)
-    el.classList.add(CLASS_SELECTED)
-    addBadge(el, state.selectedElements.length)
-    state.selectionRedoStack.length = 0
-    if (!state.multiSelectActive) state.multiSelectActive = true
-  }
+  state.selectedElements.push(el)
+  state.selectedSet.add(el)
+  state.selectedSnapshots.push(el.outerHTML)
+  el.classList.add(CLASS_SELECTED)
+  addBadge(el, state.selectedElements.length)
+  state.selectionRedoStack.length = 0
+  state.selectionRedoSnapshots.length = 0
+  if (!state.multiSelectActive) state.multiSelectActive = true
   showMessage(`${state.selectedElements.length} selected — Enter to copy`)
 }
 
 function undoSelection(): void {
   const removed = state.selectedElements.pop()!
+  const snapshot = state.selectedSnapshots.pop()!
   state.selectedSet.delete(removed)
   removed.classList.remove(CLASS_SELECTED)
   state.badgeEls.pop()?.remove()
   state.selectionRedoStack.push(removed)
+  state.selectionRedoSnapshots.push(snapshot)
   if (state.selectedElements.length === 0) {
     state.multiSelectActive = false
     syncCursor()
@@ -441,8 +447,10 @@ function undoSelection(): void {
 
 function redoSelection(): void {
   const el = state.selectionRedoStack.pop()!
+  const snapshot = state.selectionRedoSnapshots.pop()!
   state.selectedElements.push(el)
   state.selectedSet.add(el)
+  state.selectedSnapshots.push(snapshot)
   el.classList.add(CLASS_SELECTED)
   addBadge(el, state.selectedElements.length)
   if (!state.multiSelectActive) state.multiSelectActive = true
@@ -489,9 +497,9 @@ function onKeyDown(e: KeyboardEvent): void {
   } else if (e.key === 'Enter' && (state.selectedElements.length > 0 || state.lastHighlighted)) {
     e.preventDefault()
     e.stopImmediatePropagation()
-    const elements = state.selectedElements.length > 0 ? state.selectedElements : [state.lastHighlighted!]
-    const md = elements.map(el => convert(el.outerHTML)).join('\n')
-    console.log(`${LOG} committing`, elements.length, 'elements — md length:', md.length)
+    const snapshots = state.selectedSnapshots.length > 0 ? state.selectedSnapshots : [state.lastHighlighted!.outerHTML]
+    const md = snapshots.map(html => convert(html)).join('\n')
+    console.log(`${LOG} committing`, snapshots.length, 'elements — md length:', md.length)
     navigator.clipboard.writeText(md)
       .then(() => { console.log(`${LOG} clipboard write ok`); deactivatePicker('📝 Copied') })
       .catch((err: Error) => { console.error(`${LOG} clipboard write failed:`, err.message); deactivatePicker('Error: ' + err.message) })
