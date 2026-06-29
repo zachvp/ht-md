@@ -34,7 +34,7 @@
   min-width: 1.6em;
   aspect-ratio: 1;
   border-radius: 50%;
-  z-index: 2147483647; /* Z_TOP — keep in sync with src/lib/constants.ts */
+  z-index: 100000; /* Z_BADGE — keep in sync with src/lib/constants.ts */
   pointer-events: none;
   box-sizing: border-box;
 }

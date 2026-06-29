@@ -60,6 +60,33 @@ test('static: multi-select two elements and copy both', async ({ page }) => {
 
 // ── React-sim: same DOM node mutated between clicks ───────────────────────────
 
+test('static: undo removes last selection, redo restores it', async ({ page }) => {
+  await loadFixture(page, 'static.html')
+
+  await page.click('#card-a', { modifiers: ['Meta'] })
+  await page.click('#card-b', { modifiers: ['Meta'] })
+  await page.keyboard.press('ArrowLeft')   // undo card-b
+  await page.keyboard.press('ArrowRight')  // redo card-b
+  await page.keyboard.press('Enter')
+
+  const clips = await page.evaluate(() => (window as any).__clips() as string[])
+  expect(clips[0]).toContain('Card A')
+  expect(clips[0]).toContain('Card B')
+})
+
+test('static: undo all selections then copy single hover', async ({ page }) => {
+  await loadFixture(page, 'static.html')
+
+  await page.click('#card-a', { modifiers: ['Meta'] })
+  await page.keyboard.press('ArrowLeft')   // undo — selection empty, falls back to hover
+  await page.hover('#card-b')
+  await page.keyboard.press('Enter')
+
+  const clips = await page.evaluate(() => (window as any).__clips() as string[])
+  expect(clips[0]).toContain('Card B')
+  expect(clips[0]).not.toContain('Card A')
+})
+
 test('react-sim: snapshots captured at click time survive in-place DOM mutation', async ({ page }) => {
   await loadFixture(page, 'react-sim.html')
 

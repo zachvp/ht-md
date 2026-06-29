@@ -1,6 +1,8 @@
 // Maximum browser z-index (2^31 - 1). Overlay is one below so cursor renders on top.
 export const Z_TOP     = 2147483647
 export const Z_OVERLAY = 2147483646
+// Fallback badge z-index when no site nav z-index can be detected.
+export const Z_BADGE   = 100000
 
 // Prevents DarkReader from inverting injected <style> elements.
 export const DARKREADER_CLASS = 'darkreader darkreader--sync'

@@ -1,7 +1,7 @@
 import TurndownService from 'turndown'
 import { SETTINGS_DEFAULTS, Settings } from './lib/settings.generated'
 import { storage } from './lib/storage'
-import { EXT_NAME, DARKREADER_CLASS, HIGHLIGHT_ALPHA, OUTLINE_OFFSET, BADGE_INSET, CLASS_SELECTED, CLASS_BADGE, CLASS_FLASH, CLASS_CURSOR, CLASS_OVERLAY } from './lib/constants'
+import { EXT_NAME, DARKREADER_CLASS, HIGHLIGHT_ALPHA, OUTLINE_OFFSET, BADGE_INSET, CLASS_SELECTED, CLASS_BADGE, CLASS_FLASH, CLASS_CURSOR, CLASS_OVERLAY, Z_BADGE } from './lib/constants'
 
 const LOG = `[${EXT_NAME}]`
 
@@ -21,27 +21,20 @@ const state = {
   modifierHeld: false,
   // --- pure data: owned by the extension, never cleared by page DOM changes ---
   lastMousePos: { x: 0, y: 0 },
-  selectedElements: [] as Element[],
+  selections: [] as Array<{ el: Element, snapshot: string, observer: MutationObserver, badge: HTMLDivElement }>,
   selectedSet: new Set<Element>(),
-  selectedSnapshots: [] as string[],    // parallel to selectedElements (live refs)
   detachedSnapshots: [] as string[],    // snapshots whose elements were removed by the page
-  selectionRedoStack: [] as Element[],
-  selectionRedoSnapshots: [] as string[],
+  redoStack: [] as Array<{ el: Element, snapshot: string }>,
   // --- DOM refs: always null when picker is inactive ---
   lastHighlighted: null as Element | null,
   hoverRoot: null as Element | null,
-  badgeEls: [] as HTMLDivElement[],
   outlineStyleEl: null as HTMLStyleElement | null,
   highlightOverlayEl: null as HTMLDivElement | null,
   cursorStyleEl: null as HTMLStyleElement | null,
   cursorEl: null as HTMLDivElement | null,
-  cursorMoveHandler: null as ((e: MouseEvent) => void) | null,
-  cursorEnterHandler: null as (() => void) | null,
-  cursorLeaveHandler: null as (() => void) | null,
-  mousePosTracker: null as ((e: MouseEvent) => void) | null,
   domObserver: null as MutationObserver | null,
-  scrollResizeHandler: null as (() => void) | null,
-  selectedObservers: [] as MutationObserver[],
+  pickerCleanup: [] as Array<() => void>,
+  cursorCleanup: [] as Array<() => void>,
 }
 
 // User-configurable settings, kept in sync with chrome.storage.sync
@@ -208,16 +201,16 @@ function setCursor(emoji: string): void {
     el.style.transform = `translate(${(state.lastMousePos.x + settings.cursorOffsetX) / initZ}px,${(state.lastMousePos.y - initOy) / initZ}px)`
     document.documentElement.appendChild(el)
     state.cursorEl = el
-    state.cursorMoveHandler = (e: MouseEvent) => {
-      const oy = cursorFontSize() + settings.cursorOffsetY
-      const z = pageZoom()
-      state.cursorEl!.style.transform = `translate(${(e.clientX + settings.cursorOffsetX) / z}px,${(e.clientY - oy) / z}px)`
-    }
-    state.cursorLeaveHandler = () => { state.cursorEl!.style.visibility = 'hidden' }
-    state.cursorEnterHandler = () => { state.cursorEl!.style.visibility = 'visible' }
-    document.addEventListener('mousemove', state.cursorMoveHandler)
-    document.addEventListener('mouseleave', state.cursorLeaveHandler)
-    document.addEventListener('mouseenter', state.cursorEnterHandler)
+    state.cursorCleanup.push(
+      tracked(document, 'mousemove', (e: Event) => {
+        const { clientX, clientY } = e as MouseEvent
+        const oy = cursorFontSize() + settings.cursorOffsetY
+        const z = pageZoom()
+        state.cursorEl!.style.transform = `translate(${(clientX + settings.cursorOffsetX) / z}px,${(clientY - oy) / z}px)`
+      }),
+      tracked(document, 'mouseleave', () => { state.cursorEl!.style.visibility = 'hidden' }),
+      tracked(document, 'mouseenter', () => { state.cursorEl!.style.visibility = 'visible' }),
+    )
   }
   state.cursorEl!.textContent = emoji
   state.cursorEl!.style.fontSize = `${cursorFontSize()}px`
@@ -228,18 +221,17 @@ function clearCursor(): void {
   state.cursorStyleEl = null
   state.cursorEl?.remove()
   state.cursorEl = null
-  if (state.cursorMoveHandler) {
-    document.removeEventListener('mousemove', state.cursorMoveHandler)
-    state.cursorMoveHandler = null
-  }
-  if (state.cursorLeaveHandler) {
-    document.removeEventListener('mouseleave', state.cursorLeaveHandler)
-    state.cursorLeaveHandler = null
-  }
-  if (state.cursorEnterHandler) {
-    document.removeEventListener('mouseenter', state.cursorEnterHandler)
-    state.cursorEnterHandler = null
-  }
+  for (const cleanup of state.cursorCleanup) cleanup()
+  state.cursorCleanup.length = 0
+}
+
+function tracked(
+  target: EventTarget, event: string,
+  fn: EventListenerOrEventListenerObject,
+  opts?: boolean | AddEventListenerOptions
+): () => void {
+  target.addEventListener(event, fn, opts)
+  return () => target.removeEventListener(event, fn, opts as boolean | undefined)
 }
 
 function syncCursor(): void {
@@ -250,6 +242,7 @@ function createBadge(index: Number): HTMLDivElement {
   const badge = document.createElement('div')
   badge.className = CLASS_BADGE
   badge.textContent = String(index)
+  badge.style.zIndex = String(navZIndex())
   if (settings.badgePulse)
     badge.classList.add(`${CLASS_BADGE}-pulse`)
   return badge
@@ -268,24 +261,76 @@ function createMessage(content: string | Node): HTMLDivElement {
   return el
 }
 
-function addBadge(el: Element, index: number): void {
+function navZIndex(): number {
+  let min = Infinity
+  for (const el of document.querySelectorAll<HTMLElement>('header, nav, [role="banner"], [role="navigation"]')) {
+    const s = getComputedStyle(el)
+    if (s.position !== 'fixed' && s.position !== 'sticky') continue
+    const z = parseInt(s.zIndex)
+    if (!isNaN(z)) min = Math.min(min, z)
+  }
+  return isFinite(min) ? min - 1 : Z_BADGE
+}
+
+function safeZone(): { top: number, bottom: number, left: number, right: number } {
+  let top = 0, bottom = window.innerHeight, left = 0, right = window.innerWidth
+  const GAP = 8
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const el of document.querySelectorAll<HTMLElement>('*')) {
+      const s = getComputedStyle(el)
+      if (s.position !== 'fixed' && s.position !== 'sticky') continue
+      if (s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0') continue
+      const r = el.getBoundingClientRect()
+      if (r.width === 0 || r.height === 0) continue
+      if (r.top <= top + GAP && r.bottom > top)    { top    = r.bottom; changed = true }
+      if (r.bottom >= bottom - GAP && r.top < bottom) { bottom = r.top;    changed = true }
+      if (r.left <= left + GAP && r.right > left)  { left   = r.right;  changed = true }
+      if (r.right >= right - GAP && r.left < right){ right  = r.left;   changed = true }
+    }
+  }
+  return { top, bottom, left, right }
+}
+
+const NAV_SELECTOR = 'header, nav, [role="banner"], [role="navigation"]'
+
+function syncBadgeVisibility(badge: HTMLDivElement): void {
+  const b = badge.getBoundingClientRect()
+  const obscured = Array.from(document.querySelectorAll<HTMLElement>(NAV_SELECTOR)).some(nav => {
+    const s = getComputedStyle(nav)
+    if (s.position !== 'fixed' && s.position !== 'sticky') return false
+    const n = nav.getBoundingClientRect()
+    return b.left < n.right && b.right > n.left && b.top < n.bottom && b.bottom > n.top
+  })
+  badge.style.visibility = obscured ? 'hidden' : ''
+}
+
+function addBadge(el: Element, index: number): HTMLDivElement {
   const r = el.getBoundingClientRect()
   const badge = createBadge(index)
   document.documentElement.appendChild(badge)
   const z = pageZoom()
-  badge.style.top = `${(r.top + BADGE_INSET) / z}px`
-  badge.style.left = `${(r.right - badge.offsetWidth - BADGE_INSET) / z}px`
-  state.badgeEls.push(badge)
+  const sz = safeZone()
+  const top  = Math.max(r.top  + BADGE_INSET, sz.top  + BADGE_INSET)
+  const left = Math.min(r.right - badge.offsetWidth - BADGE_INSET, sz.right - badge.offsetWidth - BADGE_INSET)
+  badge.style.top  = `${top  / z}px`
+  badge.style.left = `${left / z}px`
+  syncBadgeVisibility(badge)
+  return badge
 }
 
 function repositionBadges(): void {
-  state.selectedElements.forEach((el, i) => {
-    const badge = state.badgeEls[i]
-    if (!badge) return
+  const sz = safeZone()
+  const z = pageZoom()
+  for (const { el, badge } of state.selections) {
     const r = el.getBoundingClientRect()
-    badge.style.top = `${r.top + BADGE_INSET}px`
-    badge.style.left = `${r.right - badge.offsetWidth - BADGE_INSET}px`
-  })
+    const top  = Math.max(r.top  + BADGE_INSET, sz.top  + BADGE_INSET)
+    const left = Math.min(r.right - badge.offsetWidth - BADGE_INSET, sz.right - badge.offsetWidth - BADGE_INSET)
+    badge.style.top  = `${top  / z}px`
+    badge.style.left = `${left / z}px`
+    syncBadgeVisibility(badge)
+  }
 }
 
 function watchSelectionClass(el: Element): MutationObserver {
@@ -297,25 +342,32 @@ function watchSelectionClass(el: Element): MutationObserver {
 }
 
 function clearBadges(): void {
-  for (const b of state.badgeEls) b.remove()
-  state.badgeEls.length = 0
+  for (const { badge } of state.selections) badge.remove()
 }
 
 function selectionCount(): number {
-  return state.detachedSnapshots.length + state.selectedSnapshots.length
+  return state.detachedSnapshots.length + state.selections.length
+}
+
+function addSelection(el: Element): void {
+  const index = selectionCount() + 1
+  el.classList.add(CLASS_SELECTED)
+  const observer = watchSelectionClass(el)
+  const badge = addBadge(el, index)
+  state.selections.push({ el, snapshot: el.outerHTML, observer, badge })
+  state.selectedSet.add(el)
 }
 
 function clearSelection(): void {
-  for (const obs of state.selectedObservers) obs.disconnect()
-  state.selectedObservers.length = 0
-  for (const el of state.selectedElements) el.classList.remove(CLASS_SELECTED)
-  state.selectedElements.length = 0
+  for (const { observer, el, badge } of state.selections) {
+    observer.disconnect()
+    el.classList.remove(CLASS_SELECTED)
+    badge.remove()
+  }
+  state.selections.length = 0
   state.selectedSet.clear()
-  state.selectedSnapshots.length = 0
   state.detachedSnapshots.length = 0
-  state.selectionRedoStack.length = 0
-  state.selectionRedoSnapshots.length = 0
-  clearBadges()
+  state.redoStack.length = 0
   state.multiSelectActive = false
 }
 
@@ -338,9 +390,10 @@ function activatePicker(): void {
   try {
     applyOutlineStyles()
     setCursor(settings.cursorEmoji)
-    state.mousePosTracker = (e: MouseEvent) => { state.lastMousePos = { x: e.clientX, y: e.clientY } }
-
-    document.addEventListener('mousemove', state.mousePosTracker, true)
+    state.pickerCleanup.push(tracked(document, 'mousemove', (e: Event) => {
+      const { clientX, clientY } = e as MouseEvent
+      state.lastMousePos = { x: clientX, y: clientY }
+    }, true))
     document.addEventListener('mouseover', onMouseOver)
     document.addEventListener('click', onClick, true)
     document.addEventListener('keydown', onKeyDown, true)
@@ -352,43 +405,37 @@ function activatePicker(): void {
         state.lastHighlighted = null
         state.hoverRoot = null
       }
-      if (state.selectedElements.some(el => !document.contains(el))) {
+      if (state.selections.some(s => !document.contains(s.el))) {
         // Presentation cleanup only — snapshots are extension data, not tied to page lifecycle
-        const keptEls: Element[] = []
-        const keptSnaps: string[] = []
-        const keptObs: MutationObserver[] = []
-        state.selectedElements.forEach((el, i) => {
-          if (document.contains(el)) {
-            keptEls.push(el)
-            keptSnaps.push(state.selectedSnapshots[i])
-            keptObs.push(state.selectedObservers[i])
-          } else {
-            state.selectedObservers[i]?.disconnect()
-            state.detachedSnapshots.push(state.selectedSnapshots[i])
-          }
-        })
+        const kept: typeof state.selections = []
         clearBadges()
-        state.selectedElements.length = 0
+        for (const s of state.selections) {
+          if (document.contains(s.el)) {
+            kept.push(s)
+          } else {
+            s.observer.disconnect()
+            state.detachedSnapshots.push(s.snapshot)
+          }
+        }
+        state.selections.length = 0
         state.selectedSet.clear()
-        state.selectedSnapshots.length = 0
-        state.selectedObservers.length = 0
-        for (let i = 0; i < keptEls.length; i++) {
-          const el = keptEls[i]
-          state.selectedElements.push(el)
-          state.selectedSet.add(el)
-          state.selectedSnapshots.push(keptSnaps[i])
-          state.selectedObservers.push(keptObs[i])
+        for (let i = 0; i < kept.length; i++) {
+          const { el, snapshot, observer } = kept[i]
           el.classList.add(CLASS_SELECTED)
-          addBadge(el, selectionCount())
+          const badge = addBadge(el, state.detachedSnapshots.length + i + 1)
+          state.selections.push({ el, snapshot, observer, badge })
+          state.selectedSet.add(el)
         }
         state.multiSelectActive = selectionCount() > 0
       }
     })
     state.domObserver.observe(document.body, { childList: true, subtree: true })
 
-    state.scrollResizeHandler = () => repositionBadges()
-    window.addEventListener('scroll', state.scrollResizeHandler, { capture: true, passive: true })
-    window.addEventListener('resize', state.scrollResizeHandler)
+    const scrollResizeHandler = () => repositionBadges()
+    state.pickerCleanup.push(
+      tracked(window, 'scroll', scrollResizeHandler, { capture: true, passive: true }),
+      tracked(window, 'resize', scrollResizeHandler),
+    )
 
     notifyPickerState(true)
   } catch (err) {
@@ -409,10 +456,8 @@ function deactivatePicker(message?: string | HTMLDivElement): void {
   clearHover()
   clearSelection()
 
-  if (state.mousePosTracker) {
-    document.removeEventListener('mousemove', state.mousePosTracker, true)
-    state.mousePosTracker = null
-  }
+  for (const cleanup of state.pickerCleanup) cleanup()
+  state.pickerCleanup.length = 0
   document.removeEventListener('mouseover', onMouseOver)
   document.removeEventListener('click', onClick, true)
   document.removeEventListener('keydown', onKeyDown, true)
@@ -421,12 +466,6 @@ function deactivatePicker(message?: string | HTMLDivElement): void {
   state.domObserver?.disconnect()
   state.domObserver = null
 
-
-  if (state.scrollResizeHandler) {
-    window.removeEventListener('scroll', state.scrollResizeHandler, { capture: true })
-    window.removeEventListener('resize', state.scrollResizeHandler)
-    state.scrollResizeHandler = null
-  }
 
   if (message) showMessage(typeof message === 'string' ? createMessage(message) : message)
 }
@@ -471,28 +510,20 @@ function onClick(e: MouseEvent): void {
   const el = (state.lastHighlighted ?? e.target) as Element
   e.preventDefault()
   e.stopPropagation()
-  state.selectedElements.push(el)
-  state.selectedSet.add(el)
-  state.selectedSnapshots.push(el.outerHTML)
-  el.classList.add(CLASS_SELECTED)
-  state.selectedObservers.push(watchSelectionClass(el))
-  addBadge(el, selectionCount())
-  state.selectionRedoStack.length = 0
-  state.selectionRedoSnapshots.length = 0
+  addSelection(el)
+  state.redoStack.length = 0
   if (!state.multiSelectActive) state.multiSelectActive = true
   showMessage(createMessage(`${selectionCount()} selected — Enter to copy`))
 }
 
 function undoSelection(): void {
-  if (state.selectedElements.length > 0) {
-    const removed = state.selectedElements.pop()!
-    const snapshot = state.selectedSnapshots.pop()!
-    state.selectedObservers.pop()?.disconnect()
-    state.selectedSet.delete(removed)
-    removed.classList.remove(CLASS_SELECTED)
-    state.badgeEls.pop()?.remove()
-    state.selectionRedoStack.push(removed)
-    state.selectionRedoSnapshots.push(snapshot)
+  if (state.selections.length > 0) {
+    const { el, snapshot, observer, badge } = state.selections.pop()!
+    observer.disconnect()
+    state.selectedSet.delete(el)
+    el.classList.remove(CLASS_SELECTED)
+    badge.remove()
+    state.redoStack.push({ el, snapshot })
   } else {
     // Live refs exhausted; undo the most recent detached snapshot
     state.detachedSnapshots.pop()
@@ -507,14 +538,12 @@ function undoSelection(): void {
 }
 
 function redoSelection(): void {
-  const el = state.selectionRedoStack.pop()!
-  const snapshot = state.selectionRedoSnapshots.pop()!
-  state.selectedElements.push(el)
-  state.selectedSet.add(el)
-  state.selectedSnapshots.push(snapshot)
+  const { el, snapshot } = state.redoStack.pop()!
   el.classList.add(CLASS_SELECTED)
-  state.selectedObservers.push(watchSelectionClass(el))
-  addBadge(el, selectionCount())
+  const observer = watchSelectionClass(el)
+  const badge = addBadge(el, selectionCount() + 1)
+  state.selections.push({ el, snapshot, observer, badge })
+  state.selectedSet.add(el)
   if (!state.multiSelectActive) state.multiSelectActive = true
   showMessage(createMessage(`${selectionCount()} selected — Enter to copy`))
 }
@@ -532,7 +561,7 @@ function onKeyDown(e: KeyboardEvent): void {
     e.preventDefault()
     e.stopImmediatePropagation()
     undoSelection()
-  } else if (e.key === 'ArrowRight' && state.selectionRedoStack.length > 0) {
+  } else if (e.key === 'ArrowRight' && state.redoStack.length > 0) {
     e.preventDefault()
     e.stopImmediatePropagation()
     redoSelection()
@@ -557,11 +586,11 @@ function onKeyDown(e: KeyboardEvent): void {
       positionHighlight(el)
     }
   } else if (e.key === 'Enter' && (selectionCount() > 0 || state.lastHighlighted)) {
-    const count = selectionCount()
     e.preventDefault()
     e.stopImmediatePropagation()
-    const allSnapshots = [...state.detachedSnapshots, ...state.selectedSnapshots]
+    const allSnapshots = [...state.detachedSnapshots, ...state.selections.map(s => s.snapshot)]
     const snapshots = allSnapshots.length > 0 ? allSnapshots : [state.lastHighlighted!.outerHTML]
+    const count = snapshots.length
     const md = snapshots.map(html => convert(html)).join('\n')
     console.log(`${LOG} committing`, snapshots.length, 'elements — md length:', md.length)
     navigator.clipboard.writeText(md)
@@ -594,9 +623,10 @@ function showMessage(el: HTMLDivElement): void {
   setTimeout(() => {
     const r = el.getBoundingClientRect()
     const z = pageZoom()
+    const sz = safeZone()
     const hw = r.width / 2, hh = r.height / 2
-    const cx = Math.max(hw, Math.min(window.innerWidth  - hw, r.left + hw))
-    const cy = Math.max(hh, Math.min(window.innerHeight - hh, r.top  + hh))
+    const cx = Math.max(sz.left + hw, Math.min(sz.right  - hw, r.left + hw))
+    const cy = Math.max(sz.top  + hh, Math.min(sz.bottom - hh, r.top  + hh))
     el.style.left = `${cx / z}px`
     el.style.top  = `${cy / z}px`
     el.style.transform = ''
