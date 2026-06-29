@@ -39,13 +39,21 @@
   box-sizing: border-box;
 }
 
+.ht-md-badge--inline {
+  position: static;
+  z-index: auto;
+  font-size: 0.85em;
+}
+
 .ht-md-badge-pulse {
   animation: ht-md-badge-pulse var(--badge-pulse-duration, 1000ms) ease-in-out infinite;
 }
 
 .ht-md-flash {
   all: initial;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
   position: fixed;
   background: var(--flash-bg, #000000cc);
   color: var(--flash-color, #fff);

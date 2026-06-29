@@ -258,8 +258,13 @@ function createBadge(index: Number): HTMLDivElement {
 function createMessage(content: string | Node): HTMLDivElement {
   const el = document.createElement('div')
   el.className = CLASS_FLASH
-  if (typeof content === 'string') el.textContent = content
-  else el.appendChild(content)
+  if (typeof content === 'string') {
+    el.textContent = content
+  } else {
+    if (content instanceof HTMLElement && content.classList.contains(CLASS_BADGE))
+      content.classList.add(`${CLASS_BADGE}--inline`)
+    el.appendChild(content)
+  }
   return el
 }
 
