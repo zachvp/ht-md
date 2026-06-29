@@ -246,12 +246,26 @@ function syncCursor(): void {
   setCursor(state.modifierHeld ? settings.multiCursorEmoji : settings.cursorEmoji)
 }
 
-function addBadge(el: Element, index: number): void {
-  const r = el.getBoundingClientRect()
+function createBadge(index: Number): HTMLDivElement {
   const badge = document.createElement('div')
   badge.className = CLASS_BADGE
   badge.textContent = String(index)
-  if (settings.badgePulse) badge.classList.add(`${CLASS_BADGE}-pulse`)
+  if (settings.badgePulse)
+    badge.classList.add(`${CLASS_BADGE}-pulse`)
+  return badge
+}
+
+function createMessage(content: string | Node): HTMLDivElement {
+  const el = document.createElement('div')
+  el.className = CLASS_FLASH
+  if (typeof content === 'string') el.textContent = content
+  else el.appendChild(content)
+  return el
+}
+
+function addBadge(el: Element, index: number): void {
+  const r = el.getBoundingClientRect()
+  const badge = createBadge(index)
   document.documentElement.appendChild(badge)
   const z = pageZoom()
   badge.style.top = `${(r.top + BADGE_INSET) / z}px`
@@ -280,20 +294,6 @@ function watchSelectionClass(el: Element): MutationObserver {
 function clearBadges(): void {
   for (const b of state.badgeEls) b.remove()
   state.badgeEls.length = 0
-}
-
-function repositionOverlays(): void {
-  const z = pageZoom()
-  state.selectedElements.forEach((el, i) => {
-    const badge = state.badgeEls[i]
-    if (!badge) return
-    const r = el.getBoundingClientRect()
-    badge.style.top = `${(r.top + BADGE_INSET) / z}px`
-    badge.style.left = `${(r.right - badge.offsetWidth - BADGE_INSET) / z}px`
-  })
-  if (state.lastHighlighted && state.highlightOverlayEl?.style.display !== 'none') {
-    positionHighlight(state.lastHighlighted)
-  }
 }
 
 function selectionCount(): number {
@@ -392,7 +392,7 @@ function activatePicker(): void {
   }
 }
 
-function deactivatePicker(message?: string): void {
+function deactivatePicker(message?: string | HTMLDivElement): void {
   if (!state.pickerActive) return
   state.pickerActive = false
   state.modifierHeld = false
@@ -423,7 +423,7 @@ function deactivatePicker(message?: string): void {
     state.scrollResizeHandler = null
   }
 
-  if (message) showMessage(message)
+  if (message) showMessage(typeof message === 'string' ? createMessage(message) : message)
 }
 
 function onMouseOver(e: MouseEvent): void {
@@ -451,6 +451,7 @@ function onClick(e: MouseEvent): void {
     if (state.multiSelectActive) return  // fall through to browser
     // Single-select mode, bare click: capture immediately
     const el = (state.lastHighlighted ?? e.target) as Element
+
     e.preventDefault()
     e.stopPropagation()
     const md = convert(el.outerHTML)
@@ -474,7 +475,7 @@ function onClick(e: MouseEvent): void {
   state.selectionRedoStack.length = 0
   state.selectionRedoSnapshots.length = 0
   if (!state.multiSelectActive) state.multiSelectActive = true
-  showMessage(`${selectionCount()} selected — Enter to copy`)
+  showMessage(createMessage(`${selectionCount()} selected — Enter to copy`))
 }
 
 function undoSelection(): void {
@@ -494,9 +495,9 @@ function undoSelection(): void {
   if (selectionCount() === 0) {
     state.multiSelectActive = false
     syncCursor()
-    showMessage('Selection cleared')
+    showMessage(createMessage('Selection cleared'))
   } else {
-    showMessage(`${selectionCount()} selected — Enter to copy`)
+    showMessage(createMessage(`${selectionCount()} selected — Enter to copy`))
   }
 }
 
@@ -510,7 +511,7 @@ function redoSelection(): void {
   state.selectedObservers.push(watchSelectionClass(el))
   addBadge(el, selectionCount())
   if (!state.multiSelectActive) state.multiSelectActive = true
-  showMessage(`${selectionCount()} selected — Enter to copy`)
+  showMessage(createMessage(`${selectionCount()} selected — Enter to copy`))
 }
 
 function onKeyDown(e: KeyboardEvent): void {
@@ -551,6 +552,7 @@ function onKeyDown(e: KeyboardEvent): void {
       positionHighlight(el)
     }
   } else if (e.key === 'Enter' && (selectionCount() > 0 || state.lastHighlighted)) {
+    const count = selectionCount()
     e.preventDefault()
     e.stopImmediatePropagation()
     const allSnapshots = [...state.detachedSnapshots, ...state.selectedSnapshots]
@@ -558,7 +560,12 @@ function onKeyDown(e: KeyboardEvent): void {
     const md = snapshots.map(html => convert(html)).join('\n')
     console.log(`${LOG} committing`, snapshots.length, 'elements — md length:', md.length)
     navigator.clipboard.writeText(md)
-      .then(() => { console.log(`${LOG} clipboard write ok`); deactivatePicker('📝 Copied') })
+      .then(() => {
+        console.log(`${LOG} clipboard write ok`)
+        const msg = createMessage(createBadge(count))
+        msg.appendChild(document.createTextNode(' Copied'))
+        deactivatePicker(msg)
+      })
       .catch((err: Error) => { console.error(`${LOG} clipboard write failed:`, err.message); deactivatePicker('Error: ' + err.message) })
   }
 }
@@ -571,10 +578,7 @@ function onKeyUp(e: KeyboardEvent): void {
   }
 }
 
-function showMessage(text: string): void {
-  const el = document.createElement('div')
-  el.className = CLASS_FLASH
-  el.textContent = text
+function showMessage(el: HTMLDivElement): void {
   const initZ = pageZoom()
   el.style.left = `${state.lastMousePos.x / initZ}px`
   el.style.top = `${state.lastMousePos.y / initZ}px`

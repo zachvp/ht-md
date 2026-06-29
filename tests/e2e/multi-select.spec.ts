@@ -80,6 +80,18 @@ test('react-sim: snapshots captured at click time survive in-place DOM mutation'
   expect(clips[0]).toContain('Item 2')
 })
 
+test('static: confirmation toast shows badge with count after copy', async ({ page }) => {
+  await loadFixture(page, 'static.html')
+
+  await page.click('#card-a', { modifiers: ['Meta'] })
+  await page.click('#card-b', { modifiers: ['Meta'] })
+  await page.keyboard.press('Enter')
+
+  const badge = page.locator('.ht-md-flash .ht-md-badge')
+  await expect(badge).toHaveText('2')
+  await expect(badge.locator('..') ).toContainText('Copied')
+})
+
 test('react-sim: three navigations accumulate three independent snapshots', async ({ page }) => {
   await loadFixture(page, 'react-sim.html')
 
