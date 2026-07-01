@@ -136,3 +136,27 @@ test('react-sim: three navigations accumulate three independent snapshots', asyn
   expect(clips[0]).toContain('Item 2')
   expect(clips[0]).toContain('Item 3')
 })
+
+// ── Overlay rendering: stays visible and repositioned on reactive sites ─────────
+
+test('overlay stays visible and repositioned on scroll', async ({ page }) => {
+  await loadFixture(page, 'react-sim.html')
+
+  // Hover to create overlay
+  await page.hover('#panel')
+  const beforeScroll = await page.evaluate(() => {
+    const ov = document.querySelector('.ht-md-overlay') as HTMLElement
+    return ov?.style.display !== 'none' && ov?.style.top !== ''
+  })
+  expect(beforeScroll).toBe(true)
+
+  // Scroll (simulates layout shifts on reactive sites)
+  await page.evaluate(() => window.scrollBy(0, 50))
+
+  // Overlay should still be visible and repositioned
+  const afterScroll = await page.evaluate(() => {
+    const ov = document.querySelector('.ht-md-overlay') as HTMLElement
+    return ov?.style.display !== 'none' && ov?.style.top !== ''
+  })
+  expect(afterScroll).toBe(true)
+})

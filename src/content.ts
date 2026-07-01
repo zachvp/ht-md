@@ -9,6 +9,22 @@ console.log(`${LOG} content script loaded`)
 
 // CSS zoom on <html> or <body> shifts the coordinate space for position:fixed children.
 // clientX/Y are always in viewport pixels, so we must divide by zoom when translating.
+// Promotes an element into the browser's top layer so it paints above every
+// page element regardless of the page's own stacking contexts (modals, portals, etc).
+// Falls back to normal stacking (via each class's z-index) on browsers without support.
+function promoteToTopLayer(el: HTMLElement): void {
+  if (!('showPopover' in el)) return
+  el.setAttribute('popover', 'manual')
+  try {
+    (el as HTMLElement & { showPopover: () => void }).showPopover()
+  } catch {
+    // showPopover() failed (e.g. rejected by the browser) — the 'popover' attribute
+    // alone forces display:none via the UA stylesheet, so it must be removed too,
+    // or the element stays permanently invisible instead of falling back to normal stacking.
+    el.removeAttribute('popover')
+  }
+}
+
 function pageZoom(): number {
   const z = parseFloat(getComputedStyle(document.documentElement).zoom)
   return isFinite(z) && z > 0 ? z : 1
@@ -25,6 +41,7 @@ const state = {
   selectedSet: new Set<Element>(),
   detachedSnapshots: [] as string[],    // snapshots whose elements were removed by the page
   redoStack: [] as Array<{ el: Element, snapshot: string }>,
+  cachedNavZIndex: 0,
   // --- DOM refs: always null when picker is inactive ---
   lastHighlighted: null as Element | null,
   hoverRoot: null as Element | null,
@@ -162,7 +179,9 @@ function positionHighlight(el: Element): void {
   if (!state.highlightOverlayEl) {
     const div = document.createElement('div')
     div.className = CLASS_OVERLAY
+    div.setAttribute('data-ht-md', 'overlay')
     document.documentElement.appendChild(div)
+    promoteToTopLayer(div)
     state.highlightOverlayEl = div
   }
   const r = el.getBoundingClientRect()
@@ -196,10 +215,12 @@ function setCursor(emoji: string): void {
   if (!state.cursorEl) {
     const el = document.createElement('div')
     el.className = CLASS_CURSOR
+    el.setAttribute('data-ht-md', 'cursor')
     const initOy = cursorFontSize() + settings.cursorOffsetY
     const initZ = pageZoom()
     el.style.transform = `translate(${(state.lastMousePos.x + settings.cursorOffsetX) / initZ}px,${(state.lastMousePos.y - initOy) / initZ}px)`
     document.documentElement.appendChild(el)
+    promoteToTopLayer(el)
     state.cursorEl = el
     state.cursorCleanup.push(
       tracked(document, 'mousemove', (e: Event) => {
@@ -242,7 +263,8 @@ function createBadge(index: Number): HTMLDivElement {
   const badge = document.createElement('div')
   badge.className = CLASS_BADGE
   badge.textContent = String(index)
-  badge.style.zIndex = String(navZIndex())
+  badge.style.zIndex = String(state.cachedNavZIndex || Z_BADGE)
+  badge.setAttribute('data-ht-md', 'badge')
   if (settings.badgePulse)
     badge.classList.add(`${CLASS_BADGE}-pulse`)
   return badge
@@ -251,6 +273,7 @@ function createBadge(index: Number): HTMLDivElement {
 function createMessage(content: string | Node): HTMLDivElement {
   const el = document.createElement('div')
   el.className = CLASS_FLASH
+  el.setAttribute('data-ht-md', 'message')
   if (typeof content === 'string') {
     el.textContent = content
   } else {
@@ -303,13 +326,15 @@ function syncBadgeVisibility(badge: HTMLDivElement): void {
     const n = nav.getBoundingClientRect()
     return b.left < n.right && b.right > n.left && b.top < n.bottom && b.bottom > n.top
   })
-  badge.style.visibility = obscured ? 'hidden' : ''
+  const newVisibility = obscured ? 'hidden' : ''
+  if (badge.style.visibility !== newVisibility) badge.style.visibility = newVisibility
 }
 
 function addBadge(el: Element, index: number): HTMLDivElement {
   const r = el.getBoundingClientRect()
   const badge = createBadge(index)
   document.documentElement.appendChild(badge)
+  promoteToTopLayer(badge)
   const z = pageZoom()
   const sz = safeZone()
   const top  = Math.max(r.top  + BADGE_INSET, sz.top  + BADGE_INSET)
@@ -330,6 +355,9 @@ function repositionBadges(): void {
     badge.style.top  = `${top  / z}px`
     badge.style.left = `${left / z}px`
     syncBadgeVisibility(badge)
+  }
+  if (state.lastHighlighted && document.contains(state.lastHighlighted) && state.highlightOverlayEl?.style.display !== 'none') {
+    positionHighlight(state.lastHighlighted)
   }
 }
 
@@ -386,6 +414,7 @@ function notifyPickerState(active: boolean): void {
 function activatePicker(): void {
   if (state.pickerActive) return
   state.pickerActive = true
+  state.cachedNavZIndex = navZIndex()
   console.log(`${LOG} picker activated`)
   try {
     applyOutlineStyles()

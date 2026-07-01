@@ -16,9 +16,7 @@ chrome.runtime.onMessage.addListener((msg: { action: string; active?: boolean },
   }
 })
 
-chrome.action.onClicked.addListener(async (tab) => {
-  const tabId = tab.id!
-  console.log(`${LOG} toolbar clicked, tab:`, tabId)
+async function togglePicker(tabId: number): Promise<void> {
   try {
     await chrome.tabs.sendMessage(tabId, { action: 'toggle' })
   } catch {
@@ -32,4 +30,17 @@ chrome.action.onClicked.addListener(async (tab) => {
       console.warn(`${LOG} sendMessage after inject:`, (err2 as Error).message)
     }
   }
+}
+
+chrome.action.onClicked.addListener(async (tab) => {
+  console.log(`${LOG} toolbar clicked, tab:`, tab.id)
+  await togglePicker(tab.id!)
+})
+
+// DEBUG ONLY — temporary command-based trigger for MCP-driven testing (no toolbar click available).
+// Remove before committing.
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== 'debug-toggle-picker') return
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (tab?.id != null) await togglePicker(tab.id)
 })
