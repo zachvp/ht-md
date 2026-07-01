@@ -59,7 +59,9 @@
 }
 
 .ht-md-badge-pulse {
-  animation: ht-md-badge-pulse var(--badge-pulse-duration, 1000ms) ease-in-out infinite;
+  /* !important: outranks host-page resets (e.g. Tailwind's prefers-reduced-motion
+     preflight) that set `* { animation-duration: 0.01ms !important }`. */
+  animation: ht-md-badge-pulse var(--badge-pulse-duration, 1000ms) ease-in-out infinite !important;
 }
 
 .ht-md-flash {
@@ -78,9 +80,11 @@
   pointer-events: none;
   white-space: nowrap;
   z-index: 2147483647; /* Z_TOP — keep in sync with src/lib/constants.ts */
-  animation-name: ht-md-flash-fall;
-  animation-duration: var(--flash-duration, 2000ms);
-  animation-fill-mode: forwards;
+  /* !important: outranks host-page resets (e.g. Tailwind's prefers-reduced-motion
+     preflight) that set `* { animation-duration: 0.01ms !important }`. */
+  animation-name: ht-md-flash-fall !important;
+  animation-duration: var(--flash-duration, 2000ms) !important;
+  animation-fill-mode: forwards !important;
 }
 
 @keyframes ht-md-badge-pulse {

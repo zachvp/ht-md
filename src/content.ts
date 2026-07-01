@@ -648,6 +648,7 @@ function showMessage(el: HTMLDivElement): void {
   el.style.transform = 'translate(-50%, -50%)'
   el.style.animationName = 'none'
   document.documentElement.appendChild(el)
+  promoteToTopLayer(el)
 
   setTimeout(() => {
     const r = el.getBoundingClientRect()
