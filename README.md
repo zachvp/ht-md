@@ -41,14 +41,12 @@ store listing is live — this is expected for sideloaded extensions.
    ```
    npm run build:firefox   # dist/firefox/  (load unpacked, or as a temporary add-on)
    npm run build:chrome    # dist/chrome/, dist/<name>-chrome.zip  (also loads in Brave, Edge)
-   npm run build            # both (same as build:all) — no single manifest works
-                             # correctly across Firefox and Chromium, so each
-                             # target gets its own dist/ dir and manifest
+   npm run build           # both
    ```
-
-Each target's manifest is `manifest.base.json` merged with its
-`manifest.<target>.json` override (only the fields that genuinely diverge per
-browser, e.g. `background`).
+   No single manifest works correctly across Firefox and Chromium, so each
+   target gets its own `dist/` dir and manifest: `manifest.base.json` merged
+   with the target's `manifest.<target>.json` override (only the fields that
+   genuinely diverge per browser, e.g. `background`).
 
 3. To install permanently in Firefox (not just as a temporary add-on), the
    build must be signed by Mozilla first:
@@ -57,7 +55,7 @@ browser, e.g. `background`).
    ```
    This reads AMO API credentials from macOS Keychain (`<name>-amo-issuer` /
    `<name>-amo-secret`, where `<name>` is the `name` field in `package.json`) —
-   see `scripts/sign-firefox.js` for setup. Each run
+   see `scripts/firefox.ts` for setup. Each run
    registers that exact version with AMO, so bump `manifest.base.json`'s
    `version` before re-signing.
 
