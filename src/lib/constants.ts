@@ -20,6 +20,7 @@ export const EXT_NAME = 'ht-md'
 
 // CSS class names applied to page elements or injected nodes.
 export const CLASS_SELECTED = `${EXT_NAME}-selected`
+export const CLASS_HOVER    = `${EXT_NAME}-hover`
 export const CLASS_BADGE    = `${EXT_NAME}-badge`
 export const CLASS_FLASH    = `${EXT_NAME}-flash`
 export const CLASS_CURSOR   = `${EXT_NAME}-cursor`

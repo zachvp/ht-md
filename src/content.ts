@@ -1,7 +1,7 @@
 import TurndownService from 'turndown'
 import { SETTINGS_DEFAULTS, Settings } from './lib/settings.generated'
 import { storage } from './lib/storage'
-import { EXT_NAME, DARKREADER_CLASS, HIGHLIGHT_ALPHA, OUTLINE_OFFSET, BADGE_INSET, CLASS_SELECTED, CLASS_BADGE, CLASS_FLASH, CLASS_CURSOR, CLASS_OVERLAY, Z_BADGE } from './lib/constants'
+import { EXT_NAME, DARKREADER_CLASS, HIGHLIGHT_ALPHA, OUTLINE_OFFSET, BADGE_INSET, CLASS_SELECTED, CLASS_HOVER, CLASS_BADGE, CLASS_FLASH, CLASS_CURSOR, CLASS_OVERLAY, Z_BADGE } from './lib/constants'
 
 const LOG = `[${EXT_NAME}]`
 
@@ -47,6 +47,12 @@ const state = {
   hoverRoot: null as Element | null,
   outlineStyleEl: null as HTMLStyleElement | null,
   highlightOverlayEl: null as HTMLDivElement | null,
+  // Which mechanism is currently rendering the hover highlight, and on which element.
+  // 'direct' = CSS class on the element itself (browser keeps it in sync for free).
+  // 'overlay' = floating div tracked via getBoundingClientRect (only for clipped elements).
+  hoverMode: null as 'direct' | 'overlay' | null,
+  hoverVisualEl: null as Element | null,
+  overlayRafPending: false,
   cursorStyleEl: null as HTMLStyleElement | null,
   cursorEl: null as HTMLDivElement | null,
   domObserver: null as MutationObserver | null,
@@ -162,7 +168,7 @@ function applyOutlineStyles(): void {
     document.head.appendChild(state.outlineStyleEl)
   }
   state.outlineStyleEl.textContent = `
-    .${CLASS_SELECTED} {
+    .${CLASS_SELECTED}, .${CLASS_HOVER} {
       outline: ${settings.outlineWidth}px solid ${settings.outlineColor} !important;
       outline-offset: ${OUTLINE_OFFSET} !important;
       box-shadow: inset 0 0 0 ${settings.insetWidth}px ${withAlpha(settings.outlineColor, HIGHLIGHT_ALPHA)} !important;
@@ -175,7 +181,23 @@ function clearOutlineStyles(): void {
   state.outlineStyleEl = null
 }
 
-function positionHighlight(el: Element): void {
+// True if any ancestor between el and the viewport would visually clip an outline
+// drawn around el (overflow clipping or clip-path). Elements in this situation can't
+// use the direct-CSS-class outline, since the browser would crop it at the ancestor's
+// bounds — they need the floating overlay instead.
+function isClipped(el: Element): boolean {
+  let node = el.parentElement
+  while (node && node !== document.documentElement) {
+    const s = getComputedStyle(node)
+    if (s.overflowX !== 'visible' || s.overflowY !== 'visible' || (s.clipPath !== 'none' && s.clipPath !== '')) {
+      return true
+    }
+    node = node.parentElement
+  }
+  return false
+}
+
+function positionOverlay(el: Element): void {
   if (!state.highlightOverlayEl) {
     const div = document.createElement('div')
     div.className = CLASS_OVERLAY
@@ -197,8 +219,37 @@ function positionHighlight(el: Element): void {
   ov.style.display = 'block'
 }
 
-function clearHighlight(): void {
+function hideOverlay(): void {
   if (state.highlightOverlayEl) state.highlightOverlayEl.style.display = 'none'
+}
+
+function clearHighlightVisual(): void {
+  if (state.hoverMode === 'direct' && state.hoverVisualEl) {
+    state.hoverVisualEl.classList.remove(CLASS_HOVER)
+  } else if (state.hoverMode === 'overlay') {
+    hideOverlay()
+  }
+  state.hoverVisualEl = null
+  state.hoverMode = null
+}
+
+// Renders the hover highlight on el, preferring a direct CSS class (self-syncing —
+// the browser repaints it on every reflow with zero JS) and falling back to the
+// tracked overlay div only when an ancestor would clip a direct outline.
+function showHighlight(el: Element): void {
+  clearHighlightVisual()
+  if (isClipped(el)) {
+    state.hoverMode = 'overlay'
+    positionOverlay(el)
+  } else {
+    state.hoverMode = 'direct'
+    el.classList.add(CLASS_HOVER)
+  }
+  state.hoverVisualEl = el
+}
+
+function hideHighlight(): void {
+  clearHighlightVisual()
 }
 
 function cursorFontSize(): number {
@@ -356,8 +407,8 @@ function repositionBadges(): void {
     badge.style.left = `${left / z}px`
     syncBadgeVisibility(badge)
   }
-  if (state.lastHighlighted && document.contains(state.lastHighlighted) && state.highlightOverlayEl?.style.display !== 'none') {
-    positionHighlight(state.lastHighlighted)
+  if (state.hoverMode === 'overlay' && state.hoverVisualEl && document.contains(state.hoverVisualEl)) {
+    positionOverlay(state.hoverVisualEl)
   }
 }
 
@@ -400,6 +451,7 @@ function clearSelection(): void {
 }
 
 function clearHover(): void {
+  clearHighlightVisual()
   state.highlightOverlayEl?.remove()
   state.highlightOverlayEl = null
   state.lastHighlighted = null
@@ -430,9 +482,21 @@ function activatePicker(): void {
 
     state.domObserver = new MutationObserver(() => {
       if (state.lastHighlighted && !document.contains(state.lastHighlighted)) {
-        clearHighlight()
+        hideHighlight()
         state.lastHighlighted = null
         state.hoverRoot = null
+      }
+      // Direct-class highlights repaint themselves on any reflow — only the overlay
+      // fallback needs to be re-measured when the page mutates itself (e.g. a site's
+      // own hover-triggered flyout/animation shifting layout under the cursor).
+      if (state.hoverMode === 'overlay' && state.hoverVisualEl && document.contains(state.hoverVisualEl) && !state.overlayRafPending) {
+        state.overlayRafPending = true
+        requestAnimationFrame(() => {
+          state.overlayRafPending = false
+          if (state.hoverMode === 'overlay' && state.hoverVisualEl && document.contains(state.hoverVisualEl)) {
+            positionOverlay(state.hoverVisualEl)
+          }
+        })
       }
       if (state.selections.some(s => !document.contains(s.el))) {
         // Presentation cleanup only — snapshots are extension data, not tied to page lifecycle
@@ -503,7 +567,7 @@ function onMouseOver(e: MouseEvent): void {
   state.lastMousePos = { x: e.clientX, y: e.clientY }
   const target = e.target as Element
   if (target === document.body || target === document.documentElement) {
-    clearHighlight()
+    hideHighlight()
     state.lastHighlighted = null
     state.hoverRoot = null
     return
@@ -511,9 +575,9 @@ function onMouseOver(e: MouseEvent): void {
   state.hoverRoot = target
   state.lastHighlighted = target
   if (!state.multiSelectActive || state.modifierHeld) {
-    positionHighlight(target)
+    showHighlight(target)
   } else {
-    clearHighlight()
+    hideHighlight()
   }
 }
 
@@ -581,7 +645,7 @@ function onKeyDown(e: KeyboardEvent): void {
   if (e.key === PROP_TO_KEY[keyMap.multiSelect]) {
     state.modifierHeld = true
     syncCursor()
-    if (state.lastHighlighted) positionHighlight(state.lastHighlighted)
+    if (state.lastHighlighted) showHighlight(state.lastHighlighted)
   } else if (e.key === 'Escape') {
     e.preventDefault()
     e.stopImmediatePropagation()
@@ -600,7 +664,7 @@ function onKeyDown(e: KeyboardEvent): void {
     const parent = state.lastHighlighted.parentElement
     if (parent && parent !== document.documentElement) {
       state.lastHighlighted = parent
-      positionHighlight(parent)
+      showHighlight(parent)
     }
   } else if (e.key === 'ArrowDown' && state.lastHighlighted && state.hoverRoot && state.lastHighlighted !== state.hoverRoot && (!state.multiSelectActive || state.modifierHeld)) {
     e.preventDefault()
@@ -612,7 +676,7 @@ function onKeyDown(e: KeyboardEvent): void {
     }
     if (el) {
       state.lastHighlighted = el
-      positionHighlight(el)
+      showHighlight(el)
     }
   } else if (e.key === 'Enter' && (selectionCount() > 0 || state.lastHighlighted)) {
     e.preventDefault()
@@ -637,7 +701,7 @@ function onKeyUp(e: KeyboardEvent): void {
   if (e.key === PROP_TO_KEY[keyMap.multiSelect]) {
     state.modifierHeld = false
     syncCursor()
-    if (state.multiSelectActive) clearHighlight()
+    if (state.multiSelectActive) hideHighlight()
   }
 }
 
