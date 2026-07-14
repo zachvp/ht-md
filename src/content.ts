@@ -181,19 +181,48 @@ function clearOutlineStyles(): void {
   state.outlineStyleEl = null
 }
 
+// Per-ancestor memoization for isClipped: sibling elements deep in the same nested
+// container (e.g. product tiles on Amazon-style grids) share most of their ancestor
+// chain, so caching each ancestor's clip verdict turns repeated getComputedStyle walks
+// during a hover burst into an O(1) lookup after the first. Reset whenever the page's
+// own DOM mutates, since that can change an ancestor's overflow/clip-path.
+let clipCache = new WeakMap<Element, boolean>()
+let clipCacheResetPending = false
+
+// Throttled to once per frame: on highly dynamic pages (e.g. Amazon's constant
+// carousel/price/lazy-image churn) the DOM mutation observer can fire many times
+// per frame, and resetting the cache on every single batch would defeat it entirely.
+function scheduleClipCacheReset(): void {
+  if (clipCacheResetPending) return
+  clipCacheResetPending = true
+  requestAnimationFrame(() => {
+    clipCacheResetPending = false
+    clipCache = new WeakMap<Element, boolean>()
+  })
+}
+
 // True if any ancestor between el and the viewport would visually clip an outline
 // drawn around el (overflow clipping or clip-path). Elements in this situation can't
 // use the direct-CSS-class outline, since the browser would crop it at the ancestor's
 // bounds — they need the floating overlay instead.
 function isClipped(el: Element): boolean {
   let node = el.parentElement
+  const visited: Element[] = []
   while (node && node !== document.documentElement) {
+    const cached = clipCache.get(node)
+    if (cached !== undefined) {
+      for (const v of visited) clipCache.set(v, cached)
+      return cached
+    }
+    visited.push(node)
     const s = getComputedStyle(node)
     if (s.overflowX !== 'visible' || s.overflowY !== 'visible' || (s.clipPath !== 'none' && s.clipPath !== '')) {
+      for (const v of visited) clipCache.set(v, true)
       return true
     }
     node = node.parentElement
   }
+  for (const v of visited) clipCache.set(v, false)
   return false
 }
 
@@ -469,6 +498,7 @@ function activatePicker(): void {
   state.cachedNavZIndex = navZIndex()
   console.log(`${LOG} picker activated`)
   try {
+    clipCache = new WeakMap<Element, boolean>()
     applyOutlineStyles()
     setCursor(settings.cursorEmoji)
     state.pickerCleanup.push(tracked(document, 'mousemove', (e: Event) => {
@@ -481,6 +511,7 @@ function activatePicker(): void {
     document.addEventListener('keyup', onKeyUp, true)
 
     state.domObserver = new MutationObserver(() => {
+      scheduleClipCacheReset()
       if (state.lastHighlighted && !document.contains(state.lastHighlighted)) {
         hideHighlight()
         state.lastHighlighted = null

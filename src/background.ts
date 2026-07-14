@@ -36,11 +36,3 @@ chrome.action.onClicked.addListener(async (tab) => {
   console.log(`${LOG} toolbar clicked, tab:`, tab.id)
   await togglePicker(tab.id!)
 })
-
-// DEBUG ONLY — temporary command-based trigger for MCP-driven testing (no toolbar click available).
-// Remove before committing.
-chrome.commands.onCommand.addListener(async (command) => {
-  if (command !== 'debug-toggle-picker') return
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
-  if (tab?.id != null) await togglePicker(tab.id)
-})
