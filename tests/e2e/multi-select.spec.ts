@@ -160,3 +160,26 @@ test('overlay stays visible and repositioned on scroll', async ({ page }) => {
   })
   expect(afterScroll).toBe(true)
 })
+
+// ── Style isolation: content.css scopes its popover reset to extension elements ─
+
+test('popover reset leaves host-page popovers styled and extension toast padded', async ({ page }) => {
+  await loadFixture(page, 'static.html')
+  await page.addStyleTag({ path: path.join(__dirname, '../../content.css') })
+
+  const hostPadding = await page.evaluate(() => {
+    const pop = document.createElement('div')
+    pop.setAttribute('popover', 'manual')
+    pop.textContent = 'host popover'
+    document.body.appendChild(pop)
+    pop.showPopover()
+    return getComputedStyle(pop).paddingTop
+  })
+  // UA stylesheet gives [popover] a non-zero padding; an unscoped reset would zero it
+  expect(hostPadding).not.toBe('0px')
+
+  await page.click('#card-a', { modifiers: ['Meta'] })
+  const toastPadding = await page.evaluate(() =>
+    getComputedStyle(document.querySelector('.ht-md-flash')!).padding)
+  expect(toastPadding).toBe('8px 14px')
+})

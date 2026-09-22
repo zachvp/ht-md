@@ -1,7 +1,9 @@
 
 /* Neutralize UA popover defaults (inset/margin/border/padding/background/overflow)
-   so [popover] elements keep behaving like plain fixed-position divs. */
-[popover] {
+   so the extension's promoted elements keep behaving like plain fixed-position divs.
+   Scoped to [data-ht-md] so host-page popovers keep their own styling; :where()
+   holds specificity at zero so the .ht-md-* class rules below still take precedence. */
+:where([popover][data-ht-md]) {
   margin: 0;
   padding: 0;
   border: none;
